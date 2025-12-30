@@ -15,7 +15,7 @@ export const FavoritesProvider = ({ children }) => {
     if (!token) return;
 
     try {
-      const res = await fetch("http://localhost:5000/api/favorites", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -52,7 +52,7 @@ export const FavoritesProvider = ({ children }) => {
 
     // Backend isteği
     try {
-      const res = await fetch("http://localhost:5000/api/favorites/toggle", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/toggle`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

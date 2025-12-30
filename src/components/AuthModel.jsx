@@ -19,7 +19,7 @@ const AuthModal = ({ isOpen, onClose }) => {
     setError("");
 
     const endpoint = isLogin ? "login" : "register";
-    const url = `http://localhost:5000/api/auth/${endpoint}`;
+    const url = `${import.meta.env.VITE_API_URL}/api/auth/${endpoint}`;
 
     const toastId = toast.loading("İşlem yapılıyor...");
 

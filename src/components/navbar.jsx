@@ -46,9 +46,8 @@ const Navbar = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/categories");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
       const data = await res.json();
-      // Admin panelinde "Navbar'da Göster" tikli olanları al
       const navbarCats = data.filter(cat => cat.isShowOnNavbar === true);
       setCategories(navbarCats);
     } catch (error) {

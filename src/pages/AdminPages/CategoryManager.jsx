@@ -25,7 +25,7 @@ const CategoryManager = () => {
   // --- 1. KATEGORİLERİ GETİR ---
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/categories");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
       const data = await res.json();
       setCategories(data);
       setLoading(false);
@@ -45,7 +45,7 @@ const CategoryManager = () => {
     if (!newMainCategory) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/categories/main", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/main`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ 
@@ -70,7 +70,7 @@ const CategoryManager = () => {
     }
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/categories/sub", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/sub`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ name: newSubCategory, mainCategoryId: selectedMainId })
@@ -95,7 +95,7 @@ const CategoryManager = () => {
       const token = localStorage.getItem("token");
       const endpoint = itemToDelete.type === 'main' ? `main/${itemToDelete.id}` : `sub/${itemToDelete.id}`;
       
-      const res = await fetch(`http://localhost:5000/api/categories/${endpoint}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/${endpoint}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -139,7 +139,7 @@ const CategoryManager = () => {
         bodyData.isShowOnNavbar = editIsShowOnNavbar;
       }
 
-      const res = await fetch(`http://localhost:5000/api/categories/${endpoint}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/${endpoint}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(bodyData)

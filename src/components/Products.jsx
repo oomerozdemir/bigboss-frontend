@@ -18,12 +18,12 @@ const Products = () => {
     const fetchData = async () => {
       try {
         // 1. Ürünleri Çek
-        const productRes = await fetch("http://localhost:5000/api/products");
+        const productRes = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
         const productData = await productRes.json();
         setProducts(productData);
 
         // 2. Kategorileri Çek
-        const catRes = await fetch("http://localhost:5000/api/categories");
+        const catRes = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
         const catData = await catRes.json();
 
         // 3. Sadece Admin'in "Navbar'da Göster" dediklerini filtrele

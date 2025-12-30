@@ -24,7 +24,7 @@ const AdminPanel = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/products");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
       const data = await res.json();
       setProducts(data);
       setLoading(false);
@@ -46,7 +46,7 @@ const AdminPanel = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/products/${productToDelete}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${productToDelete}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`
