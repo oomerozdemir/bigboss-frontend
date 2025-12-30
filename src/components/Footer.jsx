@@ -1,0 +1,89 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Facebook, Instagram, Twitter, MapPin, Phone, Mail } from 'lucide-react';
+
+const Footer = () => {
+  return (
+    <footer className="bg-gray-900 text-white pt-16 pb-8">
+      <div className="max-w-[1440px] mx-auto px-6 md:px-12">
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+          
+          {/* 1. KOLON: MARKA */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-black tracking-tighter">BIG BOSS</h2>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              1972'den beri kadın giyiminde zarafet ve kaliteyi buluşturuyoruz. 
+              36-50 beden aralığındaki geniş koleksiyonumuzla her kadının yanındayız.
+            </p>
+            <div className="flex gap-4">
+              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-black transition"><Instagram size={18}/></a>
+              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-black transition"><Facebook size={18}/></a>
+              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-black transition"><Twitter size={18}/></a>
+            </div>
+          </div>
+
+          {/* 2. KOLON: HIZLI LİNKLER */}
+          <div>
+            <h3 className="text-sm font-bold tracking-widest uppercase mb-6 text-gray-200">Kurumsal</h3>
+            <ul className="space-y-4 text-sm text-gray-400">
+              <li><Link to="/about" className="hover:text-white transition">Hakkımızda</Link></li>
+              <li><Link to="/products" className="hover:text-white transition">Koleksiyonlar</Link></li>
+              <li><Link to="/contact" className="hover:text-white transition">İletişim</Link></li>
+              <li><Link to="/sss" className="hover:text-white transition">Sıkça Sorulan Sorular</Link></li>
+            </ul>
+          </div>
+
+          {/* 3. KOLON: POLİTİKALAR */}
+          <div>
+            <h3 className="text-sm font-bold tracking-widest uppercase mb-6 text-gray-200">Müşteri Hizmetleri</h3>
+            <ul className="space-y-4 text-sm text-gray-400">
+              <li><Link to="/sozlesmeler" className="hover:text-white transition">Mesafeli Satış Sözleşmesi</Link></li>
+              <li><Link to="/iade" className="hover:text-white transition">İade ve Değişim</Link></li>
+              <li><Link to="/gizlilik" className="hover:text-white transition">Gizlilik Politikası</Link></li>
+              <li><Link to="/kargo" className="hover:text-white transition">Kargo ve Teslimat</Link></li>
+            </ul>
+          </div>
+
+          {/* 4. KOLON: MAĞAZALAR & İLETİŞİM */}
+          <div>
+            <h3 className="text-sm font-bold tracking-widest uppercase mb-6 text-gray-200">Bize Ulaşın</h3>
+            <ul className="space-y-4 text-sm text-gray-400">
+              <li className="flex items-start gap-3">
+                <MapPin size={18} className="shrink-0 mt-0.5 text-gray-500" />
+                <span>Merkez: Halaskargazi Cad. Osmanbey, Şişli / İstanbul</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <MapPin size={18} className="shrink-0 mt-0.5 text-gray-500" />
+                <span>Şube: Valikonağı Cad. Nişantaşı / İstanbul</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone size={18} className="shrink-0 text-gray-500" />
+                <span>0212 000 00 00</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Mail size={18} className="shrink-0 text-gray-500" />
+                <span>info@bigboss.com</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        {/* ALT TELİF ALANI */}
+        <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
+          <p>© 2026 Big Boss Tekstil. Tüm hakları saklıdır.</p>
+          <div className="flex gap-4">
+             {/* Kredi Kartı İkonları Temsili */}
+             <div className="h-6 w-10 bg-gray-800 rounded"></div>
+             <div className="h-6 w-10 bg-gray-800 rounded"></div>
+             <div className="h-6 w-10 bg-gray-800 rounded"></div>
+          </div>
+        </div>
+
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
