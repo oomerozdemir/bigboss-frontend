@@ -118,7 +118,7 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
         preview: groupImage ? URL.createObjectURL(groupImage) : null
     }));
 
-    setVariants(prev => sortVariantsByOrder([...prev, newVariants]));
+    setVariants(prev => sortVariantsByOrder([...prev, ...newVariants]));
     
     // Temizlik
     resetGroupInputs();
