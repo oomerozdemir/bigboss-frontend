@@ -31,7 +31,7 @@ const ProductDetailPage = () => {
   const fetchProductDetail = async () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL; 
-      const res = await fetch(`${apiUrl}/api/products`)
+      const res = await fetch(`${apiUrl}/api/products/${id}`)
       if (!res.ok) throw new Error("Ürün bulunamadı");
       
       const data = await res.json();

@@ -105,4 +105,5 @@ urunlerin aciklamasi mutlaka olmali
 urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 
+ana resim eklenmemis ise renklerden birini ana resim olarak secsin
 */
