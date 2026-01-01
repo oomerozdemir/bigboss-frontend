@@ -75,7 +75,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/categories");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`,)
       const data = await res.json();
       setCategories(data);
     } catch (error) { console.error(error); }
@@ -257,7 +257,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/products/${product.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/${product.id}`,{
         method: "PUT", 
         headers: { "Authorization": `Bearer ${token}` },
         body: data
