@@ -18,7 +18,7 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import AboutPage from './pages/AboutPage';
 import CartPage from './pages/CartPage';
 import FAQPage from './pages/FaqPage';
-
+import CheckoutPage from './pages/CheckOutPage';
 
 import { FavoritesProvider } from './context/FavoritesContext';
 
@@ -80,7 +80,7 @@ function App() {
           <Route path="/hakkimizda" element={<AboutPage />} />
           <Route path="/sepet" element={<CartPage />} />
           <Route path="/sss" element={<FAQPage />} />
-
+          <Route path="/odeme-sayfasi" element={<CheckoutPage />} />
           </Route>
 
           {/* Admin Giriş Rotası */}
@@ -98,7 +98,7 @@ export default App;
 
 /* 
 
-stok programi ile baglanabilecek mi onu arastir
+
 
 
 urunlerin aciklamasi mutlaka olmali
@@ -106,4 +106,12 @@ urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 
 ana resim eklenmemis ise renklerden birini ana resim olarak secsin
+
+hesabim kismini duzenle kullanicilar icin
+
+tum urunlerin listelendigi yerde urun sayisini gorebilelim
+
+productCard da beden gözükmüyor
+
+Beden ve renk seçmeden sepete eklenemesin ürün
 */
