@@ -135,6 +135,9 @@ const Navbar = () => {
                             <p className="text-xs text-gray-400 font-bold">Merhaba,</p>
                             <p className="text-sm font-semibold truncate">{user.name}</p>
                         </div>
+                        <Link to="/hesabim" className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded transition-colors">
+    <User size={14} /> Hesabım
+</Link>
                         {user.isAdmin && (
                             <Link to="/admin-panel" className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded">
                                 <ShieldCheck size={14}/> Admin Paneli

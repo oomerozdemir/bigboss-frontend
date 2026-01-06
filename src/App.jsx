@@ -19,6 +19,7 @@ import AboutPage from './pages/AboutPage';
 import CartPage from './pages/CartPage';
 import FAQPage from './pages/FaqPage';
 import CheckoutPage from './pages/CheckOutPage';
+import UserAccountPage from './pages/UserAccountPage';
 
 import { FavoritesProvider } from './context/FavoritesContext';
 
@@ -81,6 +82,7 @@ function App() {
           <Route path="/sepet" element={<CartPage />} />
           <Route path="/sss" element={<FAQPage />} />
           <Route path="/odeme-sayfasi" element={<CheckoutPage />} />
+          <Route path="/hesabim" element={<UserAccountPage />} />
           </Route>
 
           {/* Admin Giriş Rotası */}
@@ -108,6 +110,8 @@ urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 ana resim eklenmemis ise renklerden birini ana resim olarak secsin
 
 hesabim kismini duzenle kullanicilar icin
+
+sıparıslerım sayfasını yap admın ve kullanıcı ıcnı
 
 tum urunlerin listelendigi yerde urun sayisini gorebilelim
 
