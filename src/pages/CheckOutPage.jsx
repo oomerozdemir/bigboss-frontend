@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const CheckoutPage = () => {
   const { cartItems, clearCart, subtotal } = useCart(); 
@@ -28,22 +29,66 @@ const CheckoutPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handlePayment = (e) => {
+ const handlePayment = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // MOCK ÖDEME İŞLEMİ (Simülasyon)
-    setTimeout(() => {
-      setLoading(false);
-      // Başarılı işlem simülasyonu
-      alert('Siparişiniz başarıyla alındı! Teşekkür ederiz.');
-      
-      // Sepeti temizle
-      if (clearCart) clearCart();
-      
-      // Anasayfaya yönlendir
-      navigate('/');
-    }, 2000);
+    // 1. Adres bilgisini tek bir metin haline getiriyoruz
+    const fullAddress = `${formData.address}, ${formData.city} - ${formData.firstName} ${formData.lastName} (${formData.phone})`;
+    
+    // 2. Sepet verisini Backend'in beklediği formata çeviriyoruz
+    const orderItems = cartItems.map(item => ({
+        productId: item.id,
+        price: item.price,
+        quantity: item.quantity,
+        variant: `${item.selectedVariant?.size || 'Std'} / ${item.selectedVariant?.color || 'Std'}`
+    }));
+    
+    try {
+        const token = localStorage.getItem("token");
+
+        // Giriş kontrolü (Token yoksa işlem yapma)
+        if (!token) {
+            toast.error("Sipariş vermek için giriş yapmalısınız.");
+            setLoading(false);
+            return;
+        }
+
+        // 3. API'ye İstek At (Gerçek Sipariş)
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                items: orderItems,
+                total: TOTAL, // Component içinde hesaplanan TOTAL değişkeni
+                address: fullAddress
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || "Sipariş oluşturulamadı");
+        }
+
+        // 4. Başarılı İşlem
+        toast.success("Siparişiniz başarıyla alındı! 🎉");
+        
+        // Sepeti temizle
+        if (clearCart) clearCart();
+        
+        // Kullanıcıyı 'Hesabım > Siparişlerim' sayfasına yönlendir
+        navigate('/hesabim');
+
+    } catch (error) {
+        console.error("Ödeme Hatası:", error);
+        toast.error(error.message || "Bir hata oluştu, lütfen tekrar deneyin.");
+    } finally {
+        setLoading(false);
+    }
   };
 
   // Sepet Boşsa

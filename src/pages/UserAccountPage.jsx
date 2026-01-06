@@ -8,6 +8,7 @@ const UserAccountPage = () => {
   const [user, setUser] = useState(null);
   const [addresses, setAddresses] = useState([]); // Adresleri tutacak state
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [orders, setOrders] = useState([]);
   
   // Adres Form State
   const [newAddress, setNewAddress] = useState({
@@ -27,10 +28,25 @@ const UserAccountPage = () => {
     if (storedUser && token) {
       setUser(JSON.parse(storedUser));
       fetchAddresses(token);
+      fetchOrders(token);
     } else {
       navigate('/');
     }
   }, [navigate]);
+
+  const fetchOrders = async (token) => {
+    try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            setOrders(data);
+        }
+    } catch (error) {
+        console.error("Siparişler çekilemedi");
+    }
+  };
 
   // Adresleri API'den Getir
   const fetchAddresses = async (token) => {
@@ -195,15 +211,72 @@ const UserAccountPage = () => {
                   <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                     <Package size={24} className="text-gray-400"/> Siparişlerim
                   </h2>
-                  <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-100 rounded-xl">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300">
-                      <Package size={32} />
+                  
+                  {orders.length === 0 ? (
+                    // BOŞ SİPARİŞ GÖRÜNÜMÜ (Aynı kalabilir)
+                    <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-100 rounded-xl">
+                        {/* ... (eski kod) ... */}
+                        <h3 className="text-lg font-bold text-gray-900 mb-1">Henüz Siparişiniz Yok</h3>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">Henüz Siparişiniz Yok</h3>
-                  </div>
+                  ) : (
+                    // DOLU SİPARİŞ LİSTESİ
+                    <div className="space-y-6">
+                        {orders.map((order) => (
+                            <div key={order.id} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                                {/* Sipariş Başlığı */}
+                                <div className="bg-gray-50 p-4 border-b border-gray-200 flex flex-wrap justify-between items-center gap-4 text-sm">
+                                    <div>
+                                        <p className="text-gray-500 text-xs uppercase font-bold">Sipariş Tarihi</p>
+                                        <p className="font-medium text-gray-900">
+                                            {new Date(order.createdAt).toLocaleDateString('tr-TR')}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-500 text-xs uppercase font-bold">Toplam Tutar</p>
+                                        <p className="font-bold text-green-600">
+                                            {parseFloat(order.total).toLocaleString('tr-TR')} TL
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                                            order.status === 'Teslim Edildi' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                        }`}>
+                                            {order.status}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Sipariş Ürünleri */}
+                                <div className="p-4 space-y-4">
+                                    {order.items.map((item) => (
+                                        <div key={item.id} className="flex gap-4 items-center">
+                                            <div className="w-16 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                                                {/* Ürün resmi */}
+                                                <img 
+                                                    src={item.product?.imageUrl || "https://via.placeholder.com/100"} 
+                                                    alt={item.product?.name} 
+                                                    className="w-full h-full object-cover" 
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-bold text-sm text-gray-900 line-clamp-1">{item.product?.name}</h4>
+                                                <p className="text-xs text-gray-500">
+                                                    {item.variant} | {item.quantity} Adet
+                                                </p>
+                                                <p className="text-sm font-semibold mt-1">
+                                                    {parseFloat(item.price).toLocaleString('tr-TR')} TL
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               )}
-
+              
               {/* --- ADRESLER --- */}
               {activeTab === 'addresses' && (
                 <div className="animate-in fade-in duration-300">
