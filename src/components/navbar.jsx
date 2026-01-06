@@ -143,7 +143,7 @@ const Navbar = () => {
                                 <ShieldCheck size={14}/> Admin Paneli
                             </Link>
                         )}
-                        <Link to="/orders" className="block px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 rounded">Siparişlerim</Link>
+                        <Link to="/siparisler" className="block px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 rounded">Siparişlerim</Link>
                         <button onClick={handleLogout} className="w-full text-left flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-50 rounded mt-1">
                             <LogOut size={14}/> Çıkış
                         </button>
