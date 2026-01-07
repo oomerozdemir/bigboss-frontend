@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, Layers } from 'lucide-react';
+import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, Layers, ShoppingBag } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
 import AddProductModal from '../../utils/AddProductModal';
 import DeleteModal from '../../utils/DeleteModal'; 
 import EditProductModal from '../../utils/EditProductModal';
+import OrderManager from './OrderManager'; // OrderManager import edildi
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("products");
@@ -91,6 +92,7 @@ const AdminPanel = () => {
 
         <nav className="px-4 space-y-2 mt-4">
           <SidebarItem id="dashboard" icon={LayoutDashboard} label="Genel Bakış" />
+          <SidebarItem id="orders" icon={ShoppingBag} label="Siparişler" />
           <SidebarItem id="categories" icon={Layers} label="Kategoriler" />
           <SidebarItem id="products" icon={Package} label="Ürün Yönetimi" />
           <SidebarItem id="users" icon={Users} label="Müşteriler" />
@@ -104,7 +106,7 @@ const AdminPanel = () => {
         <header className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
-                {activeTab === 'products' ? "Ürün Yönetimi" : activeTab === 'categories' ? "Kategori Yönetimi" : "Panel"}
+                {activeTab === 'products' ? "Ürün Yönetimi" : activeTab === 'categories' ? "Kategori Yönetimi" : activeTab === 'orders' ? "Sipariş Yönetimi" : "Panel"}
             </h1>
             <p className="text-gray-500 text-sm">Yönetim panelinize hoşgeldiniz.</p>
           </div>
@@ -188,7 +190,6 @@ const AdminPanel = () => {
                           <Edit size={18} />
                         </button>
                           
-                          {/* SİLME BUTONU (YENİ) */}
                           <button 
                             onClick={() => handleDeleteClick(product.id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
@@ -203,6 +204,10 @@ const AdminPanel = () => {
               </table>
             </div>
           </div>
+        )}
+
+        {activeTab === 'orders' && (
+             <OrderManager />
         )}
 
         {activeTab === 'categories' && (
