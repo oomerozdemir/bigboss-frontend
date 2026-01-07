@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Heart } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom'; // 👈 useNavigate eklendi
+import { Link, useNavigate } from 'react-router-dom'; 
 import toast from 'react-hot-toast';
 import { useFavorites } from '../context/FavoritesContext';
-import { useCart } from '../context/CartContext'; // 👈 useCart eklendi
+import { useCart } from '../context/CartContext'; 
 import { sortVariantsByOrder } from '../utils/sortHelpers';
 
 const ProductCard = ({ product }) => {
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { addToCart } = useCart(); // 👈 Sepet fonksiyonunu al
-  const navigate = useNavigate();  // 👈 Yönlendirme için
+  const { addToCart } = useCart(); 
+  const navigate = useNavigate();  
   
-  const [activeImage, setActiveImage] = useState(product.imageUrl);
+  // Ana resim yoksa, varyantlardaki ilk resmi bul ve kullan
+  const initialImage = product.imageUrl 
+    ? product.imageUrl 
+    : (product.variants && product.variants.find(v => v.vImageUrl)?.vImageUrl) || "https://via.placeholder.com/400x500?text=No+Image";
+
+  const [activeImage, setActiveImage] = useState(initialImage);
+
   const liked = isFavorite(product.id);
   const sortedVariants = sortVariantsByOrder(product.variants || []);
 
@@ -44,19 +50,14 @@ const ProductCard = ({ product }) => {
     if (variantImage) setActiveImage(variantImage);
   };
 
-  // 👇 YENİ: Sepete Ekle ve Yönlendir Fonksiyonu
   const handleAddToCart = (e) => {
-    e.preventDefault(); // Link'e gitmeyi engelle
-    e.stopPropagation(); // Tıklamanın yukarı taşınmasını engelle
+    e.preventDefault(); 
+    e.stopPropagation(); 
 
-    // Vitrinde beden seçilmediği için, stokta olan İLK bedeni otomatik seçelim
     const variantToAdd = product.variants?.find(v => v.stock > 0);
 
     if (variantToAdd) {
-        // Sepete Ekle
         addToCart(product, variantToAdd, 1);
-        
-        // Sepet Sayfasına Yönlendir (Otomatik Gitme)
         navigate('/sepet'); 
     } else {
         toast.error("Ürün stokta yok veya beden seçilemedi.");
@@ -67,15 +68,13 @@ const ProductCard = ({ product }) => {
     <Link to={`/product/${product.id}`} className="group block h-full">
       <div className="flex flex-col h-full">
         
-        {/* --- GÖRSEL ALANI --- */}
         <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden mb-4">
           <img 
-            src={activeImage || "https://via.placeholder.com/400x500?text=No+Image"} 
+            src={activeImage} 
             alt={product.name} 
             className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
           />
 
-          {/* Favori Butonu */}
           <button 
             onClick={handleToggleFavorite}
             className="absolute top-3 right-3 z-20 p-2 rounded-full transition-all hover:bg-white/90"
@@ -87,17 +86,15 @@ const ProductCard = ({ product }) => {
             />
           </button>
           
-          {/* İndirim Etiketi */}
           {product.discount > 0 && (
              <span className="absolute top-3 left-3 bg-white text-black text-[10px] font-bold px-2 py-1 uppercase tracking-wider shadow-sm">
                %{product.discount} İndirim
              </span>
           )}
 
-          {/* Hızlı Sepet (Hoverda Çıkar) - BUTONA FONKSİYONU BAĞLADIK */}
           <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
              <button 
-                onClick={handleAddToCart} // 👈 Tıklama olayı buraya bağlandı
+                onClick={handleAddToCart} 
                 disabled={product.stock === 0} 
                 className="w-full bg-white text-black py-3 text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors shadow-lg flex items-center justify-center gap-2"
              >
@@ -107,9 +104,7 @@ const ProductCard = ({ product }) => {
           </div>
         </div>
 
-        {/* --- DETAYLAR --- */}
         <div className="flex flex-col gap-1">
-          {/* Renk Seçenekleri */}
           {uniqueColors.length > 0 && (
               <div className="flex gap-1.5 mb-1 h-4">
                   {uniqueColors.map((item, index) => (

@@ -10,7 +10,7 @@ import SimilarProducts from '../components/SimilarProducts';
 import { sortVariantsByOrder } from '../utils/sortHelpers';
 
 const ProductDetailPage = () => {
-  const { id } = useParams(); // URL'den ID'yi al
+  const { id } = useParams(); 
   const navigate = useNavigate();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToCart } = useCart();
@@ -18,7 +18,6 @@ const ProductDetailPage = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // Seçim State'leri
   const [activeImage, setActiveImage] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
@@ -36,15 +35,24 @@ const ProductDetailPage = () => {
       
       const data = await res.json();
       setProduct(data);
-      setActiveImage(data.imageUrl);
+      
+      let initialImage = data.imageUrl;
+      if (!initialImage && data.variants && data.variants.length > 0) {
+          const variantWithImage = data.variants.find(v => v.vImageUrl);
+          if (variantWithImage) {
+              initialImage = variantWithImage.vImageUrl;
+          }
+      }
+      setActiveImage(initialImage || "https://via.placeholder.com/500x600?text=No+Image");
 
-      // İlk rengi varsayılan olarak seç (Eğer varyant varsa)
       if (data.variants && data.variants.length > 0) {
-         // Standart olmayan ilk rengi bul
          const firstColorVariant = data.variants.find(v => v.color !== "Standart" && v.stock > 0);
          if (firstColorVariant) {
             setSelectedColor(firstColorVariant.color);
-            if(firstColorVariant.vImageUrl) setActiveImage(firstColorVariant.vImageUrl);
+            // Eğer ana resim yoksa ve bu rengin resmi varsa onu seç
+            if (!data.imageUrl && firstColorVariant.vImageUrl) {
+                setActiveImage(firstColorVariant.vImageUrl);
+            }
          }
       }
 
@@ -55,9 +63,7 @@ const ProductDetailPage = () => {
     }
   };
 
-  // --- MANTIK: Renkleri ve Bedenleri Ayıkla ---
-  
-  // 1. Benzersiz Renkler
+
   const uniqueColors = product?.variants?.reduce((acc, v) => {
     if (v.color && v.color !== "Standart" && !acc.find(c => c.name === v.color)) {
       acc.push({ name: v.color, image: v.vImageUrl });
@@ -65,15 +71,12 @@ const ProductDetailPage = () => {
     return acc;
   }, []) || [];
 
-  // 2. Seçilen Renge Göre Mevcut Bedenler
   const availableSizes = sortVariantsByOrder(
     product?.variants?.filter(v => 
-        // Eğer renk seçiliyse sadece o rengin bedenlerini getir, yoksa hepsini
         selectedColor ? v.color === selectedColor : true
     ) || []
   );
 
-  // 3. Seçilen Varyantı Bul (Sepete eklemek için ID lazım)
   const currentVariant = product?.variants?.find(v => 
     (selectedColor ? v.color === selectedColor : true) && 
     (selectedSize ? v.size === selectedSize : true)
@@ -81,12 +84,11 @@ const ProductDetailPage = () => {
 
   const handleColorSelect = (colorName, colorImage) => {
     setSelectedColor(colorName);
-    setSelectedSize(""); // Renk değişince bedeni sıfırla
-    if (colorImage) setActiveImage(colorImage); // Resmi güncelle
+    setSelectedSize(""); 
+    if (colorImage) setActiveImage(colorImage); 
   };
 
  const handleAddToCart = () => {
-    // 1. Validasyonlar
     if (product.variants && product.variants.length > 0 && !currentVariant) {
         toast.error("Lütfen beden ve renk seçiniz");
         return;
@@ -97,11 +99,8 @@ const ProductDetailPage = () => {
         return;
     }
 
-    // 2. Sepete Ekleme
     addToCart(product, currentVariant, quantity);
-
     navigate('/sepet');
-    
   };
 
   const handleToggleFavorite = async () => {
@@ -129,7 +128,7 @@ const ProductDetailPage = () => {
             <div className="space-y-4">
                <div className="aspect-[4/5] w-full bg-gray-100 rounded-2xl overflow-hidden relative group">
                   <img 
-                    src={activeImage || product.imageUrl} 
+                    src={activeImage} 
                     alt={product.name} 
                     className="w-full h-full object-cover"
                   />
@@ -213,14 +212,12 @@ const ProductDetailPage = () => {
 
                   {/* 3. ADET VE SEPET */}
                   <div className="flex gap-4 pt-4">
-                     {/* Adet */}
                      <div className="flex items-center border border-gray-300 rounded-full px-4 h-14">
                         <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 hover:text-gray-500"><Minus size={18}/></button>
                         <span className="w-8 text-center font-bold">{quantity}</span>
                         <button onClick={() => setQuantity(quantity + 1)} className="p-2 hover:text-gray-500"><Plus size={18}/></button>
                      </div>
 
-                     {/* Sepete Ekle */}
                      <button 
                         onClick={handleAddToCart}
                         disabled={product.stock === 0}
@@ -230,7 +227,6 @@ const ProductDetailPage = () => {
                         {product.stock === 0 ? "Stokta Yok" : "Sepete Ekle"}
                      </button>
 
-                     {/* Favori */}
                      <button 
                         onClick={handleToggleFavorite}
                         className={`h-14 w-14 rounded-full border flex items-center justify-center transition ${isFavorite(product.id) ? "border-red-200 bg-red-50 text-red-500" : "border-gray-300 hover:border-black"}`}
@@ -258,7 +254,6 @@ const ProductDetailPage = () => {
                   </div>
                </div>
 
-               {/* AÇIKLAMA */}
                <div className="mt-8 border-t pt-6">
                   <h3 className="font-bold text-lg mb-4">Ürün Açıklaması</h3>
                   <p className="text-gray-600 leading-relaxed">

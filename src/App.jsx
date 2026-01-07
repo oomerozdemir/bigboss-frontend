@@ -109,9 +109,8 @@ urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 ana resim eklenmemis ise renklerden birini ana resim olarak secsin
 
-hesabim kismini duzenle kullanicilar icin
 
-sıparıslerım sayfasını yap admın ve kullanıcı ıcnı
+tuadaki gibi siparis yonetimi ve iade yapisi eklenecek
 
 tum urunlerin listelendigi yerde urun sayisini gorebilelim
 
