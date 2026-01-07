@@ -4,14 +4,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCart } from '../context/CartContext'; 
-import { sortVariantsByOrder } from '../utils/sortHelpers';
 
 const ProductCard = ({ product }) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToCart } = useCart(); 
   const navigate = useNavigate();  
   
-  // Ana resim yoksa, varyantlardaki ilk resmi bul ve kullan
+  // 1. Ana resim kontrolü (Önceki düzenleme)
   const initialImage = product.imageUrl 
     ? product.imageUrl 
     : (product.variants && product.variants.find(v => v.vImageUrl)?.vImageUrl) || "https://via.placeholder.com/400x500?text=No+Image";
@@ -19,7 +18,21 @@ const ProductCard = ({ product }) => {
   const [activeImage, setActiveImage] = useState(initialImage);
 
   const liked = isFavorite(product.id);
-  const sortedVariants = sortVariantsByOrder(product.variants || []);
+
+  // --- YENİ: Bedenleri Ayıkla ve Sırala ---
+  const uniqueSizes = [...new Set(
+      product.variants
+        ?.filter(v => v.stock > 0 && v.size && v.size !== 'Standart' && v.size !== 'STD')
+        .map(v => v.size)
+  )];
+
+  // Beden Sıralama Mantığı (Manuel)
+  const sizeOrder = { 'XXS': 1, 'XS': 2, 'S': 3, 'M': 4, 'L': 5, 'XL': 6, 'XXL': 7, '2XL': 8, '3XL': 9 };
+  uniqueSizes.sort((a, b) => {
+      const orderA = sizeOrder[a] || 99; // Bilinmeyen bedenler sona
+      const orderB = sizeOrder[b] || 99;
+      return orderA - orderB;
+  });
 
   const uniqueColors = product.variants?.reduce((acc, variant) => {
     if (!variant.color || variant.color === "Standart") return acc;
@@ -68,6 +81,7 @@ const ProductCard = ({ product }) => {
     <Link to={`/product/${product.id}`} className="group block h-full">
       <div className="flex flex-col h-full">
         
+        {/* --- GÖRSEL ALANI --- */}
         <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden mb-4">
           <img 
             src={activeImage} 
@@ -104,7 +118,9 @@ const ProductCard = ({ product }) => {
           </div>
         </div>
 
+        {/* --- DETAYLAR --- */}
         <div className="flex flex-col gap-1">
+          {/* Renk Seçenekleri */}
           {uniqueColors.length > 0 && (
               <div className="flex gap-1.5 mb-1 h-4">
                   {uniqueColors.map((item, index) => (
@@ -123,6 +139,16 @@ const ProductCard = ({ product }) => {
           <h3 className="text-sm text-gray-900 font-medium leading-tight line-clamp-2 group-hover:underline decoration-1 underline-offset-4">
             {product.name}
           </h3>
+
+          {uniqueSizes.length > 0 && (
+            <div className="flex flex-wrap gap-1 my-1">
+                {uniqueSizes.map((size, i) => (
+                    <span key={i} className="text-[9px] border border-gray-200 bg-gray-50 text-gray-600 px-1.5 py-0.5 rounded-sm">
+                        {size}
+                    </span>
+                ))}
+            </div>
+          )}
           
           <div className="mt-1 flex items-center gap-2">
             <span className="text-sm font-bold text-gray-900">{product.price} TL</span>

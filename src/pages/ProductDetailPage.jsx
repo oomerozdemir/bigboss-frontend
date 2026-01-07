@@ -88,18 +88,37 @@ const ProductDetailPage = () => {
     if (colorImage) setActiveImage(colorImage); 
   };
 
- const handleAddToCart = () => {
-    if (product.variants && product.variants.length > 0 && !currentVariant) {
-        toast.error("Lütfen beden ve renk seçiniz");
-        return;
-    }
-    
-    if (currentVariant && currentVariant.stock < quantity) {
-        toast.error(`Yetersiz stok! En fazla ${currentVariant.stock} adet alabilirsiniz.`);
-        return;
+const handleAddToCart = () => {
+    // 1. Ürünün varyantları var mı?
+    if (product.variants && product.variants.length > 0) {
+        
+        // A) Renk Seçimi Kontrolü
+        if (uniqueColors.length > 0 && !selectedColor) {
+            toast.error("Lütfen bir renk seçiniz.");
+            return;
+        }
+        
+        // B) Beden Seçimi Kontrolü
+        if (availableSizes.length > 0 && !selectedSize) {
+            toast.error("Lütfen bir beden seçiniz.");
+            return;
+        }
+
+        // C) Varyant Eşleşme Kontrolü
+        if (!currentVariant) {
+            toast.error("Seçilen kombinasyon stokta bulunamadı.");
+            return;
+        }
+        
+        // D) Stok Kontrolü
+        if (currentVariant.stock < quantity) {
+            toast.error(`Yetersiz stok! En fazla ${currentVariant.stock} adet alabilirsiniz.`);
+            return;
+        }
     }
 
     addToCart(product, currentVariant, quantity);
+
     navigate('/sepet');
   };
 
