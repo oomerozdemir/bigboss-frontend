@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/navbar';
 import ProductCard from '../components/ProductCard';
-import { Search, ArrowUpDown, Filter, ChevronRight } from 'lucide-react';
+import { Search, ArrowUpDown, Filter } from 'lucide-react'; // ChevronRight kullanılmadığı için kaldırıldı
 import { useLocation } from 'react-router-dom';
 
 const ProductListPage = () => {
@@ -54,22 +54,15 @@ const ProductListPage = () => {
     }
   };
 
-
-
   // --- DİNAMİK ALT KATEGORİ HESAPLAMA ---
-  // Ana Kategori (selectedMainCategory) değiştiğinde çalışır
   useEffect(() => {
-    // 1. Önce alt kategori seçimini sıfırla (Çünkü eski seçim yeni grupta olmayabilir)
     setSelectedSubCategory("Tümü");
 
-    // 2. Seçilen Ana Kategoriye ait alt kategorileri bul
     const subCats = new Set(["Tümü"]);
 
     products.forEach(p => {
         p.categories?.forEach(c => {
-            // Eğer "Tümü" seçiliyse hepsini ekle, değilse sadece eşleşen ana kategorinin altlarını ekle
             const mainCatName = c.mainCategory?.name;
-            
             if (selectedMainCategory === "Tümü" || mainCatName === selectedMainCategory) {
                 subCats.add(c.name);
             }
@@ -104,7 +97,7 @@ const ProductListPage = () => {
       );
     }
 
-    // 3. Alt Kategori Filtresi (YENİ)
+    // 3. Alt Kategori Filtresi
     if (selectedSubCategory !== "Tümü") {
         result = result.filter(p => 
           p.categories?.some(c => c.name === selectedSubCategory)
@@ -130,18 +123,26 @@ const ProductListPage = () => {
       <div className="bg-gray-50 min-h-screen pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
+          {/* --- YENİLENMİŞ BAŞLIK ALANI --- */}
           <div className="mb-8 text-center">
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">TÜM ÜRÜNLER</h1>
-            <p className="text-gray-500">Tarzını yansıtan en iyi parçalar.</p>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2 uppercase">
+                {selectedMainCategory === "Tümü" ? "TÜM ÜRÜNLER" : selectedMainCategory}
+            </h1>
+            <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
+                <span>Tarzını yansıtan en iyi parçalar.</span>
+                <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                {/* 👇 DİNAMİK ÜRÜN SAYACI BURADA 👇 */}
+                <span className="font-bold text-black bg-gray-200 px-2 py-0.5 rounded-md">
+                    {loading ? "..." : filteredProducts.length} Ürün
+                </span>
+            </div>
           </div>
 
           {/* --- FİLTRE ALANI --- */}
           <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 mb-8 sticky top-20 z-30">
             
-            {/* 1. SATIR: ANA KATEGORİLER & ARAMA */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4 border-b border-gray-100 pb-4">
                 
-                {/* Ana Kategori Butonları */}
                 <div className="flex gap-2 overflow-x-auto pb-1 w-full md:w-auto scrollbar-hide">
                     {mainCategories.map((cat) => (
                         <button
@@ -158,7 +159,6 @@ const ProductListPage = () => {
                     ))}
                 </div>
 
-                {/* Arama ve Sıralama */}
                 <div className="flex gap-3 w-full md:w-auto">
                     <div className="relative flex-1 md:w-56">
                         <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
@@ -185,7 +185,6 @@ const ProductListPage = () => {
                 </div>
             </div>
 
-            {/* 2. SATIR: DİNAMİK ALT KATEGORİLER (Sadece "Tümü" seçili değilse veya alt kategori varsa göster) */}
             {availableSubCategories.length > 1 && (
                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-2 hidden md:block">Filtrele:</span>
