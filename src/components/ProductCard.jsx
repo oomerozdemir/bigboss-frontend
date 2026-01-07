@@ -86,7 +86,7 @@ const ProductCard = ({ product }) => {
           <img 
             src={activeImage} 
             alt={product.name} 
-            className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+            className="w-full h-full object-cover object-top transition-transform duration-700 ease-in-out group-hover:scale-110"
           />
 
           <button 

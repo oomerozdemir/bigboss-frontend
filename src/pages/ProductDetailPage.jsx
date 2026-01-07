@@ -149,7 +149,7 @@ const handleAddToCart = () => {
                   <img 
                     src={activeImage} 
                     alt={product.name} 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-top"
                   />
                   {product.stock === 0 && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
