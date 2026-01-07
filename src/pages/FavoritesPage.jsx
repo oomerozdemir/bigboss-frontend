@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 const FavoritesPage = () => {
   const [favorites, setFavorites] = useState([]);
-  const [suggestedProducts, setSuggestedProducts] = useState([]); // Alt kısım için öneriler
+  const [suggestedProducts, setSuggestedProducts] = useState([]); 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,25 +14,22 @@ const FavoritesPage = () => {
 
   const fetchData = async () => {
     const token = localStorage.getItem("token");
+    const apiUrl = import.meta.env.VITE_API_URL;
     
     try {
-      // 1. Favorileri Çek (Eğer giriş yapıldıysa)
       if (token) {
-        const favRes = await fetch("http://localhost:5000/api/favorites", {
+        const favRes = await fetch(`${apiUrl}/api/favorites`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         const favData = await favRes.json();
         setFavorites(favData);
       } else {
-        setLoading(false); // Giriş yoksa direkt yüklemeyi bitir
+        setLoading(false); 
       }
 
-      // 2. Öneri Ürünleri Çek (Sayfanın altı boş kalmasın diye)
-      // Gerçek senaryoda "En Çok Satanlar" endpointi olabilir.
-      const prodRes = await fetch("http://localhost:5000/api/products");
+      const prodRes = await fetch(`${apiUrl}/api/products`);
       const prodData = await prodRes.json();
       
-      // Rastgele veya ilk 4 ürünü öneri olarak al
       setSuggestedProducts(prodData.slice(0, 4));
 
       setLoading(false);
@@ -77,10 +74,9 @@ const FavoritesPage = () => {
 
         ) : (
           
-          /* BOŞ LİSTE (EMPTY STATE) - Tasarımı Güçlendirildi */
+          /* BOŞ LİSTE (EMPTY STATE) */
           <div className="flex flex-col items-center justify-center py-20 bg-gray-50 border border-gray-100 relative overflow-hidden group">
             
-            {/* Arkaplan Dekoru */}
             <Heart className="absolute text-gray-100 w-96 h-96 -bottom-20 -right-20 opacity-50 transform rotate-12 group-hover:scale-110 transition-transform duration-700" strokeWidth={0.5} />
 
             <div className="relative z-10 text-center max-w-md px-6">
@@ -107,8 +103,7 @@ const FavoritesPage = () => {
           </div>
         )}
 
-        {/* --- SAYFAYI UZATAN BÖLÜM: ÖNERİLER --- */}
-        {/* Favoriler olsun ya da olmasın, aşağıda öneriler gösterilir */}
+        {/* --- ÖNERİLER --- */}
         <div className="mt-32">
             <div className="flex items-center justify-between mb-10">
                 <h3 className="text-2xl font-black uppercase tracking-tighter text-gray-900">

@@ -111,7 +111,7 @@ tuadaki gibi siparis yonetimi ve iade yapisi eklenecek
 
 kupon yapisi eklenicek
 
-tum urunlerin listelendigi yerde urun sayisini gorebilelim
+
 
 
 */

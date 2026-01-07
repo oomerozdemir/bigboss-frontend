@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/navbar';
 import ProductCard from '../components/ProductCard';
-import { Search, ArrowUpDown, Filter } from 'lucide-react'; // ChevronRight kullanılmadığı için kaldırıldı
+import { Search, ArrowUpDown, Filter } from 'lucide-react'; 
 import { useLocation } from 'react-router-dom';
 
 const ProductListPage = () => {
