@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { User, Package, MapPin, Heart, LogOut, Plus, Trash2, X } from 'lucide-react';
+import { User, Package, MapPin, Heart, LogOut, Plus, Trash2, X, RefreshCcw } from 'lucide-react'; // RefreshCcw eklendi
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const UserAccountPage = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [user, setUser] = useState(null);
-  const [addresses, setAddresses] = useState([]); // Adresleri tutacak state
+  const [addresses, setAddresses] = useState([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [orders, setOrders] = useState([]);
   
+  // DÜZELTME 1: returnStatus burada tanımlanmaz, aşağıda map içinde kullanılacak.
+
   // Adres Form State
   const [newAddress, setNewAddress] = useState({
     title: 'Ev',
@@ -20,7 +22,19 @@ const UserAccountPage = () => {
 
   const navigate = useNavigate();
 
-  // 1. Kullanıcıyı ve Adresleri Çek
+  // Enum -> Türkçe Çeviri Haritası
+  const STATUS_MAP = {
+    "SIPARIS_ALINDI": "Sipariş Alındı",
+    "HAZIRLANIYOR": "Hazırlanıyor",
+    "KARGOLANDI": "Kargolandı",
+    "TESLIM_EDILDI": "Teslim Edildi",
+    "IPTAL_EDILDI": "İptal Edildi",
+    "IADE_TALEP_EDILDI": "İade Talebi Alındı",
+    "IADE_ONAYLANDI": "İade Edildi",
+    "IADE_REDDEDILDI": "İade Reddedildi",
+    "IADE_EDILDI": "İade Edildi"
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const token = localStorage.getItem("token");
@@ -48,7 +62,6 @@ const UserAccountPage = () => {
     }
   };
 
-  // Adresleri API'den Getir
   const fetchAddresses = async (token) => {
     try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/address`, {
@@ -63,7 +76,33 @@ const UserAccountPage = () => {
     }
   };
 
-  // Yeni Adres Ekle
+  // --- İADE TALEBİ OLUŞTURMA ---
+  const handleReturnRequest = async (orderId) => {
+    if (!window.confirm("Bu sipariş için iade talebi oluşturmak istediğinize emin misiniz?")) return;
+
+    try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/returns`, { // Rotayı /api/returns olarak varsaydık
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ orderId })
+        });
+
+        if (res.ok) {
+            toast.success("İade talebiniz alındı.");
+            fetchOrders(token); // Listeyi yenile
+        } else {
+            const data = await res.json();
+            toast.error(data.error || "İşlem başarısız.");
+        }
+    } catch (error) {
+        toast.error("Bir hata oluştu.");
+    }
+  };
+
   const handleAddAddress = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
@@ -81,8 +120,8 @@ const UserAccountPage = () => {
         if (res.ok) {
             toast.success("Adres eklendi");
             setIsAddressModalOpen(false);
-            setNewAddress({ title: 'Ev', city: '', address: '', phone: '' }); // Formu sıfırla
-            fetchAddresses(token); // Listeyi güncelle
+            setNewAddress({ title: 'Ev', city: '', address: '', phone: '' }); 
+            fetchAddresses(token); 
         } else {
             toast.error("Adres eklenirken hata oluştu");
         }
@@ -91,7 +130,6 @@ const UserAccountPage = () => {
     }
   };
 
-  // Adres Sil
   const handleDeleteAddress = async (id) => {
     if(!window.confirm("Bu adresi silmek istediğinize emin misiniz?")) return;
 
@@ -213,15 +251,17 @@ const UserAccountPage = () => {
                   </h2>
                   
                   {orders.length === 0 ? (
-                    // BOŞ SİPARİŞ GÖRÜNÜMÜ (Aynı kalabilir)
                     <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-100 rounded-xl">
-                        {/* ... (eski kod) ... */}
+                        <Package size={48} className="text-gray-300 mb-4"/>
                         <h3 className="text-lg font-bold text-gray-900 mb-1">Henüz Siparişiniz Yok</h3>
                     </div>
                   ) : (
-                    // DOLU SİPARİŞ LİSTESİ
                     <div className="space-y-6">
-                        {orders.map((order) => (
+                        {orders.map((order) => {
+                            // DÜZELTME 2: Return Status her sipariş için burada çekilir
+                            const returnStatus = order.returnRequest?.status;
+
+                            return (
                             <div key={order.id} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
                                 {/* Sipariş Başlığı */}
                                 <div className="bg-gray-50 p-4 border-b border-gray-200 flex flex-wrap justify-between items-center gap-4 text-sm">
@@ -239,9 +279,12 @@ const UserAccountPage = () => {
                                     </div>
                                     <div>
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                                            order.status === 'Teslim Edildi' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                            order.status === 'TESLIM_EDILDI' || order.status === 'IADE_EDILDI' 
+                                            ? 'bg-green-100 text-green-700' 
+                                            : 'bg-yellow-100 text-yellow-700'
                                         }`}>
-                                            {order.status}
+                                            {/* DÜZELTME 3: Enum Map kullanıldı */}
+                                            {STATUS_MAP[order.status] || order.status}
                                         </span>
                                     </div>
                                 </div>
@@ -251,7 +294,6 @@ const UserAccountPage = () => {
                                     {order.items.map((item) => (
                                         <div key={item.id} className="flex gap-4 items-center">
                                             <div className="w-16 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                                                {/* Ürün resmi */}
                                                 <img 
                                                     src={item.product?.imageUrl || "https://via.placeholder.com/100"} 
                                                     alt={item.product?.name} 
@@ -270,8 +312,33 @@ const UserAccountPage = () => {
                                         </div>
                                     ))}
                                 </div>
+                                
+                                {/* --- DÜZELTME 4: İADE BUTONU VE DURUM ALANI --- */}
+                                <div className="px-4 pb-4 flex justify-end">
+                                    {returnStatus ? (
+                                        <div className="flex items-center gap-2 text-xs font-bold border border-gray-100 bg-gray-50 px-3 py-1.5 rounded-lg">
+                                            <RefreshCcw size={14} className="text-gray-500"/>
+                                            <span className="text-gray-500">İade Durumu:</span>
+                                            {returnStatus === 'BEKLIYOR' && <span className="text-orange-500">İnceleniyor</span>}
+                                            {returnStatus === 'ONAYLANDI' && <span className="text-green-600">Onaylandı</span>}
+                                            {returnStatus === 'REDDEDILDI' && <span className="text-red-500">Reddedildi</span>}
+                                        </div>
+                                    ) : (
+                                        order.status === 'TESLIM_EDILDI' && (
+                                            <button 
+                                                onClick={() => handleReturnRequest(order.id)}
+                                                className="text-xs font-bold text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-red-100 flex items-center gap-1"
+                                            >
+                                                <RefreshCcw size={14}/>
+                                                İade Talep Et
+                                            </button>
+                                        )
+                                    )}
+                                </div>
+
                             </div>
-                        ))}
+                            )
+                        })}
                     </div>
                   )}
                 </div>
@@ -287,8 +354,7 @@ const UserAccountPage = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {/* Adres Listesi */}
-                     {addresses.map((addr) => (
+                      {addresses.map((addr) => (
                         <div key={addr.id} className="border border-gray-200 rounded-xl p-5 relative group hover:border-black hover:shadow-md transition-all duration-300 bg-white">
                             <button 
                                 onClick={() => handleDeleteAddress(addr.id)}
@@ -306,16 +372,15 @@ const UserAccountPage = () => {
                                 <span className="text-xs text-gray-400 mt-1 block">{addr.phone}</span>
                             </p>
                         </div>
-                     ))}
-                     
-                     {/* Yeni Ekle Butonu */}
-                     <button 
+                      ))}
+                      
+                      <button 
                         onClick={() => setIsAddressModalOpen(true)}
                         className="border-2 border-dashed border-gray-200 rounded-xl p-5 flex flex-col items-center justify-center text-gray-400 hover:border-black hover:text-black hover:bg-gray-50 transition-all duration-300 min-h-[160px]"
-                     >
+                      >
                         <Plus size={32} className="mb-2" />
                         <span className="font-bold text-sm">YENİ ADRES EKLE</span>
-                     </button>
+                      </button>
                   </div>
                 </div>
               )}

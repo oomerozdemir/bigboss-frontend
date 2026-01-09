@@ -5,7 +5,8 @@ import CategoryManager from './CategoryManager';
 import AddProductModal from '../../utils/AddProductModal';
 import DeleteModal from '../../utils/DeleteModal'; 
 import EditProductModal from '../../utils/EditProductModal';
-import OrderManager from './OrderManager'; // OrderManager import edildi
+import OrderManager from './OrderManager'; 
+import ReturnManager from './ReturnManager';
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("products");
@@ -93,6 +94,7 @@ const AdminPanel = () => {
         <nav className="px-4 space-y-2 mt-4">
           <SidebarItem id="dashboard" icon={LayoutDashboard} label="Genel Bakış" />
           <SidebarItem id="orders" icon={ShoppingBag} label="Siparişler" />
+          <SidebarItem id="returns" icon={RefreshCcw} label="İade Talepleri" />
           <SidebarItem id="categories" icon={Layers} label="Kategoriler" />
           <SidebarItem id="products" icon={Package} label="Ürün Yönetimi" />
           <SidebarItem id="users" icon={Users} label="Müşteriler" />
@@ -209,6 +211,8 @@ const AdminPanel = () => {
         {activeTab === 'orders' && (
              <OrderManager />
         )}
+
+        {activeTab === 'returns' && <ReturnManager />}
 
         {activeTab === 'categories' && (
           <CategoryManager /> 
