@@ -112,6 +112,6 @@ tuadaki gibi siparis yonetimi ve iade yapisi eklenecek
 kupon yapisi eklenicek
 
 
-
+sipariş sonrası mail gönderimi yapısı sipariş alındığında, kargoya verildiğinde ve teslim edildiğindee mail gitmeli
 
 */
