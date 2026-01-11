@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const CheckoutPage = () => {
-  const { cartItems, clearCart, subtotal } = useCart(); 
+  const { cartItems, clearCart, subTotal, grandTotal, discountAmount } = useCart(); 
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
@@ -20,9 +20,11 @@ const CheckoutPage = () => {
     cvc: ''
   });
 
-  // Kargo Hesabı
-  const SHIPPING_COST = subtotal > 2000 ? 0 : 59.90;
-  const TOTAL = subtotal + SHIPPING_COST;
+  // Kargo Hesabı (2000 TL üzeri ücretsiz)
+  const SHIPPING_COST = subTotal > 2000 ? 0 : 59.90;
+  
+  // ÖDENECEK TUTAR = (İndirimli Sepet Tutarı) + Kargo
+  const FINAL_TOTAL = grandTotal + SHIPPING_COST;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -33,28 +35,26 @@ const CheckoutPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    // 1. Adres bilgisini tek bir metin haline getiriyoruz
     const fullAddress = `${formData.address}, ${formData.city} - ${formData.firstName} ${formData.lastName} (${formData.phone})`;
     
-    // 2. Sepet verisini Backend'in beklediği formata çeviriyoruz
+    // Sipariş verisini hazırla
     const orderItems = cartItems.map(item => ({
         productId: item.id,
         price: item.price,
         quantity: item.quantity,
+        // Varyant bilgisi (Beden ve Renk)
         variant: `${item.selectedVariant?.size || 'Std'} / ${item.selectedVariant?.color || 'Std'}`
     }));
     
     try {
         const token = localStorage.getItem("token");
 
-        // Giriş kontrolü (Token yoksa işlem yapma)
         if (!token) {
             toast.error("Sipariş vermek için giriş yapmalısınız.");
             setLoading(false);
             return;
         }
 
-        // 3. API'ye İstek At (Gerçek Sipariş)
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
             method: 'POST',
             headers: { 
@@ -63,7 +63,7 @@ const CheckoutPage = () => {
             },
             body: JSON.stringify({
                 items: orderItems,
-                total: TOTAL, // Component içinde hesaplanan TOTAL değişkeni
+                total: FINAL_TOTAL, // Güncel Tutar
                 address: fullAddress
             })
         });
@@ -74,18 +74,16 @@ const CheckoutPage = () => {
             throw new Error(data.error || "Sipariş oluşturulamadı");
         }
 
-        // 4. Başarılı İşlem
         toast.success("Siparişiniz başarıyla alındı! 🎉");
         
-        // Sepeti temizle
         if (clearCart) clearCart();
         
-        // Kullanıcıyı 'Hesabım > Siparişlerim' sayfasına yönlendir
+        // Kullanıcıyı yönlendir
         navigate('/hesabim');
 
     } catch (error) {
         console.error("Ödeme Hatası:", error);
-        toast.error(error.message || "Bir hata oluştu, lütfen tekrar deneyin.");
+        toast.error(error.message || "Bir hata oluştu.");
     } finally {
         setLoading(false);
     }
@@ -107,7 +105,6 @@ const CheckoutPage = () => {
   }
 
   return (
-    // DÜZELTME: MainLayout kaldırıldı, doğrudan içerik div'i döndürülüyor.
     <div className="bg-gray-50 min-h-screen py-12">
       <div className="container mx-auto px-4">
         <h1 className="text-3xl font-bold mb-8 text-center font-serif tracking-wider">ÖDEME & TESLİMAT</h1>
@@ -118,7 +115,6 @@ const CheckoutPage = () => {
           <div className="lg:w-2/3">
             <form onSubmit={handlePayment} className="bg-white p-6 rounded-lg shadow-sm">
               
-              {/* İletişim & Adres */}
               <h2 className="text-xl font-semibold mb-4 border-b pb-2">Teslimat Bilgileri</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -151,7 +147,6 @@ const CheckoutPage = () => {
                 <input required name="city" onChange={handleInputChange} type="text" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none transition" />
               </div>
 
-              {/* Ödeme Bilgileri (Görsel - İşlevsiz) */}
               <h2 className="text-xl font-semibold mb-4 border-b pb-2">Ödeme Bilgileri</h2>
               <div className="bg-gray-50 p-4 rounded mb-4 border border-gray-200">
                   <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
@@ -178,7 +173,7 @@ const CheckoutPage = () => {
                 disabled={loading}
                 className={`w-full bg-black text-white py-4 rounded font-bold text-lg hover:bg-gray-800 transition duration-300 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                {loading ? 'Sipariş Oluşturuluyor...' : `Ödemeyi Tamamla (${TOTAL.toLocaleString('tr-TR')} TL)`}
+                {loading ? 'Sipariş Oluşturuluyor...' : `Ödemeyi Tamamla (${FINAL_TOTAL.toLocaleString('tr-TR')} TL)`}
               </button>
 
             </form>
@@ -201,7 +196,7 @@ const CheckoutPage = () => {
                     <div className="flex-1">
                       <h3 className="text-sm font-medium line-clamp-2">{item.name}</h3>
                       <p className="text-xs text-gray-500">
-                           Beden: {item.selectedVariant?.size || 'Standart'}
+                           {item.selectedVariant?.size || 'Std'} / {item.selectedVariant?.color || 'Std'}
                       </p>
                       <p className="text-xs text-gray-500">Adet: {item.quantity}</p>
                     </div>
@@ -215,8 +210,16 @@ const CheckoutPage = () => {
               <div className="border-t pt-4 space-y-2 text-sm">
                   <div className="flex justify-between text-gray-600">
                       <span>Ara Toplam</span>
-                      <span>{subtotal.toLocaleString('tr-TR')} TL</span>
+                      <span>{subTotal.toLocaleString('tr-TR')} TL</span>
                   </div>
+                  
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-green-600 font-bold">
+                        <span>İndirim</span>
+                        <span>- {discountAmount.toLocaleString('tr-TR')} TL</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-gray-600">
                       <span>Kargo</span>
                       {SHIPPING_COST === 0 ? (
@@ -227,7 +230,7 @@ const CheckoutPage = () => {
                   </div>
                   <div className="flex justify-between text-xl font-bold border-t pt-2 mt-2">
                       <span>Toplam</span>
-                      <span>{TOTAL.toLocaleString('tr-TR')} TL</span>
+                      <span>{FINAL_TOTAL.toLocaleString('tr-TR')} TL</span>
                   </div>
               </div>
             </div>
