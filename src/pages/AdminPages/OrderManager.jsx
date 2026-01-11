@@ -9,12 +9,14 @@ const OrderManager = () => {
   
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
 
+  // --- DURUM HARİTASI (IADE_EDILDI EKLENDİ) ---
   const STATUS_MAP = {
     "SIPARIS_ALINDI": "Sipariş Alındı",
     "HAZIRLANIYOR": "Hazırlanıyor",
     "KARGOLANDI": "Kargolandı",
     "TESLIM_EDILDI": "Teslim Edildi",
-    "IPTAL_EDILDI": "İptal Edildi"
+    "IPTAL_EDILDI": "İptal Edildi",
+    "IADE_EDILDI": "İade Edildi (Onaylandı) ✅" // <--- YENİ EKLENEN
   };
 
   useEffect(() => {
@@ -43,6 +45,9 @@ const OrderManager = () => {
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
+    // İade edilmiş bir siparişin durumunu değiştirmeyi engellemek isterseniz buraya kontrol koyabilirsiniz
+    // if(newStatus !== 'IADE_EDILDI') ...
+
     setUpdatingOrderId(orderId);
     const token = localStorage.getItem("token");
 
@@ -69,13 +74,15 @@ const OrderManager = () => {
     }
   };
 
+  // --- RENK FONKSİYONU (IADE_EDILDI EKLENDİ) ---
   const getStatusColor = (status) => {
     switch (status) {
         case 'TESLIM_EDILDI': return "bg-green-100 text-green-700 border-green-200";
         case 'KARGOLANDI': return "bg-blue-100 text-blue-700 border-blue-200";
         case 'HAZIRLANIYOR': return "bg-yellow-100 text-yellow-700 border-yellow-200";
         case 'IPTAL_EDILDI': return "bg-red-100 text-red-700 border-red-200";
-        default: return "bg-gray-100 text-gray-700 border-gray-200"; // SIPARIS_ALINDI
+        case 'IADE_EDILDI': return "bg-purple-100 text-purple-700 border-purple-200"; // <--- MOR RENK
+        default: return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
@@ -127,9 +134,10 @@ const OrderManager = () => {
                         <select 
                             value={order.status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            // Eğer İade Edildiyse disabled yapabiliriz (isteğe bağlı)
+                            // disabled={order.status === 'IADE_EDILDI'}
                             className={`px-3 py-1.5 rounded-full text-xs font-bold border outline-none cursor-pointer appearance-none pr-8 transition-colors ${getStatusColor(order.status)}`}
                         >
-                            {/* DÜZELTME 3: Object.keys ile dönüyoruz. Value=ENUM, Text=TÜRKÇE */}
                             {Object.keys(STATUS_MAP).map(key => (
                                 <option key={key} value={key}>
                                     {STATUS_MAP[key]}
