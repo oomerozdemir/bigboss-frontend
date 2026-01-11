@@ -107,8 +107,6 @@ urunlerin aciklamasi mutlaka olmali
 urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 
-tuadaki gibi siparis yonetimi ve iade yapisi eklenecek
-
 kupon yapisi eklenicek
 
 toast bildirimi ekranin sag ustu yerine ortada 

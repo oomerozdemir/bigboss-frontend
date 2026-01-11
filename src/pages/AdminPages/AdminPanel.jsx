@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, Layers, ShoppingBag, RefreshCcw } from 'lucide-react';
+// YENİ: Ticket ikonu eklendi
+import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, Layers, ShoppingBag, RefreshCcw, Ticket } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
 import AddProductModal from '../../utils/AddProductModal';
@@ -7,6 +8,8 @@ import DeleteModal from '../../utils/DeleteModal';
 import EditProductModal from '../../utils/EditProductModal';
 import OrderManager from './OrderManager'; 
 import ReturnManager from './ReturnManager';
+// YENİ: CouponManager import edildi
+import CouponManager from './CouponManager';
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("products");
@@ -95,6 +98,8 @@ const AdminPanel = () => {
           <SidebarItem id="dashboard" icon={LayoutDashboard} label="Genel Bakış" />
           <SidebarItem id="orders" icon={ShoppingBag} label="Siparişler" />
           <SidebarItem id="returns" icon={RefreshCcw} label="İade Talepleri" />
+          {/* YENİ: KUPONLAR MENÜSÜ */}
+          <SidebarItem id="coupons" icon={Ticket} label="Kuponlar" />
           <SidebarItem id="categories" icon={Layers} label="Kategoriler" />
           <SidebarItem id="products" icon={Package} label="Ürün Yönetimi" />
           <SidebarItem id="users" icon={Users} label="Müşteriler" />
@@ -108,7 +113,11 @@ const AdminPanel = () => {
         <header className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
-                {activeTab === 'products' ? "Ürün Yönetimi" : activeTab === 'categories' ? "Kategori Yönetimi" : activeTab === 'orders' ? "Sipariş Yönetimi" : "Panel"}
+                {activeTab === 'products' ? "Ürün Yönetimi" 
+                : activeTab === 'categories' ? "Kategori Yönetimi" 
+                : activeTab === 'orders' ? "Sipariş Yönetimi" 
+                : activeTab === 'coupons' ? "Kupon Yönetimi" // YENİ
+                : "Panel"}
             </h1>
             <p className="text-gray-500 text-sm">Yönetim panelinize hoşgeldiniz.</p>
           </div>
@@ -208,15 +217,13 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {activeTab === 'orders' && (
-             <OrderManager />
-        )}
-
+        {/* --- DİĞER MODÜLLER --- */}
+        {activeTab === 'orders' && <OrderManager />}
         {activeTab === 'returns' && <ReturnManager />}
-
-        {activeTab === 'categories' && (
-          <CategoryManager /> 
-        )}
+        {activeTab === 'categories' && <CategoryManager />}
+        
+        {/* YENİ: KUPON MODÜLÜ */}
+        {activeTab === 'coupons' && <CouponManager />}
 
         <AddProductModal 
             isOpen={isProductModalOpen} 
@@ -231,7 +238,6 @@ const AdminPanel = () => {
            onSuccess={fetchProducts} 
         />
 
-        {/* ÜRÜN SİLME MODALI */}
         <DeleteModal 
             isOpen={deleteModalOpen}
             onClose={() => setDeleteModalOpen(false)}
