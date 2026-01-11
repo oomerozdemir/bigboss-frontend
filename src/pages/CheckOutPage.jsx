@@ -64,7 +64,9 @@ const CheckoutPage = () => {
             body: JSON.stringify({
                 items: orderItems,
                 total: FINAL_TOTAL, // Güncel Tutar
-                address: fullAddress
+                address: fullAddress,
+                couponCode: appliedCoupon ? appliedCoupon.code : null,
+                discountAmount: discountAmount
             })
         });
 

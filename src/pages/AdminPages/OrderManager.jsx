@@ -9,14 +9,14 @@ const OrderManager = () => {
   
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
 
-  // --- DURUM HARİTASI (IADE_EDILDI EKLENDİ) ---
+  // --- DURUM HARİTASI ---
   const STATUS_MAP = {
     "SIPARIS_ALINDI": "Sipariş Alındı",
     "HAZIRLANIYOR": "Hazırlanıyor",
     "KARGOLANDI": "Kargolandı",
     "TESLIM_EDILDI": "Teslim Edildi",
     "IPTAL_EDILDI": "İptal Edildi",
-    "IADE_EDILDI": "İade Edildi (Onaylandı) ✅" // <--- YENİ EKLENEN
+    "IADE_EDILDI": "İade Edildi (Onaylandı) ✅"
   };
 
   useEffect(() => {
@@ -45,9 +45,6 @@ const OrderManager = () => {
   };
 
   const handleStatusChange = async (orderId, newStatus) => {
-    // İade edilmiş bir siparişin durumunu değiştirmeyi engellemek isterseniz buraya kontrol koyabilirsiniz
-    // if(newStatus !== 'IADE_EDILDI') ...
-
     setUpdatingOrderId(orderId);
     const token = localStorage.getItem("token");
 
@@ -74,14 +71,14 @@ const OrderManager = () => {
     }
   };
 
-  // --- RENK FONKSİYONU (IADE_EDILDI EKLENDİ) ---
+  // --- RENK FONKSİYONU ---
   const getStatusColor = (status) => {
     switch (status) {
         case 'TESLIM_EDILDI': return "bg-green-100 text-green-700 border-green-200";
         case 'KARGOLANDI': return "bg-blue-100 text-blue-700 border-blue-200";
         case 'HAZIRLANIYOR': return "bg-yellow-100 text-yellow-700 border-yellow-200";
         case 'IPTAL_EDILDI': return "bg-red-100 text-red-700 border-red-200";
-        case 'IADE_EDILDI': return "bg-purple-100 text-purple-700 border-purple-200"; // <--- MOR RENK
+        case 'IADE_EDILDI': return "bg-purple-100 text-purple-700 border-purple-200";
         default: return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
@@ -123,7 +120,6 @@ const OrderManager = () => {
                     {parseFloat(order.total).toLocaleString('tr-TR')} TL
                   </td>
                   
-                  {/* --- DURUM SELECT BOX --- */}
                   <td className="p-4">
                     <div className="relative">
                         {updatingOrderId === order.id && (
@@ -134,8 +130,6 @@ const OrderManager = () => {
                         <select 
                             value={order.status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                            // Eğer İade Edildiyse disabled yapabiliriz (isteğe bağlı)
-                            // disabled={order.status === 'IADE_EDILDI'}
                             className={`px-3 py-1.5 rounded-full text-xs font-bold border outline-none cursor-pointer appearance-none pr-8 transition-colors ${getStatusColor(order.status)}`}
                         >
                             {Object.keys(STATUS_MAP).map(key => (
@@ -156,16 +150,46 @@ const OrderManager = () => {
                   </td>
                 </tr>
                 
+                {/* --- DETAY ALANI (GÜNCELLENDİ) --- */}
                 {expandedOrder === order.id && (
                     <tr className="bg-gray-50/50">
                         <td colSpan="6" className="p-6 border-t border-gray-100 shadow-inner">
                             <div className="flex flex-col md:flex-row gap-8">
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-xs uppercase text-gray-400 mb-3">Teslimat Adresi</h4>
-                                    <p className="text-sm text-gray-700 bg-white p-3 rounded border border-gray-200">
-                                        {order.addressSnapshot}
-                                    </p>
+                                <div className="flex-1 space-y-4">
+                                    {/* Adres Bilgisi */}
+                                    <div>
+                                        <h4 className="font-bold text-xs uppercase text-gray-400 mb-2">Teslimat Adresi</h4>
+                                        <p className="text-sm text-gray-700 bg-white p-3 rounded border border-gray-200">
+                                            {order.addressSnapshot}
+                                        </p>
+                                    </div>
+
+                                    {/* YENİ: Ödeme Detayları ve Kupon */}
+                                    <div>
+                                        <h4 className="font-bold text-xs uppercase text-gray-400 mb-2">Ödeme Detayları</h4>
+                                        <div className="bg-white p-3 rounded border border-gray-200 text-sm">
+                                            <div className="flex justify-between mb-1 text-gray-500">
+                                                <span>Ara Toplam:</span>
+                                                {/* Ara Toplam = Ödenen + İndirim */}
+                                                <span>{(parseFloat(order.total) + parseFloat(order.discountAmount || 0)).toLocaleString('tr-TR')} TL</span>
+                                            </div>
+                                            
+                                            {/* İndirim Varsa Göster */}
+                                            {parseFloat(order.discountAmount) > 0 && (
+                                                <div className="flex justify-between text-red-600 font-bold mb-1">
+                                                    <span>Kupon İndirimi ({order.couponCode || 'KUPON'}):</span>
+                                                    <span>-{parseFloat(order.discountAmount).toLocaleString('tr-TR')} TL</span>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="flex justify-between font-black border-t pt-2 mt-1 text-black">
+                                                <span>TAHSİL EDİLEN:</span>
+                                                <span>{parseFloat(order.total).toLocaleString('tr-TR')} TL</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+
                                 <div className="flex-[2]">
                                     <h4 className="font-bold text-xs uppercase text-gray-400 mb-3">Sipariş İçeriği</h4>
                                     <div className="space-y-2">

@@ -276,6 +276,12 @@ const UserAccountPage = () => {
                                         <p className="font-bold text-green-600">
                                             {parseFloat(order.total).toLocaleString('tr-TR')} TL
                                         </p>
+                                        {parseFloat(order.discountAmount) > 0 && (
+        <div className="text-xs text-orange-600 font-medium flex flex-col mt-1">
+            <span>Kupon: {order.couponCode}</span>
+            <span>-{parseFloat(order.discountAmount).toLocaleString('tr-TR')} TL İndirim</span>
+        </div>
+    )}
                                     </div>
                                     <div>
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
