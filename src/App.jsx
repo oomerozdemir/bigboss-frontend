@@ -113,4 +113,5 @@ toast bildirimi ekranin sag ustu yerine ortada
 
 sipariş sonrası mail gönderimi yapısı sipariş alındığında, kargoya verildiğinde ve teslim edildiğindee mail gitmeli
 
+kupon adedi sinirlamasi
 */

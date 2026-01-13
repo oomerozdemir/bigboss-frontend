@@ -1,58 +1,111 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 const HeroSection = () => {
   return (
-    <div className="relative w-full h-[85vh] min-h-[600px] bg-gray-900 overflow-hidden">
-      
-      {/* 1. Arkaplan Görseli (Zoom Efektli) */}
-      <div className="absolute inset-0">
-        <img 
-          src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop" 
-          alt="Big Boss New Season" 
-          className="w-full h-full object-cover opacity-80 animate-slow-zoom" 
-        />
-        {/* Karartma */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+    <div className="w-full bg-white">
+      {/* Header with title and search */}
+      <div className="max-w-7xl mx-auto px-6 py-8 mt-15">
+        <div className="flex items-start justify-between">
+          {/* Main heading */}
+          <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold leading-none tracking-tight">
+            Big Boss ile →<br />
+            <span className="block">tarzını Yansıt.</span>
+          </h1>
+          
+          {/* Search bar */}
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search item"
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-black w-64"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* 2. İçerik */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-        
-        {/* Üst Başlık */}
-        <span className="text-white/90 text-xs md:text-sm font-bold tracking-[0.3em] uppercase mb-4 border-b border-white/30 pb-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          2025 Sonbahar / Kış
-        </span>
+      {/* Grid Layout */}
+      <div className="max-w-7xl mx-auto px-6 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Left side - Model image with Shop Now button */}
+          <div className="relative bg-gray-100 rounded-2xl overflow-hidden h-[600px]">
+            <img 
+              src="/hero-product3.png" 
+              alt="Fashion model"
+              className="w-full h-full object-cover object-top"
+            />
+            {/* Shop Now button */}
+            <button className="absolute bottom-1/2 right-12 translate-y-1/2 bg-black text-white rounded-full w-32 h-32 flex items-center justify-center font-semibold text-sm hover:scale-105 transition-transform">
+              Şimdi Satın Al!
+            </button>
+          </div>
 
-        {/* Ana Başlık */}
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white tracking-tighter mb-6 uppercase leading-none drop-shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
-          Tarzını<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">Yansıt</span>
-        </h1>
-        
-        {/* Açıklama */}
-        <p className="text-gray-300 text-sm md:text-lg max-w-lg mb-10 font-light tracking-wide animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
-          Zamansız parçalar, modern kesimler ve Big Boss kalitesiyle sezonun en iddialı görünümüne sahip ol.
-        </p>
-        
-        {/* Butonlar */}
-        <div className="flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
-            <Link 
-                to="/products" 
-                className="group bg-white text-black px-10 py-4 text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center gap-2"
-            >
-                Koleksiyonu Keşfet
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform"/>
-            </Link>
-            <Link 
-                to="/about" 
-                className="px-10 py-4 text-xs font-bold uppercase tracking-widest text-white border border-white hover:bg-white hover:text-black transition-all"
-            >
-                Hikayemiz
-            </Link>
+         {/* Right side - Two sections stacked */}
+          <div className="flex flex-col gap-6">
+            
+            {/* Promo section - 20% OFF */}
+            <div className="bg-gray-200 rounded-2xl p-10 relative overflow-hidden h-[350px] flex flex-col justify-between">
+              {/* Background illustration image */}
+              <div className="absolute top-0 right-0 w-80 h-full">
+                <img 
+                  src="/hero-product4.jpg" 
+                  alt="Women Ordering on the laptop"
+                  className="w-full h-full object-contain object-right opacity-60"
+                />
+              </div>
+              
+              {/* Text content */}
+              <div className="relative z-10">
+                <h2 className="text-5xl font-bold leading-tight mb-4">
+                  %50'ye Varan<br />
+                  indirimlerden <br />
+                  faydalan.
+                </h2>
+                <p className="text-sm text-gray-600">
+                  30 Ocak'a Kadar Geçerli<span className="font-semibold"></span>
+                </p>
+              </div>
+              
+              {/* CTA button */}
+              <button className="relative z-10 self-start border-2 border-black rounded-full px-8 py-3 text-sm font-semibold hover:bg-black hover:text-white transition-colors">
+                %50 İndirimi Al
+              </button>
+            </div>
+            {/* Bottom categories */}
+            <div className="grid grid-cols-2 gap-6 h-[234px]">
+              
+              {/* Headwear category */}
+              <div className="relative bg-gray-300 rounded-2xl overflow-hidden group cursor-pointer">
+                <img 
+                  src="/hero-product4.jpg" 
+                  alt="Ceket"
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-black/20"></div>
+                <h3 className="absolute bottom-6 left-6 text-white text-2xl font-bold">
+                  #Ceketler
+                </h3>
+              </div>
+
+              {/* Sunglasses category */}
+              <div className="relative bg-gray-300 rounded-2xl overflow-hidden group cursor-pointer">
+                <img 
+                  src="/hero-product3.png" 
+                  alt="Elbise"
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-black/20"></div>
+                <h3 className="absolute bottom-6 left-6 text-white text-2xl font-bold">
+                  #Elbiseler
+                </h3>
+              </div>
+              
+            </div>
+          </div>
+
         </div>
-
       </div>
     </div>
   );
