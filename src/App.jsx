@@ -116,4 +116,12 @@ kupon adedi sinirlamasi
 tum urunleri bir anda yuklemesin sayfayi assagiya kaydirdikca gelsin ilk yuklemedeki hizi dusuruyoruz urunlerin listelendigi sayfada
 
 mobil responsivelik
+
+
+### Sonra Yap (İleride)
+🔄 **Level 2-3 için plan yap**
+- Admin panel hero editor
+- Slider/carousel
+- Dynamic content
+- A/B testing
 */
