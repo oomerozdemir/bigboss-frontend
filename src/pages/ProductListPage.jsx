@@ -15,13 +15,13 @@ const ProductListPage = () => {
   const [sortOption, setSortOption] = useState("newest");
   
   // Kategori State'leri
-  const [mainCategories, setMainCategories] = useState(["Tümü"]); // Ana Kategoriler Listesi
-   const [selectedMainCategory, setSelectedMainCategory] = useState(
+  const [mainCategories, setMainCategories] = useState(["Tümü"]);
+  const [selectedMainCategory, setSelectedMainCategory] = useState(
     location.state?.category || "Tümü"
   );
 
-  const [availableSubCategories, setAvailableSubCategories] = useState(["Tümü"]); // Dinamik Alt Kategori Listesi
-  const [selectedSubCategory, setSelectedSubCategory] = useState("Tümü"); // Seçili Alt Kategori
+  const [availableSubCategories, setAvailableSubCategories] = useState(["Tümü"]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState("Tümü");
 
   useEffect(() => {
     fetchProducts();
@@ -33,41 +33,64 @@ const ProductListPage = () => {
       const res = await fetch(`${apiUrl}/api/products`);
       const data = await res.json();
       
-      setProducts(data);
-      setFilteredProducts(data);
-
-      // --- ANA KATEGORİLERİ ÇIKART ---
-      const uniqueMainCats = new Set(["Tümü"]);
-      data.forEach(p => {
-        p.categories?.forEach(subCat => {
-           if (subCat.mainCategory?.name) {
-             uniqueMainCats.add(subCat.mainCategory.name);
-           }
-        });
-      });
-      setMainCategories(Array.from(uniqueMainCats));
+      // ✅ DÜZELTME 1: Ürün verisi formatı kontrolü
+      let productsArray = [];
+      if (Array.isArray(data)) {
+        productsArray = data;
+      } else if (data?.products && Array.isArray(data.products)) {
+        productsArray = data.products;
+      } else {
+        console.error("Beklenmeyen ürün verisi formatı:", data);
+      }
       
+      setProducts(productsArray);
+      setFilteredProducts(productsArray);
+
+      // ✅ DÜZELTME 2: Ana kategorileri çıkart - Güvenli
+      const uniqueMainCats = new Set(["Tümü"]);
+      
+      if (Array.isArray(productsArray)) {
+        productsArray.forEach(p => {
+          if (p?.categories && Array.isArray(p.categories)) {
+            p.categories.forEach(subCat => {
+              if (subCat?.mainCategory?.name) {
+                uniqueMainCats.add(subCat.mainCategory.name);
+              }
+            });
+          }
+        });
+      }
+      
+      setMainCategories(Array.from(uniqueMainCats));
       setLoading(false);
     } catch (error) {
-      console.error("Hata:", error);
+      console.error("Fetch Products Error:", error);
+      setProducts([]);
+      setFilteredProducts([]);
       setLoading(false);
     }
   };
 
-  // --- DİNAMİK ALT KATEGORİ HESAPLAMA ---
+  // ✅ DÜZELTME 3: DİNAMİK ALT KATEGORİ HESAPLAMA - Güvenli
   useEffect(() => {
     setSelectedSubCategory("Tümü");
 
     const subCats = new Set(["Tümü"]);
 
-    products.forEach(p => {
-        p.categories?.forEach(c => {
-            const mainCatName = c.mainCategory?.name;
+    if (Array.isArray(products)) {
+      products.forEach(p => {
+        if (p?.categories && Array.isArray(p.categories)) {
+          p.categories.forEach(c => {
+            const mainCatName = c?.mainCategory?.name;
             if (selectedMainCategory === "Tümü" || mainCatName === selectedMainCategory) {
+              if (c?.name) {
                 subCats.add(c.name);
+              }
             }
-        });
-    });
+          });
+        }
+      });
+    }
 
     setAvailableSubCategories(Array.from(subCats));
   }, [selectedMainCategory, products]);
@@ -78,39 +101,58 @@ const ProductListPage = () => {
     }
   }, [location.state]);
 
-
-  // --- GENEL FİLTRELEME MANTIĞI ---
+  // ✅ DÜZELTME 4: GENEL FİLTRELEME MANTIĞI - Tamamen güvenli
   useEffect(() => {
+    if (!Array.isArray(products)) {
+      setFilteredProducts([]);
+      return;
+    }
+
     let result = [...products];
 
     // 1. Arama Filtresi
     if (searchTerm) {
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      result = result.filter(p => {
+        const name = p?.name || '';
+        return name.toLowerCase().includes(searchTerm.toLowerCase());
+      });
     }
 
     // 2. Ana Kategori Filtresi
     if (selectedMainCategory !== "Tümü") {
-      result = result.filter(p => 
-        p.categories?.some(c => c.mainCategory?.name === selectedMainCategory)
-      );
+      result = result.filter(p => {
+        if (!p?.categories || !Array.isArray(p.categories)) return false;
+        return p.categories.some(c => c?.mainCategory?.name === selectedMainCategory);
+      });
     }
 
     // 3. Alt Kategori Filtresi
     if (selectedSubCategory !== "Tümü") {
-        result = result.filter(p => 
-          p.categories?.some(c => c.name === selectedSubCategory)
-        );
+      result = result.filter(p => {
+        if (!p?.categories || !Array.isArray(p.categories)) return false;
+        return p.categories.some(c => c?.name === selectedSubCategory);
+      });
     }
 
     // 4. Sıralama
     if (sortOption === "price-asc") {
-      result.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+      result.sort((a, b) => {
+        const priceA = parseFloat(a?.price) || 0;
+        const priceB = parseFloat(b?.price) || 0;
+        return priceA - priceB;
+      });
     } else if (sortOption === "price-desc") {
-      result.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+      result.sort((a, b) => {
+        const priceA = parseFloat(a?.price) || 0;
+        const priceB = parseFloat(b?.price) || 0;
+        return priceB - priceA;
+      });
     } else if (sortOption === "newest") {
-      result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      result.sort((a, b) => {
+        const dateA = new Date(a?.createdAt || 0);
+        const dateB = new Date(b?.createdAt || 0);
+        return dateB - dateA;
+      });
     }
 
     setFilteredProducts(result);
@@ -123,7 +165,7 @@ const ProductListPage = () => {
       <div className="bg-gray-50 min-h-screen pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* --- YENİLENMİŞ BAŞLIK ALANI --- */}
+          {/* --- BAŞLIK ALANI --- */}
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2 uppercase">
                 {selectedMainCategory === "Tümü" ? "TÜM ÜRÜNLER" : selectedMainCategory}
@@ -131,9 +173,8 @@ const ProductListPage = () => {
             <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
                 <span>Tarzını yansıtan en iyi parçalar.</span>
                 <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                {/* 👇 DİNAMİK ÜRÜN SAYACI BURADA 👇 */}
                 <span className="font-bold text-black bg-gray-200 px-2 py-0.5 rounded-md">
-                    {loading ? "..." : filteredProducts.length} Ürün
+                    {loading ? "..." : (Array.isArray(filteredProducts) ? filteredProducts.length : 0)} Ürün
                 </span>
             </div>
           </div>
@@ -143,20 +184,29 @@ const ProductListPage = () => {
             
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4 border-b border-gray-100 pb-4">
                 
+                {/* ✅ DÜZELTME 5: Ana Kategori Butonları - Güvenli */}
                 <div className="flex gap-2 overflow-x-auto pb-1 w-full md:w-auto scrollbar-hide">
-                    {mainCategories.map((cat) => (
+                    {Array.isArray(mainCategories) && mainCategories.length > 0 ? (
+                      mainCategories.map((cat) => (
                         <button
-                        key={cat}
-                        onClick={() => setSelectedMainCategory(cat)}
-                        className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all ${
-                            selectedMainCategory === cat 
-                            ? "bg-black text-white shadow-lg transform scale-105" 
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
+                          key={cat}
+                          onClick={() => setSelectedMainCategory(cat)}
+                          className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all ${
+                              selectedMainCategory === cat 
+                              ? "bg-black text-white shadow-lg transform scale-105" 
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
                         >
-                        {cat}
+                          {cat}
                         </button>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="flex gap-2">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="h-10 w-24 bg-gray-200 animate-pulse rounded-full"></div>
+                        ))}
+                      </div>
+                    )}
                 </div>
 
                 <div className="flex gap-3 w-full md:w-auto">
@@ -185,7 +235,8 @@ const ProductListPage = () => {
                 </div>
             </div>
 
-            {availableSubCategories.length > 1 && (
+            {/* ✅ DÜZELTME 6: Alt Kategori Butonları - Güvenli */}
+            {Array.isArray(availableSubCategories) && availableSubCategories.length > 1 && (
                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-2 hidden md:block">Filtrele:</span>
                     <div className="flex gap-2 overflow-x-auto pb-1 w-full scrollbar-hide">
@@ -212,11 +263,13 @@ const ProductListPage = () => {
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-96 bg-gray-200 rounded-xl animate-pulse"></div>)}
              </div>
-          ) : filteredProducts.length > 0 ? (
+          ) : Array.isArray(filteredProducts) && filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
+              {filteredProducts.map((product) => {
+                // ✅ Her ürünü kontrol et
+                if (!product?.id) return null;
+                return <ProductCard key={product.id} product={product} />;
+              })}
             </div>
           ) : (
             <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-gray-300">
