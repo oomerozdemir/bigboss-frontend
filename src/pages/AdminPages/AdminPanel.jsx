@@ -14,6 +14,7 @@ const AdminPanel = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Sayfalama State'leri
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,12 +25,12 @@ const AdminPanel = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState(null); // Tekli silme için
+  const [productToDelete, setProductToDelete] = useState(null);
 
-  // ---TOPLU İŞLEMLER ---
-  const [selectedIds, setSelectedIds] = useState([]); // Seçili ürün ID'leri
-  const [categories, setCategories] = useState([]); // Kategori seçimi için
-  const [isBulkCategoryModalOpen, setIsBulkCategoryModalOpen] = useState(false); // Toplu kategori modalı
+  // --- TOPLU İŞLEMLER ---
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [isBulkCategoryModalOpen, setIsBulkCategoryModalOpen] = useState(false);
   const [selectedBulkCategory, setSelectedBulkCategory] = useState("");
 
   useEffect(() => {
@@ -37,50 +38,74 @@ const AdminPanel = () => {
         fetchProducts(currentPage, searchTerm);
         fetchCategories();
     }
-  }, [activeTab, currentPage]); // Sayfa değişince yeniden çek
+  }, [activeTab, currentPage]);
 
-  // --- ARAMA İŞLEMİ (ENTER'A BASINCA) ---
+  // --- ARAMA İŞLEMİ ---
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
-        setCurrentPage(1); // Aramada ilk sayfaya dön
+        setCurrentPage(1);
         fetchProducts(1, searchTerm);
     }
   };
 
- const fetchProducts = async (page = 1, search = "") => {
+  // --- ÜRÜNLERİ GETİR ---
+  const fetchProducts = async (page = 1, search = "") => {
     setLoading(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products?isAdmin=true&page=${page}&limit=20&search=${search}`);
       const data = await res.json();
       
-      if (data.products) {
+      if (data && data.products && Array.isArray(data.products)) {
           setProducts(data.products);
-          setTotalPages(data.meta.totalPages);
-          setTotalCount(data.meta.totalCount);
+          setTotalPages(data.meta?.totalPages || 1);
+          setTotalCount(data.meta?.totalCount || 0);
+      } else if (Array.isArray(data)) {
+          // Eski API yapısı veya direkt dizi gelirse
+          setProducts(data);
       } else {
-          setProducts(Array.isArray(data) ? data : []);
+          setProducts([]);
       }
-      setLoading(false);
     } catch (error) {
       toast.error("Ürünler yüklenirken hata oluştu");
-      setLoading(false);
+      setProducts([]);
+    } finally {
+        setLoading(false);
     }
   };
 
+  // --- KATEGORİLERİ GETİR (GÜVENLİ) ---
   const fetchCategories = async () => {
       try {
           const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
-          setCategories(await res.json());
-      } catch (err) {}
+          const data = await res.json();
+          // API hata objesi dönerse site çökmesin diye kontrol ediyoruz
+          setCategories(Array.isArray(data) ? data : []);
+      } catch (err) {
+          console.error("Kategori hatası:", err);
+          setCategories([]);
+      }
   };
 
   // --- SEÇİM FONKSİYONLARI ---
   const toggleSelectAll = () => {
-    if (selectedIds.length === products.length) setSelectedIds([]);
-    else setSelectedIds(products.map(p => p.id));
+    if (selectedIds.length === products.length) {
+        setSelectedIds([]);
+    } else {
+        setSelectedIds(products.map(p => p.id));
+    }
   };
 
- const toggleSelectOne = (id) => selectedIds.includes(id) ? setSelectedIds(prev => prev.filter(i => i !== id)) : setSelectedIds(prev => [...prev, id]);
+  const toggleSelectOne = (id) => {
+      setSelectedIds(prev => {
+          // prev'in dizi olduğundan emin ol (Hata burada çıkıyordu)
+          const safePrev = Array.isArray(prev) ? prev : [];
+          if (safePrev.includes(id)) {
+              return safePrev.filter(i => i !== id);
+          } else {
+              return [...safePrev, id];
+          }
+      });
+  };
 
   // --- TOPLU SİLME ---
   const handleBulkDelete = async () => {
@@ -100,7 +125,7 @@ const AdminPanel = () => {
           if (res.ok) {
               toast.success("Seçili ürünler silindi");
               setSelectedIds([]);
-              fetchProducts();
+              fetchProducts(currentPage, searchTerm);
           } else {
               toast.error("Silme başarısız");
           }
@@ -128,7 +153,7 @@ const AdminPanel = () => {
               toast.success("Kategoriye eklendi");
               setIsBulkCategoryModalOpen(false);
               setSelectedIds([]);
-              fetchProducts();
+              fetchProducts(currentPage, searchTerm);
           } else {
               toast.error("İşlem başarısız");
           }
@@ -140,7 +165,7 @@ const AdminPanel = () => {
   // --- GİZLE / GÖSTER TOGGLE ---
   const toggleProductStatus = async (id, currentStatus) => {
       const token = localStorage.getItem("token");
-      // UI'da hemen güncelle (Optimistic Update)
+      // UI'da hemen güncelle
       setProducts(prev => prev.map(p => p.id === id ? { ...p, isActive: !currentStatus } : p));
 
       try {
@@ -155,7 +180,7 @@ const AdminPanel = () => {
           toast.success(!currentStatus ? "Ürün Yayında" : "Ürün Gizlendi");
       } catch (error) {
           toast.error("Durum değiştirilemedi");
-          fetchProducts(); // Hata varsa geri al
+          fetchProducts(currentPage, searchTerm);
       }
   };
 
@@ -175,7 +200,7 @@ const AdminPanel = () => {
       });
       if (res.ok) {
         toast.success("Ürün silindi!"); 
-        fetchProducts();
+        fetchProducts(currentPage, searchTerm);
       } else {
         toast.error("Silinemedi"); 
       }
@@ -239,7 +264,7 @@ const AdminPanel = () => {
 
         {/* ÜRÜN TABLOSU & TOPLU İŞLEMLER */}
         {activeTab === 'products' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[600px]">
             
             {/* ÜST BAR: Arama ve Toplu İşlemler */}
             <div className="p-4 border-b border-gray-100 flex items-center justify-between gap-4 bg-gray-50/50">
@@ -266,12 +291,19 @@ const AdminPanel = () => {
               ) : (
                 <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
-                    <input type="text" placeholder="Ürün ara..." className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-black"/>
+                    <input 
+                        type="text" 
+                        placeholder="Ürün ara ve Enter'a bas..." 
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={handleSearch}
+                    />
                 </div>
               )}
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto flex-1">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
@@ -324,7 +356,7 @@ const AdminPanel = () => {
                       </td>
                       <td className="p-4">
                         <div className="flex flex-wrap gap-1 max-w-[200px]">
-                            {product.categories && product.categories.length > 0 ? (
+                            {product.categories && Array.isArray(product.categories) && product.categories.length > 0 ? (
                             product.categories.map((cat) => (
                                 <span key={cat.id} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md font-medium whitespace-nowrap">
                                 {cat.name}
@@ -362,7 +394,8 @@ const AdminPanel = () => {
                 </tbody>
               </table>
             </div>
-          {/* --- YENİ: SAYFALAMA KONTROLLERİ --- */}
+
+            {/* --- SAYFALAMA KONTROLLERİ --- */}
             <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/30">
                 <span className="text-sm text-gray-500">
                     Toplam <b>{totalCount}</b> ürün, <b>{currentPage}</b> / {totalPages} sayfa
@@ -375,20 +408,27 @@ const AdminPanel = () => {
                     >
                         <ChevronLeft size={16} />
                     </button>
-                    {/* Sayfa Numaraları */}
-                    {[...Array(totalPages)].map((_, i) => {
-                        // Çok fazla sayfa varsa hepsini gösterme mantığı eklenebilir ama şimdilik basit tutuyoruz
-                        if (totalPages > 10 && Math.abs(currentPage - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
-                        return (
-                            <button
-                                key={i}
-                                onClick={() => setCurrentPage(i + 1)}
-                                className={`w-8 h-8 flex items-center justify-center rounded text-sm font-bold ${currentPage === i + 1 ? 'bg-black text-white' : 'hover:bg-gray-200'}`}
-                            >
-                                {i + 1}
-                            </button>
-                        );
-                    })}
+                    {/* Sayfa Numaraları (Basit) */}
+                    <div className="flex gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                             // Sayfalama mantığını basit tutuyoruz, karmaşık olursa component yapılabilir
+                             let pageNum = i + 1;
+                             if (totalPages > 5 && currentPage > 3) {
+                                 pageNum = currentPage - 2 + i;
+                                 if (pageNum > totalPages) pageNum = totalPages - (4 - i);
+                             }
+                             return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`w-8 h-8 flex items-center justify-center rounded text-sm font-bold ${currentPage === pageNum ? 'bg-black text-white' : 'hover:bg-gray-200'}`}
+                                >
+                                    {pageNum}
+                                </button>
+                             )
+                        })}
+                    </div>
+
                     <button 
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                         disabled={currentPage === totalPages}
@@ -402,16 +442,14 @@ const AdminPanel = () => {
           </div>
         )}
 
-        
-
         {/* --- DİĞER MODÜLLER --- */}
         {activeTab === 'orders' && <OrderManager />}
         {activeTab === 'returns' && <ReturnManager />}
         {activeTab === 'categories' && <CategoryManager />}
         {activeTab === 'coupons' && <CouponManager />}
 
-        <AddProductModal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} onSuccess={fetchProducts} />
-        <EditProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={editingProduct} onSuccess={fetchProducts} />
+        <AddProductModal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} onSuccess={() => fetchProducts(currentPage, searchTerm)} />
+        <EditProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={editingProduct} onSuccess={() => fetchProducts(currentPage, searchTerm)} />
         
         <DeleteModal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} onConfirm={confirmDeleteProduct} title="Ürünü Sil" message="Bu işlem geri alınamaz." />
 
@@ -421,7 +459,7 @@ const AdminPanel = () => {
                 <div className="bg-white p-6 rounded-xl w-96 shadow-2xl animate-in fade-in zoom-in-95">
                     <h3 className="text-lg font-bold mb-4">Kategori Seçin</h3>
                     <div className="max-h-60 overflow-y-auto mb-4 border rounded p-2">
-                        {categories.map(mainCat => (
+                        {Array.isArray(categories) && categories.map(mainCat => (
                             <div key={mainCat.id} className="mb-2">
                                 <p className="font-bold text-xs text-gray-400 uppercase mb-1">{mainCat.name}</p>
                                 {mainCat.subCategories?.map(sub => (
