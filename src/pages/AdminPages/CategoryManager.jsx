@@ -23,14 +23,22 @@ const CategoryManager = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
 
   // --- 1. KATEGORİLERİ GETİR ---
-  const fetchCategories = async () => {
+ const fetchCategories = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
       const data = await res.json();
-      setCategories(data);
+      
+      // API'den dizi gelmezse boş dizi ata (Site çökmez)
+      if (Array.isArray(data)) {
+          setCategories(data);
+      } else {
+          console.error("Kategori hatası:", data);
+          setCategories([]);
+      }
       setLoading(false);
    } catch (error) {
       toast.error("Kategoriler yüklenemedi!");
+      setCategories([]);
       setLoading(false);
     }
   };
@@ -38,9 +46,11 @@ const CategoryManager = () => {
   useEffect(() => {
     fetchCategories();
   }, []);
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-  // --- EKLEME ---
-  const handleAddMain = async (e) => {
+const handleAddMain = async (e) => {
     e.preventDefault();
     if (!newMainCategory) return;
     try {
@@ -48,26 +58,15 @@ const CategoryManager = () => {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/main`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ 
-          name: newMainCategory, 
-          isShowOnNavbar: newIsShowOnNavbar
-        })
+        body: JSON.stringify({ name: newMainCategory, isShowOnNavbar: newIsShowOnNavbar })
       });
-      if (res.ok) { 
-        setNewMainCategory(""); 
-        setNewIsShowOnNavbar(false);
-        fetchCategories(); 
-        toast.success("Ana kategori başarıyla eklendi!");
-      }
+      if (res.ok) { setNewMainCategory(""); setNewIsShowOnNavbar(false); fetchCategories(); toast.success("Eklendi!"); }
     } catch (error) { console.error(error); }
   };
 
   const handleAddSub = async (e) => {
     e.preventDefault();
-    if (!newSubCategory || !selectedMainId) { 
-        toast.error("Lütfen ana kategori seçin.");
-        return; 
-    }
+    if (!newSubCategory || !selectedMainId) { toast.error("Ana kategori seçin."); return; }
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/sub`, {
@@ -75,83 +74,29 @@ const CategoryManager = () => {
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ name: newSubCategory, mainCategoryId: selectedMainId })
       });
-      if (res.ok) { 
-        setNewSubCategory(""); 
-        fetchCategories(); 
-        toast.success("Alt kategori eklendi!");
-      }
+      if (res.ok) { setNewSubCategory(""); fetchCategories(); toast.success("Eklendi!"); }
     } catch (error) { console.error(error); }
   };
 
-  // --- SİLME ---
-  const confirmDelete = (id, type) => {
-    setItemToDelete({ id, type });
-    setDeleteModalOpen(true);
-  };
-
+  const confirmDelete = (id, type) => { setItemToDelete({ id, type }); setDeleteModalOpen(true); };
   const executeDelete = async () => {
     if (!itemToDelete) return;
     try {
       const token = localStorage.getItem("token");
       const endpoint = itemToDelete.type === 'main' ? `main/${itemToDelete.id}` : `sub/${itemToDelete.id}`;
-      
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/${endpoint}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-
-      if (res.ok) {
-        fetchCategories();
-        toast.success("Kategori silindi.");
-      } else {
-        toast.error("Silinemedi. Alt kategorisi olabilir.");
-      }
-    } catch (error) { toast.error("Bir hata oluştu."); }
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/${endpoint}`, { method: "DELETE", headers: { "Authorization": `Bearer ${token}` } });
+      if (res.ok) { fetchCategories(); toast.success("Silindi."); } else { toast.error("Silinemedi."); }
+    } catch (error) { toast.error("Hata."); }
   };
-
-  // --- DÜZENLEME BAŞLAT ---
-  const startEditing = (item, type) => {
-    setEditingItem({ id: item.id, type });
-    setEditName(item.name);
-    // Eğer ana kategoriyse mevcut Navbar durumunu state'e yükle
-    if (type === 'main') {
-        setEditIsShowOnNavbar(item.isShowOnNavbar || false);
-    }
-  };
-
-  const cancelEditing = () => {
-    setEditingItem({ id: null, type: null });
-    setEditName("");
-    setEditIsShowOnNavbar(false);
-  };
-
-  // --- DÜZENLEME KAYDET ---
+const startEditing = (item, type) => { setEditingItem({ id: item.id, type }); setEditName(item.name); if (type === 'main') setEditIsShowOnNavbar(item.isShowOnNavbar || false); };
+  const cancelEditing = () => { setEditingItem({ id: null, type: null }); setEditName(""); setEditIsShowOnNavbar(false); };
   const saveEditing = async () => {
     try {
       const token = localStorage.getItem("token");
       const endpoint = editingItem.type === 'main' ? `main/${editingItem.id}` : `sub/${editingItem.id}`;
-      
-      // Gönderilecek veriyi hazırla
-      const bodyData = { name: editName };
-      
-      // Sadece ana kategoriyse Navbar durumunu da ekle
-      if (editingItem.type === 'main') {
-        bodyData.isShowOnNavbar = editIsShowOnNavbar;
-      }
-
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/${endpoint}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(bodyData)
-      });
-
-      if (res.ok) {
-        fetchCategories();
-        setEditingItem({ id: null, type: null });
-        toast.success("Güncellendi!");
-      } else {
-        toast.error("Güncellenemedi.");
-      }
+      const bodyData = { name: editName, ...(editingItem.type === 'main' && { isShowOnNavbar: editIsShowOnNavbar }) };
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories/${endpoint}`, { method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }, body: JSON.stringify(bodyData) });
+      if (res.ok) { fetchCategories(); setEditingItem({ id: null, type: null }); toast.success("Güncellendi!"); } else { toast.error("Güncellenemedi."); }
     } catch (error) { console.error(error); }
   };
 
