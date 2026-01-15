@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, Layers, ShoppingBag, RefreshCcw, Ticket, CheckSquare, Square, FolderInput, Eye, EyeOff } from 'lucide-react';
+import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, Layers, ShoppingBag, RefreshCcw, Ticket, CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
 import AddProductModal from '../../utils/AddProductModal';
