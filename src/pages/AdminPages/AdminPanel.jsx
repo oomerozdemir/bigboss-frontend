@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// DÜZELTME: ChevronLeft ve ChevronRight eklendi
 import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, Layers, ShoppingBag, RefreshCcw, Ticket, CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
@@ -48,25 +49,25 @@ const AdminPanel = () => {
     }
   };
 
-  // --- ÜRÜNLERİ GETİR ---
-const fetchProducts = async (page = 1, search = "") => {
+  // --- ÜRÜNLERİ GETİR (GÜVENLİ) ---
+  const fetchProducts = async (page = 1, search = "") => {
     setLoading(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products?isAdmin=true&page=${page}&limit=20&search=${search}`);
       const data = await res.json();
       
-      // DÜZELTME 2: Gelen verinin dizi olduğundan emin olunuyor
+      // DÜZELTME: Gelen verinin formatı kontrol ediliyor
       if (data && data.products && Array.isArray(data.products)) {
           setProducts(data.products);
           setTotalPages(data.meta?.totalPages || 1);
           setTotalCount(data.meta?.totalCount || 0);
       } else if (Array.isArray(data)) {
-          // Eski API yapısı veya direkt dizi gelirse
-          setProducts(data);
+          setProducts(data); // Eski yapı
       } else {
           setProducts([]);
       }
     } catch (error) {
+      console.error("Ürün çekme hatası:", error);
       toast.error("Ürünler yüklenirken hata oluştu");
       setProducts([]);
     } finally {
@@ -79,7 +80,7 @@ const fetchProducts = async (page = 1, search = "") => {
       try {
           const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
           const data = await res.json();
-          // API hata objesi dönerse site çökmesin diye kontrol ediyoruz
+          // API hata objesi dönerse boş dizi ata
           setCategories(Array.isArray(data) ? data : []);
       } catch (err) {
           console.error("Kategori hatası:", err);
@@ -96,10 +97,12 @@ const fetchProducts = async (page = 1, search = "") => {
     }
   };
 
+  // DÜZELTME: 'r.filter is not a function' hatasını çözen kısım
   const toggleSelectOne = (id) => {
       setSelectedIds(prev => {
-          // prev'in dizi olduğundan emin ol (Hata burada çıkıyordu)
+          // prev'in kesinlikle bir dizi olduğundan emin oluyoruz
           const safePrev = Array.isArray(prev) ? prev : [];
+          
           if (safePrev.includes(id)) {
               return safePrev.filter(i => i !== id);
           } else {
@@ -166,7 +169,6 @@ const fetchProducts = async (page = 1, search = "") => {
   // --- GİZLE / GÖSTER TOGGLE ---
   const toggleProductStatus = async (id, currentStatus) => {
       const token = localStorage.getItem("token");
-      // UI'da hemen güncelle
       setProducts(prev => prev.map(p => p.id === id ? { ...p, isActive: !currentStatus } : p));
 
       try {
@@ -412,7 +414,6 @@ const fetchProducts = async (page = 1, search = "") => {
                     {/* Sayfa Numaraları (Basit) */}
                     <div className="flex gap-1">
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                             // Sayfalama mantığını basit tutuyoruz, karmaşık olursa component yapılabilir
                              let pageNum = i + 1;
                              if (totalPages > 5 && currentPage > 3) {
                                  pageNum = currentPage - 2 + i;
