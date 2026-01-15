@@ -34,6 +34,9 @@ const AdminPanel = () => {
   const [isBulkCategoryModalOpen, setIsBulkCategoryModalOpen] = useState(false);
   const [selectedBulkCategory, setSelectedBulkCategory] = useState("");
 
+  // GÜVENLİ selectedIds kullanımı için helper - HER ZAMAN DİZİ OLMASINI GARANTİ EDER
+  const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
+
   useEffect(() => {
     if (activeTab === 'products') {
         fetchProducts(currentPage, searchTerm);
@@ -90,14 +93,14 @@ const AdminPanel = () => {
 
   // --- SEÇİM FONKSİYONLARI ---
   const toggleSelectAll = () => {
-    if (selectedIds.length === products.length) {
+    if (safeSelectedIds.length === products.length) {
         setSelectedIds([]);
     } else {
         setSelectedIds(products.map(p => p.id));
     }
   };
 
-  // DÜZELTME: 'r.filter is not a function' hatasını çözen kısım
+  // DÜZELTME: 'r.filter is not a function' hatasını çözen kısım - GÜÇLENDİRİLMİŞ VERSİYON
   const toggleSelectOne = (id) => {
       setSelectedIds(prev => {
           // prev'in kesinlikle bir dizi olduğundan emin oluyoruz
@@ -113,7 +116,7 @@ const AdminPanel = () => {
 
   // --- TOPLU SİLME ---
   const handleBulkDelete = async () => {
-      if (!confirm(`${selectedIds.length} ürünü silmek istediğinize emin misiniz?`)) return;
+      if (!confirm(`${safeSelectedIds.length} ürünü silmek istediğinize emin misiniz?`)) return;
       
       const token = localStorage.getItem("token");
       try {
@@ -123,7 +126,7 @@ const AdminPanel = () => {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}` 
               },
-              body: JSON.stringify({ ids: selectedIds })
+              body: JSON.stringify({ ids: safeSelectedIds })
           });
           
           if (res.ok) {
@@ -150,7 +153,7 @@ const AdminPanel = () => {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}` 
               },
-              body: JSON.stringify({ productIds: selectedIds, categoryId: selectedBulkCategory })
+              body: JSON.stringify({ productIds: safeSelectedIds, categoryId: selectedBulkCategory })
           });
 
           if (res.ok) {
@@ -272,10 +275,10 @@ const AdminPanel = () => {
             {/* ÜST BAR: Arama ve Toplu İşlemler */}
             <div className="p-4 border-b border-gray-100 flex items-center justify-between gap-4 bg-gray-50/50">
               
-              {/* TOPLU İŞLEM BUTONLARI */}
-              {selectedIds.length > 0 ? (
+              {/* TOPLU İŞLEM BUTONLARI - safeSelectedIds KULLANIMI */}
+              {safeSelectedIds.length > 0 ? (
                   <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-4">
-                      <span className="text-sm font-bold text-black mr-2">{selectedIds.length} seçildi</span>
+                      <span className="text-sm font-bold text-black mr-2">{safeSelectedIds.length} seçildi</span>
                       
                       <button 
                         onClick={handleBulkDelete}
@@ -310,10 +313,10 @@ const AdminPanel = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                    {/* SEÇİM KUTUSU BAŞLIĞI */}
+                    {/* SEÇİM KUTUSU BAŞLIĞI - safeSelectedIds KULLANIMI */}
                     <th className="p-4 w-10">
                         <button onClick={toggleSelectAll} className="text-gray-400 hover:text-black">
-                            {selectedIds.length > 0 && selectedIds.length === products.length ? <CheckSquare size={20}/> : <Square size={20}/>}
+                            {safeSelectedIds.length > 0 && safeSelectedIds.length === products.length ? <CheckSquare size={20}/> : <Square size={20}/>}
                         </button>
                     </th>
                     <th className="p-4 font-semibold">Görünürlük</th>
@@ -328,12 +331,12 @@ const AdminPanel = () => {
                   {loading ? (
                     <tr><td colSpan="7" className="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
                   ) : products.map((product) => (
-                    <tr key={product.id} className={`hover:bg-gray-50 transition-colors group ${selectedIds.includes(product.id) ? "bg-blue-50/30" : ""}`}>
+                    <tr key={product.id} className={`hover:bg-gray-50 transition-colors group ${safeSelectedIds.includes(product.id) ? "bg-blue-50/30" : ""}`}>
                       
-                      {/* SEÇİM KUTUSU */}
+                      {/* SEÇİM KUTUSU - safeSelectedIds KULLANIMI */}
                       <td className="p-4">
-                          <button onClick={() => toggleSelectOne(product.id)} className={`${selectedIds.includes(product.id) ? "text-black" : "text-gray-300"}`}>
-                              {selectedIds.includes(product.id) ? <CheckSquare size={20}/> : <Square size={20}/>}
+                          <button onClick={() => toggleSelectOne(product.id)} className={`${safeSelectedIds.includes(product.id) ? "text-black" : "text-gray-300"}`}>
+                              {safeSelectedIds.includes(product.id) ? <CheckSquare size={20}/> : <Square size={20}/>}
                           </button>
                       </td>
 
