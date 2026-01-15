@@ -49,12 +49,13 @@ const AdminPanel = () => {
   };
 
   // --- ÜRÜNLERİ GETİR ---
-  const fetchProducts = async (page = 1, search = "") => {
+const fetchProducts = async (page = 1, search = "") => {
     setLoading(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products?isAdmin=true&page=${page}&limit=20&search=${search}`);
       const data = await res.json();
       
+      // DÜZELTME 2: Gelen verinin dizi olduğundan emin olunuyor
       if (data && data.products && Array.isArray(data.products)) {
           setProducts(data.products);
           setTotalPages(data.meta?.totalPages || 1);
