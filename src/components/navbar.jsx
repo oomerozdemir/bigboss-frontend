@@ -14,15 +14,26 @@ const Navbar = () => {
   const { cartItems } = useCart();
   const [categories, setCategories] = useState([]);
 
-  // Sepetteki toplam ürün sayısı (Güvenli Hesaplama)
-  const totalItems = Array.isArray(cartItems) ? cartItems.reduce((acc, item) => acc + item.quantity, 0) : 0;
+  // ✅ DÜZELTME 1: Güvenli totalItems hesabı
+  const totalItems = React.useMemo(() => {
+    if (!Array.isArray(cartItems)) return 0;
+    return cartItems.reduce((acc, item) => {
+      const quantity = parseInt(item?.quantity) || 0;
+      return acc + quantity;
+    }, 0);
+  }, [cartItems]);
   
   const navigate = useNavigate();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    if (storedUser && storedUser !== "undefined") {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error("User parse error:", error);
+        localStorage.removeItem("user");
+      }
     }
 
     const handleScroll = () => {
@@ -33,36 +44,41 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // ✅ DÜZELTME 2: Güvenli kategori çekme
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      // ✅ DÜZELTME 3: Veri formatı kontrolü
+      if (Array.isArray(data)) {
+        const navbarCats = data.filter(cat => cat?.isShowOnNavbar === true);
+        setCategories(navbarCats);
+      } else {
+        console.error("Kategori verisi dizi değil:", data);
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error("Kategoriler yüklenemedi:", error);
+      setCategories([]); // Hata durumunda boş dizi
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
     navigate("/");
     window.location.reload();
-  };
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  // --- DÜZELTME: GÜVENLİ KATEGORİ ÇEKME ---
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
-      const data = await res.json();
-      
-      // HATA KAYNAĞI BURASIYDI: .filter() yapmadan önce diziyi kontrol ediyoruz
-      if (Array.isArray(data)) {
-          const navbarCats = data.filter(cat => cat.isShowOnNavbar === true);
-          setCategories(navbarCats);
-      } else {
-          console.error("Kategori verisi dizi değil:", data);
-          setCategories([]);
-      }
-    } catch (error) {
-      console.error("Kategoriler yüklenemedi", error);
-      setCategories([]);
-    }
   };
 
   return (
@@ -92,34 +108,55 @@ const Navbar = () => {
                     ANASAYFA
                 </Link>
 
-                {/* --- DİNAMİK KATEGORİLER --- */}
-                {categories.map((mainCat) => (
-                    <div key={mainCat.id} className="group relative h-full flex items-center py-2 cursor-pointer">
-                        {/* Ana Kategori İsmi */}
-                        <Link 
-                            to={`/products?category=${mainCat.name}`}
-                            className="text-xs font-bold text-gray-800 group-hover:text-gray-500 tracking-widest uppercase transition-colors flex items-center gap-1"
-                        >
-                            {mainCat.name}
-                            {mainCat.subCategories?.length > 0 && <ChevronDown size={12} className="group-hover:rotate-180 transition-transform duration-300"/>}
-                        </Link>
+                {/* ✅ DÜZELTME 4: Kategorilerin güvenli render edilmesi */}
+                {Array.isArray(categories) && categories.length > 0 ? (
+                  categories.map((mainCat) => {
+                    // ✅ Her kategorinin geçerliliğini kontrol et
+                    if (!mainCat?.id || !mainCat?.name) return null;
+                    
+                    return (
+                      <div key={mainCat.id} className="group relative h-full flex items-center py-2 cursor-pointer">
+                          {/* Ana Kategori İsmi */}
+                          <Link 
+                              to={`/products?category=${encodeURIComponent(mainCat.name)}`}
+                              className="text-xs font-bold text-gray-800 group-hover:text-gray-500 tracking-widest uppercase transition-colors flex items-center gap-1"
+                          >
+                              {mainCat.name}
+                              {mainCat.subCategories?.length > 0 && (
+                                <ChevronDown size={12} className="group-hover:rotate-180 transition-transform duration-300"/>
+                              )}
+                          </Link>
 
-                        {/* --- DROPDOWN (ALT KATEGORİLER) --- */}
-                        {mainCat.subCategories && mainCat.subCategories.length > 0 && (
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-48 bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 rounded-lg overflow-hidden py-2">
-                                {mainCat.subCategories.map((sub) => (
-                                    <Link 
-                                        key={sub.id} 
-                                        to={`/products?category=${mainCat.name}&subcategory=${sub.name}`} 
-                                        className="block px-6 py-2.5 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 transition-colors text-center"
-                                    >
-                                        {sub.name}
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ))}
+                          {/* --- DROPDOWN (ALT KATEGORİLER) --- */}
+                          {Array.isArray(mainCat.subCategories) && mainCat.subCategories.length > 0 && (
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 w-48 bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 rounded-lg overflow-hidden py-2">
+                                  {mainCat.subCategories.map((sub) => {
+                                    // ✅ Alt kategorinin geçerliliğini kontrol et
+                                    if (!sub?.id || !sub?.name) return null;
+                                    
+                                    return (
+                                      <Link 
+                                          key={sub.id} 
+                                          to={`/products?category=${encodeURIComponent(mainCat.name)}&subcategory=${encodeURIComponent(sub.name)}`} 
+                                          className="block px-6 py-2.5 text-xs font-medium text-gray-600 hover:text-black hover:bg-gray-50 transition-colors text-center"
+                                      >
+                                          {sub.name}
+                                      </Link>
+                                    );
+                                  })}
+                              </div>
+                          )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  // ✅ DÜZELTME 5: Kategoriler yüklenene kadar skeleton göster
+                  <div className="flex gap-8">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="h-4 w-16 bg-gray-200 animate-pulse rounded"></div>
+                    ))}
+                  </div>
+                )}
             </div>
 
             {/* --- 3. SAĞ: İKONLAR --- */}
@@ -165,7 +202,7 @@ const Navbar = () => {
                 <ShoppingBag size={22} strokeWidth={1.2} />
                 {totalItems > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 bg-black text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center animate-in zoom-in duration-300">
-                    {totalItems}
+                      {totalItems}
                     </span>
                 )}
               </Link>
@@ -185,25 +222,44 @@ const Navbar = () => {
              <div className="flex flex-col space-y-6">
                 <Link to="/" onClick={() => setIsOpen(false)} className="text-xl font-bold text-gray-900 border-b border-gray-100 pb-2">ANASAYFA</Link>
                 
-                {/* Mobilde Dinamik Kategoriler */}
-                {categories.map((cat) => (
-                    <div key={cat.id} className="flex flex-col">
-                         <Link 
-                            to={`/products?category=${cat.name}`} 
-                            onClick={() => setIsOpen(false)} 
-                            className="text-xl font-bold text-gray-900 mb-2 flex justify-between items-center"
-                         >
-                            {cat.name}
-                         </Link>
-                         <div className="pl-4 flex flex-col gap-3 border-l-2 border-gray-100 ml-1">
-                             {cat.subCategories?.map(sub => (
-                                 <Link key={sub.id} to={`/products?category=${cat.name}&subcategory=${sub.name}`} onClick={() => setIsOpen(false)} className="text-sm font-medium text-gray-500">
-                                     {sub.name}
-                                 </Link>
-                             ))}
-                         </div>
-                    </div>
-                ))}
+                {/* ✅ DÜZELTME 6: Mobilde de güvenli kategori render */}
+                {Array.isArray(categories) && categories.length > 0 ? (
+                  categories.map((cat) => {
+                    if (!cat?.id || !cat?.name) return null;
+                    
+                    return (
+                      <div key={cat.id} className="flex flex-col">
+                          <Link 
+                              to={`/products?category=${encodeURIComponent(cat.name)}`} 
+                              onClick={() => setIsOpen(false)} 
+                              className="text-xl font-bold text-gray-900 mb-2 flex justify-between items-center"
+                          >
+                              {cat.name}
+                          </Link>
+                          {Array.isArray(cat.subCategories) && cat.subCategories.length > 0 && (
+                            <div className="pl-4 flex flex-col gap-3 border-l-2 border-gray-100 ml-1">
+                                {cat.subCategories.map(sub => {
+                                  if (!sub?.id || !sub?.name) return null;
+                                  
+                                  return (
+                                    <Link 
+                                      key={sub.id} 
+                                      to={`/products?category=${encodeURIComponent(cat.name)}&subcategory=${encodeURIComponent(sub.name)}`} 
+                                      onClick={() => setIsOpen(false)} 
+                                      className="text-sm font-medium text-gray-500"
+                                    >
+                                        {sub.name}
+                                    </Link>
+                                  );
+                                })}
+                            </div>
+                          )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-gray-400 text-sm">Kategoriler yükleniyor...</div>
+                )}
 
                 {!user && (
                     <button onClick={() => {setIsOpen(false); setIsAuthOpen(true);}} className="w-full bg-black text-white py-4 rounded text-sm font-bold tracking-widest uppercase mt-4">
