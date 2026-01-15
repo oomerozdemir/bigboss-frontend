@@ -14,7 +14,7 @@ const Navbar = () => {
   const { cartItems } = useCart();
   const [categories, setCategories] = useState([]);
 
-  // Sepetteki toplam ürün sayısı
+  // Sepetteki toplam ürün sayısı (Güvenli Hesaplama)
   const totalItems = Array.isArray(cartItems) ? cartItems.reduce((acc, item) => acc + item.quantity, 0) : 0;
   
   const navigate = useNavigate();
@@ -45,13 +45,13 @@ const Navbar = () => {
     fetchCategories();
   }, []);
 
-  // --- GÜVENLİ KATEGORİ ÇEKME ---
+  // --- DÜZELTME: GÜVENLİ KATEGORİ ÇEKME ---
   const fetchCategories = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
       const data = await res.json();
       
-      // DÜZELTME: .filter yapmadan önce diziyi kontrol et
+      // HATA KAYNAĞI BURASIYDI: .filter() yapmadan önce diziyi kontrol ediyoruz
       if (Array.isArray(data)) {
           const navbarCats = data.filter(cat => cat.isShowOnNavbar === true);
           setCategories(navbarCats);
