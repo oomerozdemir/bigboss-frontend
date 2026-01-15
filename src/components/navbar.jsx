@@ -14,7 +14,8 @@ const Navbar = () => {
   const { cartItems } = useCart();
   const [categories, setCategories] = useState([]);
 
-  const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  // Sepetteki toplam ürün sayısı
+  const totalItems = Array.isArray(cartItems) ? cartItems.reduce((acc, item) => acc + item.quantity, 0) : 0;
   
   const navigate = useNavigate();
 
@@ -44,14 +45,23 @@ const Navbar = () => {
     fetchCategories();
   }, []);
 
+  // --- GÜVENLİ KATEGORİ ÇEKME ---
   const fetchCategories = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
       const data = await res.json();
-      const navbarCats = data.filter(cat => cat.isShowOnNavbar === true);
-      setCategories(navbarCats);
+      
+      // DÜZELTME: .filter yapmadan önce diziyi kontrol et
+      if (Array.isArray(data)) {
+          const navbarCats = data.filter(cat => cat.isShowOnNavbar === true);
+          setCategories(navbarCats);
+      } else {
+          console.error("Kategori verisi dizi değil:", data);
+          setCategories([]);
+      }
     } catch (error) {
       console.error("Kategoriler yüklenemedi", error);
+      setCategories([]);
     }
   };
 
@@ -82,7 +92,7 @@ const Navbar = () => {
                     ANASAYFA
                 </Link>
 
-                {/* --- DİNAMİK KATEGORİLER BURADA DİZİLİYOR --- */}
+                {/* --- DİNAMİK KATEGORİLER --- */}
                 {categories.map((mainCat) => (
                     <div key={mainCat.id} className="group relative h-full flex items-center py-2 cursor-pointer">
                         {/* Ana Kategori İsmi */}
@@ -110,16 +120,11 @@ const Navbar = () => {
                         )}
                     </div>
                 ))}
-
-                
-
             </div>
 
             {/* --- 3. SAĞ: İKONLAR --- */}
             <div className="flex items-center gap-5 md:gap-6 text-gray-800">
               
-             
-
               <Link to="/favoriler" className="hover:text-gray-500 transition-transform hover:scale-105">
                 <Heart size={22} strokeWidth={1.2} />
               </Link>
@@ -136,8 +141,8 @@ const Navbar = () => {
                             <p className="text-sm font-semibold truncate">{user.name}</p>
                         </div>
                         <Link to="/hesabim" className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 rounded transition-colors">
-    <User size={14} /> Hesabım
-</Link>
+                            <User size={14} /> Hesabım
+                        </Link>
                         {user.isAdmin && (
                             <Link to="/admin-panel" className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded">
                                 <ShieldCheck size={14}/> Admin Paneli
@@ -156,15 +161,15 @@ const Navbar = () => {
               )}
 
               {/* Sepet */}
-            <Link to="/sepet" className="relative hover:text-gray-500 transition-transform hover:scale-105">
-              <ShoppingBag size={22} strokeWidth={1.2} />
-              
-              {totalItems > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-black text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center animate-in zoom-in duration-300">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+              <Link to="/sepet" className="relative hover:text-gray-500 transition-transform hover:scale-105">
+                <ShoppingBag size={22} strokeWidth={1.2} />
+                {totalItems > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-black text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center animate-in zoom-in duration-300">
+                    {totalItems}
+                    </span>
+                )}
+              </Link>
+
               {/* Mobil Menü Butonu */}
               <button onClick={() => setIsOpen(!isOpen)} className="md:hidden text-gray-800">
                  {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -199,7 +204,6 @@ const Navbar = () => {
                          </div>
                     </div>
                 ))}
-
 
                 {!user && (
                     <button onClick={() => {setIsOpen(false); setIsAuthOpen(true);}} className="w-full bg-black text-white py-4 rounded text-sm font-bold tracking-widest uppercase mt-4">
