@@ -13,6 +13,11 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("products");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [totalCount, setTotalCount] = useState(0);
   
   // Modallar
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -21,7 +26,7 @@ const AdminPanel = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null); // Tekli silme için
 
-  // --- YENİ STATE'LER: TOPLU İŞLEMLER ---
+  // ---TOPLU İŞLEMLER ---
   const [selectedIds, setSelectedIds] = useState([]); // Seçili ürün ID'leri
   const [categories, setCategories] = useState([]); // Kategori seçimi için
   const [isBulkCategoryModalOpen, setIsBulkCategoryModalOpen] = useState(false); // Toplu kategori modalı
@@ -29,17 +34,32 @@ const AdminPanel = () => {
 
   useEffect(() => {
     if (activeTab === 'products') {
-        fetchProducts();
-        fetchCategories(); // Kategorileri de çekelim
+        fetchProducts(currentPage, searchTerm);
+        fetchCategories();
     }
-  }, [activeTab]);
+  }, [activeTab, currentPage]); // Sayfa değişince yeniden çek
 
-  // Ürünleri Çek (Admin parametresi ile hepsi gelir)
-  const fetchProducts = async () => {
+  // --- ARAMA İŞLEMİ (ENTER'A BASINCA) ---
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+        setCurrentPage(1); // Aramada ilk sayfaya dön
+        fetchProducts(1, searchTerm);
+    }
+  };
+
+ const fetchProducts = async (page = 1, search = "") => {
+    setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products?isAdmin=true`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products?isAdmin=true&page=${page}&limit=20&search=${search}`);
       const data = await res.json();
-      setProducts(data);
+      
+      if (data.products) {
+          setProducts(data.products);
+          setTotalPages(data.meta.totalPages);
+          setTotalCount(data.meta.totalCount);
+      } else {
+          setProducts(Array.isArray(data) ? data : []);
+      }
       setLoading(false);
     } catch (error) {
       toast.error("Ürünler yüklenirken hata oluştu");
@@ -56,20 +76,11 @@ const AdminPanel = () => {
 
   // --- SEÇİM FONKSİYONLARI ---
   const toggleSelectAll = () => {
-      if (selectedIds.length === products.length) {
-          setSelectedIds([]); // Hepsini kaldır
-      } else {
-          setSelectedIds(products.map(p => p.id)); // Hepsini seç
-      }
+    if (selectedIds.length === products.length) setSelectedIds([]);
+    else setSelectedIds(products.map(p => p.id));
   };
 
-  const toggleSelectOne = (id) => {
-      if (selectedIds.includes(id)) {
-          setSelectedIds(prev => prev.filter(item => item !== id));
-      } else {
-          setSelectedIds(prev => [...prev, id]);
-      }
-  };
+ const toggleSelectOne = (id) => selectedIds.includes(id) ? setSelectedIds(prev => prev.filter(i => i !== id)) : setSelectedIds(prev => [...prev, id]);
 
   // --- TOPLU SİLME ---
   const handleBulkDelete = async () => {
@@ -351,8 +362,47 @@ const AdminPanel = () => {
                 </tbody>
               </table>
             </div>
+          {/* --- YENİ: SAYFALAMA KONTROLLERİ --- */}
+            <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/30">
+                <span className="text-sm text-gray-500">
+                    Toplam <b>{totalCount}</b> ürün, <b>{currentPage}</b> / {totalPages} sayfa
+                </span>
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ChevronLeft size={16} />
+                    </button>
+                    {/* Sayfa Numaraları */}
+                    {[...Array(totalPages)].map((_, i) => {
+                        // Çok fazla sayfa varsa hepsini gösterme mantığı eklenebilir ama şimdilik basit tutuyoruz
+                        if (totalPages > 10 && Math.abs(currentPage - (i + 1)) > 2 && i !== 0 && i !== totalPages - 1) return null;
+                        return (
+                            <button
+                                key={i}
+                                onClick={() => setCurrentPage(i + 1)}
+                                className={`w-8 h-8 flex items-center justify-center rounded text-sm font-bold ${currentPage === i + 1 ? 'bg-black text-white' : 'hover:bg-gray-200'}`}
+                            >
+                                {i + 1}
+                            </button>
+                        );
+                    })}
+                    <button 
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <ChevronRight size={16} />
+                    </button>
+                </div>
+            </div>
+
           </div>
         )}
+
+        
 
         {/* --- DİĞER MODÜLLER --- */}
         {activeTab === 'orders' && <OrderManager />}

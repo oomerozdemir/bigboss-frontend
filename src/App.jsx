@@ -107,8 +107,6 @@ urunlerin aciklamasi mutlaka olmali
 urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 
-kupon yapisi eklenicek
-
 toast bildirimi ekranin sag ustu yerine ortada 
 
 sipariş sonrası mail gönderimi yapısı sipariş alındığında, kargoya verildiğinde ve teslim edildiğindee mail gitmeli
