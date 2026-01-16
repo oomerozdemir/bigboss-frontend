@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../components/navbar';
 import ProductCard from '../components/ProductCard';
 import { Search, ArrowUpDown, Filter, ChevronLeft, ChevronRight } from 'lucide-react'; 
 import { useLocation } from 'react-router-dom';
@@ -208,7 +207,6 @@ const ProductListPage = () => {
 
   return (
     <>
-      <Navbar />
       
       <div className="bg-gray-50 min-h-screen pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
