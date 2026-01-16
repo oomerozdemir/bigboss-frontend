@@ -418,20 +418,6 @@ const CookiePolicy = () => {
               </p>
             </section>
 
-            {/* 9. İletişim */}
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. İletişim</h2>
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <p className="text-gray-700 mb-4">
-                  Çerez politikamız hakkında sorularınız için bizimle iletişime geçebilirsiniz:
-                </p>
-                <p className="text-gray-700">
-                  <strong>E-posta:</strong> kvkk@bigboss.com.tr<br />
-                  <strong>Telefon:</strong> [Telefon Numarası - Doldurulacak]<br />
-                  <strong>Adres:</strong> [Şirket Adresi - Doldurulacak]
-                </p>
-              </div>
-            </section>
 
             {/* Son Güncelleme */}
             <div className="mt-12 pt-8 border-t border-gray-200">

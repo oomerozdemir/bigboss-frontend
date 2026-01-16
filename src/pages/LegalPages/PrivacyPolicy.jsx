@@ -33,18 +33,15 @@ const PrivacyPolicy = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Veri Sorumlusu</h2>
               <div className="bg-gray-50 p-6 rounded-lg">
                 <p className="text-gray-700 font-semibold mb-2">Şirket Unvanı:</p>
-                <p className="text-gray-700 mb-4">Big Boss Tekstil ve Giyim Sanayi Ticaret Limited Şirketi</p>
+                <p className="text-gray-700 mb-4">Big Boss Tekstil</p>
                 
                 <p className="text-gray-700 font-semibold mb-2">Adres:</p>
-                <p className="text-gray-700 mb-4">[Şirket Adresi - Doldurulacak]</p>
-                
-                <p className="text-gray-700 font-semibold mb-2">MERSİS No:</p>
-                <p className="text-gray-700 mb-4">[MERSİS Numarası - Doldurulacak]</p>
+                <p className="text-gray-700 mb-4">MEŞRUTİYET MAH. HALASKARGAZİ CAD. NO: 150 B ŞİŞLİ/İSTANBUL</p>
                 
                 <p className="text-gray-700 font-semibold mb-2">İletişim:</p>
                 <p className="text-gray-700">
-                  E-posta: kvkk@bigboss.com.tr<br />
-                  Telefon: [Telefon Numarası - Doldurulacak]
+                  E-posta: bigbosstextil1972@gmail.com<br />
+                  Telefon: 530 774 99 86
                 </p>
               </div>
             </section>
@@ -199,7 +196,7 @@ const PrivacyPolicy = () => {
               <div className="bg-blue-50 p-6 rounded-lg mb-4">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Yazılı Başvuru</h3>
                 <p className="text-gray-700 mb-2">
-                  <strong>Adres:</strong> [Şirket Adresi - Doldurulacak]
+                  <strong>Adres:</strong> MEŞRUTİYET MAH. HALASKARGAZİ CAD. NO: 150 B ŞİŞLİ/İSTANBUL
                 </p>
                 <p className="text-gray-700 mb-2">
                   <strong>Konu:</strong> "KVKK Kapsamında Bilgi Talep Başvurusu"
@@ -209,7 +206,7 @@ const PrivacyPolicy = () => {
               <div className="bg-blue-50 p-6 rounded-lg mb-4">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">E-posta ile Başvuru</h3>
                 <p className="text-gray-700">
-                  <strong>E-posta:</strong> kvkk@bigboss.com.tr<br />
+                  <strong>E-posta:</strong> bigbosstextil1972@gmail.com<br />
                   <small className="text-gray-600">
                     (Başvurunuz kayıtlı elektronik posta (KEP) adresi, güvenli elektronik imza, 
                     mobil imza veya başvuruda bulunacak kişi tarafından Şirketimize daha önce bildirilen 
@@ -271,20 +268,7 @@ const PrivacyPolicy = () => {
               </p>
             </section>
 
-            {/* 13. İletişim */}
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">13. İletişim</h2>
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <p className="text-gray-700 mb-2">
-                  Gizlilik politikamız hakkında sorularınız için bizimle iletişime geçebilirsiniz:
-                </p>
-                <p className="text-gray-700 mt-4">
-                  <strong>E-posta:</strong> kvkk@bigboss.com.tr<br />
-                  <strong>Telefon:</strong> [Telefon Numarası - Doldurulacak]<br />
-                  <strong>Adres:</strong> [Şirket Adresi - Doldurulacak]
-                </p>
-              </div>
-            </section>
+        
 
             {/* Son Güncelleme */}
             <div className="mt-12 pt-8 border-t border-gray-200">

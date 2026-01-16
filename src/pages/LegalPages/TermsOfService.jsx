@@ -37,12 +37,10 @@ const TermsOfService = () => {
               
               <h3 className="text-xl font-semibold text-gray-800 mb-3">2.1. SATICI</h3>
               <div className="bg-gray-50 p-6 rounded-lg mb-4">
-                <p className="text-gray-700 mb-2"><strong>Ünvan:</strong> Big Boss Tekstil ve Giyim Sanayi Ticaret Limited Şirketi</p>
-                <p className="text-gray-700 mb-2"><strong>Adres:</strong> [Şirket Adresi - Doldurulacak]</p>
-                <p className="text-gray-700 mb-2"><strong>Telefon:</strong> [Telefon Numarası - Doldurulacak]</p>
-                <p className="text-gray-700 mb-2"><strong>E-posta:</strong> info@bigboss.com.tr</p>
-                <p className="text-gray-700 mb-2"><strong>MERSİS No:</strong> [MERSİS Numarası - Doldurulacak]</p>
-                <p className="text-gray-700"><strong>Vergi Dairesi:</strong> [Vergi Dairesi - Doldurulacak]</p>
+                <p className="text-gray-700 mb-2"><strong>Ünvan:</strong> Big Boss Tekstil</p>
+                <p className="text-gray-700 mb-2"><strong>Adres:</strong> MEŞRUTİYET MAH. HALASKARGAZİ CAD. NO: 150 B ŞİŞLİ/İSTANBUL</p>
+                <p className="text-gray-700 mb-2"><strong>Telefon:</strong> 530 774 99 86</p>
+                <p className="text-gray-700 mb-2"><strong>E-posta:</strong> bigbosstextil1972@gmail.com</p>
               </div>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-3">2.2. ALICI</h3>
@@ -120,7 +118,6 @@ const TermsOfService = () => {
                 <li>Kredi Kartı (Tek Çekim / Taksit)</li>
                 <li>Banka Kartı</li>
                 <li>Havale / EFT</li>
-                <li>Kapıda Ödeme (Nakit veya Kredi Kartı)</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-3">6.2. Güvenlik</h3>
@@ -150,7 +147,7 @@ const TermsOfService = () => {
 
               <h3 className="text-xl font-semibold text-gray-800 mb-3">7.2. Kargo Bedeli</h3>
               <p className="text-gray-700 leading-relaxed mb-4">
-                150 TL ve üzeri alışverişlerde kargo ücretsizdir. Altındaki tutarlarda kargo 
+                2000 TL ve üzeri alışverişlerde kargo ücretsizdir. Altındaki tutarlarda kargo 
                 bedeli sepet toplamına eklenir ve ödeme sırasında gösterilir.
               </p>
 
@@ -185,7 +182,7 @@ const TermsOfService = () => {
               </p>
               <ol className="list-decimal list-inside text-gray-700 space-y-2 mb-4">
                 <li>Web sitesindeki "İade/İptal Talebi" formunu doldurun veya</li>
-                <li>Müşteri hizmetleri ile iletişime geçin (iade@bigboss.com.tr)</li>
+                <li>Müşteri hizmetleri ile iletişime geçin (bigbosstextil1972@gmail.com)</li>
                 <li>Ürünü orijinal ambalajında, kullanılmamış ve etiketli şekilde kargoya verin</li>
               </ol>
 
@@ -222,23 +219,11 @@ const TermsOfService = () => {
               </p>
             </section>
 
-            {/* 9. Garanti */}
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Garanti</h2>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                Ürünler, üretici veya ithalatçı firma tarafından belirlenen garanti süresi 
-                kapsamındadır. Garanti kapsamındaki ürün arızalarında, Satıcı veya yetkili 
-                servis ile iletişime geçilmelidir.
-              </p>
-              <p className="text-gray-700 leading-relaxed">
-                Tekstil ürünlerinde malzeme veya üretim hatası bulunması durumunda, fatura 
-                tarihi üzerinden 2 (iki) yıl içerisinde garanti hakkı kullanılabilir.
-              </p>
-            </section>
+            
 
-            {/* 10. Fikri Mülkiyet Hakları */}
+            {/* 9. Fikri Mülkiyet Hakları */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Fikri Mülkiyet Hakları</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Fikri Mülkiyet Hakları</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
                 Web Sitesinde yer alan tüm içerikler (metin, görsel, logo, grafik, video, yazılım vb.) 
                 Satıcı'ya aittir ve telif hakkı yasaları ile korunmaktadır.
@@ -249,9 +234,9 @@ const TermsOfService = () => {
               </p>
             </section>
 
-            {/* 11. Sorumluluk Sınırlaması */}
+            {/* 10. Sorumluluk Sınırlaması */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">11. Sorumluluk Sınırlaması</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Sorumluluk Sınırlaması</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
                 Satıcı, aşağıdaki durumlardan sorumlu tutulamaz:
               </p>
@@ -265,9 +250,9 @@ const TermsOfService = () => {
               </ul>
             </section>
 
-            {/* 12. Uyuşmazlıkların Çözümü */}
+            {/* 11. Uyuşmazlıkların Çözümü */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">12. Uyuşmazlıkların Çözümü</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">11. Uyuşmazlıkların Çözümü</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
                 İşbu Sözleşme'den doğabilecek uyuşmazlıklarda, Türkiye Cumhuriyeti yasaları uygulanır.
               </p>
@@ -275,8 +260,8 @@ const TermsOfService = () => {
                 Tüketici şikayetleri için öncelikle Satıcı müşteri hizmetleri ile iletişime geçilmelidir:
               </p>
               <ul className="list-disc list-inside text-gray-700 space-y-2 mb-4">
-                <li>E-posta: musteri@bigboss.com.tr</li>
-                <li>Telefon: [Telefon Numarası - Doldurulacak]</li>
+                <li>E-posta: bigbosstextil1972@gmail.com</li>
+                <li>Telefon: 530 774 99 86</li>
               </ul>
               <p className="text-gray-700 leading-relaxed">
                 Çözüm sağlanamazsa, T.C. Gümrük ve Ticaret Bakanlığı tarafından her yıl belirlenen 
@@ -286,9 +271,9 @@ const TermsOfService = () => {
               </p>
             </section>
 
-            {/* 13. Yürürlük */}
+            {/* 12. Yürürlük */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">13. Yürürlük</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">12. Yürürlük</h2>
               <p className="text-gray-700 leading-relaxed">
                 İşbu Kullanım Koşulları, Web Sitesini kullanmaya başladığınız anda yürürlüğe girer. 
                 Satıcı, bu koşulları önceden haber vermeksizin değiştirme hakkını saklı tutar. 
@@ -296,19 +281,18 @@ const TermsOfService = () => {
               </p>
             </section>
 
-            {/* 14. İletişim */}
+            {/* 13. İletişim */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">14. İletişim</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">13. İletişim</h2>
               <div className="bg-gray-50 p-6 rounded-lg">
                 <p className="text-gray-700 mb-4">
                   Sorularınız, önerileriniz veya şikayetleriniz için bizimle iletişime geçebilirsiniz:
                 </p>
                 <p className="text-gray-700">
-                  <strong>Big Boss Tekstil ve Giyim San. Tic. Ltd. Şti.</strong><br />
-                  <strong>Adres:</strong> [Şirket Adresi - Doldurulacak]<br />
-                  <strong>Telefon:</strong> [Telefon Numarası - Doldurulacak]<br />
-                  <strong>E-posta:</strong> info@bigboss.com.tr<br />
-                  <strong>Müşteri Hizmetleri:</strong> musteri@bigboss.com.tr
+                  <strong>Big Boss Tekstil</strong><br />
+                  <strong>Adres:</strong> MEŞRUTİYET MAH. HALASKARGAZİ CAD. NO: 150 B ŞİŞLİ/İSTANBUL <br />
+                  <strong>Telefon:</strong> 530 774 99 86<br />
+                  <strong>E-posta:</strong> bigbosstextil1972@gmail.com<br />
                 </p>
               </div>
             </section>

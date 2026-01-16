@@ -67,13 +67,9 @@ const ReturnPolicy = () => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Adım 1: İade Talebi Oluşturun</h3>
                   <p className="text-gray-700 mb-2">
                     Hesabınıza giriş yaparak "Siparişlerim" bölümünden iade etmek istediğiniz ürünü 
-                    seçin ve "İade Et" butonuna tıklayın. Alternatif olarak:
+                    seçin ve "İade Et" butonuna tıklayın.
                   </p>
-                  <ul className="list-disc list-inside text-gray-700 space-y-1 text-sm">
-                    <li>Müşteri hizmetlerini arayın: [Telefon - Doldurulacak]</li>
-                    <li>E-posta gönderin: iade@bigboss.com.tr</li>
-                    <li>WhatsApp: [WhatsApp Hattı - Doldurulacak]</li>
-                  </ul>
+                 
                 </div>
 
                 <div className="border-l-4 border-green-500 pl-4">
@@ -102,50 +98,11 @@ const ReturnPolicy = () => {
               </div>
             </section>
 
-            {/* 3. İade Koşulları */}
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">3. İade Edilebilme Koşulları</h2>
-              
-              <div className="bg-gray-50 p-6 rounded-lg mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">✓ İade Edilebilir Ürünler</h3>
-                <ul className="list-disc list-inside text-gray-700 space-y-2">
-                  <li>Kullanılmamış, denenmemiş ürünler</li>
-                  <li>Orijinal ambalajında ve etiketli ürünler</li>
-                  <li>Hasarsız, lekelenme ve deformasyon olmayan ürünler</li>
-                  <li>Parfüm veya koku emmemiş ürünler</li>
-                  <li>Tüm aksesuarları (kopça, düğme vb.) eksiksiz olan ürünler</li>
-                </ul>
-              </div>
+            
 
-              <div className="bg-red-50 p-6 rounded-lg border border-red-200">
-                <h3 className="text-lg font-semibold text-red-900 mb-3 flex items-center gap-2">
-                  <AlertCircle size={20} />
-                  ✗ İade Edilemeyen Ürünler
-                </h3>
-                <p className="text-gray-700 mb-3">
-                  Hijyen ve sağlık açısından aşağıdaki ürünler <strong>açıldıktan sonra</strong> iade edilemez:
-                </p>
-                <ul className="list-disc list-inside text-gray-700 space-y-2">
-                  <li><strong>İç giyim ürünleri</strong> (külot, sütyen, body, termal vb.)</li>
-                  <li><strong>Deniz giyim</strong> (mayo, bikini, pareo vb.)</li>
-                  <li><strong>Takılar</strong> (küpe, piercing - hijyen nedeniyle)</li>
-                  <li><strong>Kozmetik ürünler</strong> (açılmış ise)</li>
-                  <li><strong>Kişiye özel üretim</strong> (isim baskılı, özel dikim vb.)</li>
-                  <li><strong>İndirim kuponu, hediye çeki</strong> gibi dijital ürünler</li>
-                </ul>
-                <div className="bg-white p-3 rounded mt-3">
-                  <p className="text-sm text-gray-700">
-                    <strong>Önemli Not:</strong> Yukarıdaki ürünler orijinal ambalajında, açılmamış 
-                    ve hiç denenmemiş olması kaydıyla iade edilebilir. Ambalaj açıldıktan sonra iade 
-                    kabul edilmez.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* 4. Para İadesi */}
+            {/* 3. Para İadesi */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Para İadesi Nasıl Yapılır?</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">3. Para İadesi Nasıl Yapılır?</h2>
               
               <div className="space-y-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -177,19 +134,12 @@ const ReturnPolicy = () => {
                   </p>
                 </div>
 
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-2">💵 Kapıda Ödeme</h3>
-                  <p className="text-gray-700 text-sm">
-                    Kapıda ödeme ile aldığınız ürünlerin iadesi durumunda, tutar IBAN bilgilerinize 
-                    havale/EFT olarak yapılır.
-                  </p>
-                </div>
               </div>
             </section>
 
             {/* 5. Değişim */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Ürün Değişimi</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Ürün Değişimi</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
                 Satın aldığınız ürünü farklı beden, renk veya modeliyle değiştirmek isterseniz:
               </p>
@@ -221,7 +171,7 @@ const ReturnPolicy = () => {
 
             {/* 6. Hasarlı/Hatalı Ürün */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Hasarlı veya Hatalı Ürün Teslimi</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Hasarlı veya Hatalı Ürün Teslimi</h2>
               
               <div className="bg-red-50 border border-red-200 p-6 rounded-lg mb-4">
                 <h3 className="font-semibold text-red-900 mb-3">🚨 Acil Durum Prosedürü</h3>
@@ -232,7 +182,6 @@ const ReturnPolicy = () => {
                   <li>Ürünü kargo görevlisi önünde kontrol edin</li>
                   <li>Hasar varsa kargo görevlisine tutanak tutturun</li>
                   <li>Hasarlı paketi kabul etmeyin veya "hasarlı teslim aldım" notu düşürün</li>
-                  <li>Derhal müşteri hizmetlerini arayın: [Telefon - Doldurulacak]</li>
                   <li>Fotoğraf çekin (hasar kanıtı için)</li>
                 </ol>
                 <div className="bg-white p-3 rounded">
@@ -256,7 +205,7 @@ const ReturnPolicy = () => {
 
             {/* 7. Kargo Bedeli */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. İade Kargo Bedeli</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">6. İade Kargo Bedeli</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
@@ -290,7 +239,7 @@ const ReturnPolicy = () => {
 
             {/* 8. SSS */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Sık Sorulan Sorular</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Sık Sorulan Sorular</h2>
               
               <div className="space-y-4">
                 <div className="border border-gray-200 rounded-lg p-4">
@@ -347,16 +296,15 @@ const ReturnPolicy = () => {
 
             {/* 9. İletişim */}
             <section className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. İletişim</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. İletişim</h2>
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
                 <p className="text-gray-700 mb-4">
                   İade sürecinizle ilgili her türlü soru ve destek için 7/24 müşteri hizmetlerimizle 
                   iletişime geçebilirsiniz:
                 </p>
                 <div className="space-y-2 text-gray-700">
-                  <p><strong>📞 Telefon:</strong> [Telefon Numarası - Doldurulacak]</p>
-                  <p><strong>📧 E-posta:</strong> iade@bigboss.com.tr</p>
-                  <p><strong>💬 WhatsApp:</strong> [WhatsApp Hattı - Doldurulacak]</p>
+                  <p><strong>📞 Telefon:</strong> 530 774 99 86</p>
+                  <p><strong>📧 E-posta:</strong> bigbosstextil1972@gmail.com</p>
                   <p><strong>🕐 Çalışma Saatleri:</strong> Hafta içi 09:00 - 18:00</p>
                 </div>
               </div>
