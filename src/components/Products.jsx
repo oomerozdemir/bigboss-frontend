@@ -1,58 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ProductCard from './ProductCard';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Products = () => {
-  const [products, setProducts] = useState([]); 
+  const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true); 
-  
-  const [activeMainCat, setActiveMainCat] = useState(""); 
+  const [activeMainCat, setActiveMainCat] = useState("Tümü");
   const [activeSubCat, setActiveSubCat] = useState("Tümü");
+  const [loading, setLoading] = useState(true);
+  
+  // ✅ PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 8; // Her sayfada 8 ürün göster
 
-  const navigate = useNavigate();
-
-  // --- TEK SEFERDE VERİLERİ ÇEK ---
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Ürünleri Çek
-        const productRes = await fetch(`${import.meta.env.VITE_API_URL}/api/products`);
-        const productData = await productRes.json();
+        const apiUrl = import.meta.env.VITE_API_URL;
         
-        // ✅ DÜZELTME 1: Products array kontrolü
-        if (Array.isArray(productData)) {
-          setProducts(productData);
-        } else if (productData?.products && Array.isArray(productData.products)) {
-          setProducts(productData.products);
-        } else {
-          console.error("Ürün verisi beklenen formatta değil:", productData);
-          setProducts([]);
-        }
-
-        // 2. Kategorileri Çek
-        const catRes = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
+        // Kategorileri getir
+        const catRes = await fetch(`${apiUrl}/api/categories`);
         const catData = await catRes.json();
-
-        // ✅ DÜZELTME 2: Categories array kontrolü
+        
         if (Array.isArray(catData)) {
-          // 3. Sadece Admin'in "Navbar'da Göster" dediklerini filtrele
           const featuredCats = catData.filter(c => c?.isShowOnNavbar === true);
           setCategories(featuredCats);
-
-          // 4. İlk kategoriyi varsayılan olarak seç (Eğer kategori varsa)
-          if (featuredCats.length > 0) {
-            setActiveMainCat(featuredCats[0].name);
-          }
         } else {
           console.error("Kategori verisi dizi değil:", catData);
           setCategories([]);
         }
 
+        // Ürünleri getir
+        const prodRes = await fetch(`${apiUrl}/api/products`);
+        const prodData = await prodRes.json();
+        
+        let productsArray = [];
+        if (Array.isArray(prodData)) {
+          productsArray = prodData;
+        } else if (prodData?.products && Array.isArray(prodData.products)) {
+          productsArray = prodData.products;
+        }
+        
+        setProducts(productsArray);
         setLoading(false);
       } catch (error) {
-        console.error("Veri hatası:", error);
+        console.error("Veri çekme hatası:", error);
         setProducts([]);
         setCategories([]);
         setLoading(false);
@@ -62,164 +54,268 @@ const Products = () => {
     fetchData();
   }, []);
 
-  
-  // --- FİLTRELEME MANTIĞI ---
-  
-  // ✅ DÜZELTME 3: Güvenli filtreleme
-  const productsInMainCategory = React.useMemo(() => {
+  // ✅ Ana kategoriye göre ürünleri filtrele
+  const productsInMainCategory = useMemo(() => {
     if (!Array.isArray(products)) return [];
     
+    if (activeMainCat === "Tümü") {
+      return products;
+    }
+
     return products.filter(product => {
       if (!product?.categories || !Array.isArray(product.categories)) return false;
-      
-      // Ürünün herhangi bir alt kategorisinin bağlı olduğu Ana Kategori, şu an seçili olana eşit mi?
-      return product.categories.some(cat => 
-        cat?.mainCategory?.name === activeMainCat
-      );
+      return product.categories.some(cat => cat?.mainCategory?.name === activeMainCat);
     });
   }, [products, activeMainCat]);
 
-  // ✅ DÜZELTME 4: Güvenli alt kategori çıkarma
-  const availableSubCategories = React.useMemo(() => {
+  // ✅ Alt kategorileri dinamik hesapla
+  const availableSubCategories = useMemo(() => {
     if (!Array.isArray(productsInMainCategory)) return ["Tümü"];
     
-    const allSubCats = productsInMainCategory.flatMap(p => {
-      if (!p?.categories || !Array.isArray(p.categories)) return [];
-      
-      return p.categories
-        .filter(c => c?.mainCategory?.name === activeMainCat)
-        .map(c => c?.name)
-        .filter(Boolean); // undefined/null değerleri filtrele
+    const subCats = new Set(["Tümü"]);
+    
+    productsInMainCategory.forEach(p => {
+      if (p?.categories && Array.isArray(p.categories)) {
+        p.categories.forEach(c => {
+          if (c?.name && c.name !== "Standart") {
+            subCats.add(c.name);
+          }
+        });
+      }
     });
     
-    // Benzersiz alt kategorileri listele ve başına "Tümü" ekle
-    return ["Tümü", ...new Set(allSubCats)];
-  }, [productsInMainCategory, activeMainCat]);
+    return Array.from(subCats);
+  }, [productsInMainCategory]);
 
-  // ✅ DÜZELTME 5: Güvenli display products
-  const displayProducts = React.useMemo(() => {
+  // ✅ Alt kategoriye göre filtrele
+  const displayProducts = useMemo(() => {
     if (!Array.isArray(productsInMainCategory)) return [];
     
-    return productsInMainCategory
-      .filter(p => {
-        if (activeSubCat === "Tümü") return true;
-        if (!p?.categories || !Array.isArray(p.categories)) return false;
-        return p.categories.some(cat => cat?.name === activeSubCat);
-      })
-      .slice(0, 8); // Sadece ilk 8 ürünü göster
+    if (activeSubCat === "Tümü") {
+      return productsInMainCategory;
+    }
+
+    return productsInMainCategory.filter(product => {
+      if (!product?.categories || !Array.isArray(product.categories)) return false;
+      return product.categories.some(cat => cat?.name === activeSubCat);
+    });
   }, [productsInMainCategory, activeSubCat]);
 
-  // Kategori Değiştirme
-  const handleMainCatChange = (catName) => {
+  // ✅ PAGINATION HESAPLAMALARI
+  const totalPages = Math.ceil(displayProducts.length / PRODUCTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const endIndex = startIndex + PRODUCTS_PER_PAGE;
+  const currentProducts = displayProducts.slice(startIndex, endIndex);
+
+  // Kategori değiştiğinde sayfayı resetle
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeMainCat, activeSubCat]);
+
+  // ✅ Pagination fonksiyonları
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      // Sayfa değişince scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleMainCategoryChange = (catName) => {
     setActiveMainCat(catName);
-    setActiveSubCat("Tümü"); // Kategori değişince alt filtreyi sıfırla
+    setActiveSubCat("Tümü");
+    setCurrentPage(1);
   };
 
-  // Tümünü Gör Butonu
-  const handleSeeAllClick = () => {
-    navigate('/products', { state: { category: activeMainCat } });
+  const handleSubCategoryChange = (subCatName) => {
+    setActiveSubCat(subCatName);
+    setCurrentPage(1);
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-32 text-xs tracking-widest uppercase animate-pulse">
-        Yükleniyor...
-      </div>
-    );
-  }
+  // ✅ Sayfa numaralarını hesapla (max 5 sayfa göster)
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   return (
-    <div className="bg-white py-24 border-b border-gray-100">
-      <div className="max-w-[1440px] mx-auto px-6 md:px-12">
-        
-        {/* BAŞLIK VE SEKME ALANI */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-            <div>
-                <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter uppercase mb-2">Seçkiler</h2>
-                <p className="text-gray-500 text-sm font-light tracking-wide">Sezonun öne çıkan en güçlü parçaları.</p>
-            </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      
+      {/* BAŞLIK */}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight mb-2 uppercase">
+          En Çok Satanlar
+        </h2>
+        <p className="text-gray-500 text-sm">
+          {loading ? "Yükleniyor..." : `${displayProducts.length} ürün bulundu`}
+        </p>
+      </div>
 
-            {/* ✅ DÜZELTME 6: DİNAMİK KATEGORİ TABLARI - Güvenli render */}
-            <div className="flex gap-6 border-b border-gray-100 pb-1 overflow-x-auto scrollbar-hide">
-                {Array.isArray(categories) && categories.length > 0 ? (
-                    categories.map((cat) => {
-                        // Her kategorinin geçerliliğini kontrol et
-                        if (!cat?.id || !cat?.name) return null;
-                        
-                        return (
-                            <button 
-                                key={cat.id}
-                                onClick={() => handleMainCatChange(cat.name)}
-                                className={`text-xs font-bold uppercase tracking-widest pb-3 transition-all whitespace-nowrap ${
-                                    activeMainCat === cat.name 
-                                    ? "text-black border-b-2 border-black" 
-                                    : "text-gray-400 hover:text-gray-600 border-b-2 border-transparent"
-                                }`}
-                            >
-                                {cat.name}
-                            </button>
-                        );
-                    })
-                ) : (
-                    <div className="flex gap-4">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="h-4 w-20 bg-gray-200 animate-pulse rounded"></div>
-                        ))}
-                    </div>
-                )}
+      {/* KATEGORİ FİLTRELEME */}
+      <div className="mb-8">
+        {/* Ana Kategoriler */}
+        <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
+          <button
+            onClick={() => handleMainCategoryChange("Tümü")}
+            className={`whitespace-nowrap px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+              activeMainCat === "Tümü"
+                ? "bg-black text-white shadow-lg"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            Tümü
+          </button>
+          {Array.isArray(categories) && categories.length > 0 ? (
+            categories.map((cat) => {
+              if (!cat?.id || !cat?.name) return null;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => handleMainCategoryChange(cat.name)}
+                  className={`whitespace-nowrap px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                    activeMainCat === cat.name
+                      ? "bg-black text-white shadow-lg"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              );
+            })
+          ) : (
+            <div className="flex gap-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-10 w-24 bg-gray-200 animate-pulse rounded-full"></div>
+              ))}
             </div>
+          )}
         </div>
 
-        {/* ✅ DÜZELTME 7: ALT KATEGORİ BUTONLARI - Güvenli render */}
+        {/* Alt Kategoriler */}
         {Array.isArray(availableSubCategories) && availableSubCategories.length > 1 && (
-            <div className="flex flex-wrap gap-2 mb-10 animate-in fade-in slide-in-from-left-2 duration-500">
-                {availableSubCategories.map((sub) => (
-                    <button 
-                        key={sub}
-                        onClick={() => setActiveSubCat(sub)}
-                        className={`px-4 py-2 border text-[10px] font-bold uppercase tracking-wider transition-all ${
-                            activeSubCat === sub 
-                            ? "bg-black text-white border-black" 
-                            : "bg-white text-gray-500 border-gray-200 hover:border-gray-900 hover:text-black"
-                        }`}
-                    >
-                        {sub}
-                    </button>
-                ))}
-            </div>
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {availableSubCategories.map((sub) => (
+              <button
+                key={sub}
+                onClick={() => handleSubCategoryChange(sub)}
+                className={`whitespace-nowrap px-4 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  activeSubCat === sub
+                    ? "bg-black text-white border-black"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                }`}
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
         )}
+      </div>
 
-        {/* ✅ DÜZELTME 8: ÜRÜN VİTRİNİ - Güvenli render */}
-        {Array.isArray(displayProducts) && displayProducts.length > 0 ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10">
-            {displayProducts.map((product) => {
-              // Her ürünün geçerliliğini kontrol et
+      {/* ÜRÜN GRID */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+            <div key={i} className="h-96 bg-gray-200 rounded-xl animate-pulse"></div>
+          ))}
+        </div>
+      ) : Array.isArray(currentProducts) && currentProducts.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+            {currentProducts.map((product) => {
               if (!product?.id) return null;
               return <ProductCard key={product.id} product={product} />;
             })}
           </div>
-        ) : (
-          <div className="text-center py-20 bg-gray-50 rounded-sm">
-            <p className="text-gray-400 text-xs tracking-widest uppercase">
-                {activeMainCat ? `${activeMainCat} kategorisinde henüz ürün yok.` : "Kategori seçin."}
-            </p>
-          </div>
-        )}
 
-        {/* TÜMÜNÜ GÖR BUTONU */}
-        {activeMainCat && displayProducts.length > 0 && (
-          <div className="mt-16 text-center border-t border-gray-100 pt-10">
-            <button 
-              onClick={handleSeeAllClick} 
-              className="group inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-black hover:text-gray-600 transition"
-            >
-              <span>{activeMainCat} Koleksiyonunu İncele</span>
-              <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-        )}
+          {/* ✅ PAGINATION CONTROLS */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-12">
+              {/* Previous Button */}
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                aria-label="Önceki sayfa"
+              >
+                <ChevronLeft size={20} />
+              </button>
 
-      </div>
+              {/* Page Numbers */}
+              <div className="flex gap-1">
+                {getPageNumbers().map((page, index) => {
+                  if (page === '...') {
+                    return (
+                      <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-400">
+                        ...
+                      </span>
+                    );
+                  }
+                  
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => goToPage(page)}
+                      className={`min-w-[40px] px-3 py-2 rounded-lg font-medium transition-all ${
+                        currentPage === page
+                          ? "bg-black text-white shadow-lg"
+                          : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                aria-label="Sonraki sayfa"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+
+          {/* Sayfa Bilgisi */}
+          <div className="text-center mt-4 text-sm text-gray-500">
+            Sayfa {currentPage} / {totalPages} - Toplam {displayProducts.length} ürün
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-24 bg-gray-50 rounded-3xl border border-dashed border-gray-300">
+          <p className="text-xl font-bold text-gray-800 mb-2">Ürün Bulunamadı</p>
+          <p className="text-gray-500">Seçili kategoride ürün yok.</p>
+        </div>
+      )}
     </div>
   );
 };

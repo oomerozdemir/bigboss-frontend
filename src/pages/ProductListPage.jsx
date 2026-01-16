@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import Navbar from '../components/navbar';
 import ProductCard from '../components/ProductCard';
-import { Search, ArrowUpDown, Filter } from 'lucide-react'; 
+import { Search, ArrowUpDown, Filter, ChevronLeft, ChevronRight } from 'lucide-react'; 
 import { useLocation } from 'react-router-dom';
 
 const ProductListPage = () => {
@@ -9,11 +10,10 @@ const ProductListPage = () => {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- FİLTRE STATE'LERİ ---
+  // Filtre state'leri
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("newest");
   
-  // Kategori State'leri
   const [mainCategories, setMainCategories] = useState(["Tümü"]);
   const [selectedMainCategory, setSelectedMainCategory] = useState(
     location.state?.category || "Tümü"
@@ -21,6 +21,10 @@ const ProductListPage = () => {
 
   const [availableSubCategories, setAvailableSubCategories] = useState(["Tümü"]);
   const [selectedSubCategory, setSelectedSubCategory] = useState("Tümü");
+
+  // ✅ PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 12; // Her sayfada 12 ürün
 
   useEffect(() => {
     fetchProducts();
@@ -32,7 +36,6 @@ const ProductListPage = () => {
       const res = await fetch(`${apiUrl}/api/products`);
       const data = await res.json();
       
-      // ✅ DÜZELTME 1: Ürün verisi formatı kontrolü
       let productsArray = [];
       if (Array.isArray(data)) {
         productsArray = data;
@@ -45,7 +48,7 @@ const ProductListPage = () => {
       setProducts(productsArray);
       setFilteredProducts(productsArray);
 
-      // ✅ DÜZELTME 2: Ana kategorileri çıkart - Güvenli
+      // Ana kategorileri çıkart
       const uniqueMainCats = new Set(["Tümü"]);
       
       if (Array.isArray(productsArray)) {
@@ -70,7 +73,7 @@ const ProductListPage = () => {
     }
   };
 
-  // ✅ DÜZELTME 3: DİNAMİK ALT KATEGORİ HESAPLAMA - Güvenli
+  // Dinamik alt kategori hesaplama
   useEffect(() => {
     setSelectedSubCategory("Tümü");
 
@@ -100,7 +103,7 @@ const ProductListPage = () => {
     }
   }, [location.state]);
 
-  // ✅ DÜZELTME 4: GENEL FİLTRELEME MANTIĞI - Tamamen güvenli
+  // Genel filtreleme mantığı
   useEffect(() => {
     if (!Array.isArray(products)) {
       setFilteredProducts([]);
@@ -155,15 +158,62 @@ const ProductListPage = () => {
     }
 
     setFilteredProducts(result);
+    setCurrentPage(1); // Filtre değişince ilk sayfaya dön
   }, [searchTerm, selectedMainCategory, selectedSubCategory, sortOption, products]);
+
+  // ✅ PAGINATION HESAPLAMALARI
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const endIndex = startIndex + PRODUCTS_PER_PAGE;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Sayfa numaralarını hesapla
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   return (
     <>
+      <Navbar />
       
       <div className="bg-gray-50 min-h-screen pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* --- BAŞLIK ALANI --- */}
+          {/* BAŞLIK */}
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2 uppercase">
                 {selectedMainCategory === "Tümü" ? "TÜM ÜRÜNLER" : selectedMainCategory}
@@ -177,12 +227,12 @@ const ProductListPage = () => {
             </div>
           </div>
 
-          {/* --- FİLTRE ALANI --- */}
+          {/* FİLTRE ALANI */}
           <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 mb-8 sticky top-20 z-30">
             
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4 border-b border-gray-100 pb-4">
                 
-                {/* ✅ DÜZELTME 5: Ana Kategori Butonları - Güvenli */}
+                {/* Ana Kategori Butonları */}
                 <div className="flex gap-2 overflow-x-auto pb-1 w-full md:w-auto scrollbar-hide">
                     {Array.isArray(mainCategories) && mainCategories.length > 0 ? (
                       mainCategories.map((cat) => (
@@ -233,7 +283,7 @@ const ProductListPage = () => {
                 </div>
             </div>
 
-            {/* ✅ DÜZELTME 6: Alt Kategori Butonları - Güvenli */}
+            {/* Alt Kategori Butonları */}
             {Array.isArray(availableSubCategories) && availableSubCategories.length > 1 && (
                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-2 hidden md:block">Filtrele:</span>
@@ -256,19 +306,67 @@ const ProductListPage = () => {
             )}
           </div>
 
-          {/* --- SONUÇLAR --- */}
+          {/* SONUÇLAR */}
           {loading ? (
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-96 bg-gray-200 rounded-xl animate-pulse"></div>)}
              </div>
-          ) : Array.isArray(filteredProducts) && filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {filteredProducts.map((product) => {
-                // ✅ Her ürünü kontrol et
-                if (!product?.id) return null;
-                return <ProductCard key={product.id} product={product} />;
-              })}
-            </div>
+          ) : Array.isArray(currentProducts) && currentProducts.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+                {currentProducts.map((product) => {
+                  if (!product?.id) return null;
+                  return <ProductCard key={product.id} product={product} />;
+                })}
+              </div>
+
+              {/* ✅ PAGINATION */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-12">
+                  <button
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+
+                  <div className="flex gap-1">
+                    {getPageNumbers().map((page, index) => {
+                      if (page === '...') {
+                        return <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-400">...</span>;
+                      }
+                      
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => goToPage(page)}
+                          className={`min-w-[40px] px-3 py-2 rounded-lg font-medium transition-all ${
+                            currentPage === page
+                              ? "bg-black text-white shadow-lg"
+                              : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              )}
+
+              <div className="text-center mt-4 text-sm text-gray-500">
+                Sayfa {currentPage} / {totalPages} - Toplam {filteredProducts.length} ürün
+              </div>
+            </>
           ) : (
             <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-gray-300">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
