@@ -38,10 +38,11 @@ const Footer = () => {
           <div>
             <h3 className="text-sm font-bold tracking-widest uppercase mb-6 text-gray-200">Müşteri Hizmetleri</h3>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li><Link to="/sozlesmeler" className="hover:text-white transition">Mesafeli Satış Sözleşmesi</Link></li>
-              <li><Link to="/iade" className="hover:text-white transition">İade ve Değişim</Link></li>
-              <li><Link to="/gizlilik" className="hover:text-white transition">Gizlilik Politikası</Link></li>
-              <li><Link to="/kargo" className="hover:text-white transition">Kargo ve Teslimat</Link></li>
+              <li><Link to="/mesafeli-satis-sozlesmesi" className="hover:text-white transition">Mesafeli Satış Sözleşmesi</Link></li>
+              <li><Link to="/iade-politikasi" className="hover:text-white transition">İade Politikası</Link></li>
+              <li><Link to="/gizlilik-politikasi" className="hover:text-white transition">Gizlilik Politikası</Link></li>
+              <li><Link to="/cerez-politikasi" className="hover:text-white transition">Çerez Politikası</Link></li>
+              <li><Link to="/kargo-teslimat-politikasi" className="hover:text-white transition">Kargo ve Teslimat</Link></li>
             </ul>
           </div>
 

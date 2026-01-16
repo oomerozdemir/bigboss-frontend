@@ -21,6 +21,12 @@ import FAQPage from './pages/FaqPage';
 import CheckoutPage from './pages/CheckOutPage';
 import UserAccountPage from './pages/UserAccountPage';
 
+
+import TermsOfService from './pages/LegalPages/TermsOfService';
+import PrivacyPolicy from './pages/LegalPages/PrivacyPolicy';
+import ReturnPolicy from './pages/LegalPages/ReturnPolicy';
+import CookiePolicy from './pages/LegalPages/CookiePolicy';
+
 import { FavoritesProvider } from './context/FavoritesContext';
 
 
@@ -83,6 +89,16 @@ function App() {
           <Route path="/sss" element={<FAQPage />} />
           <Route path="/odeme-sayfasi" element={<CheckoutPage />} />
           <Route path="/hesabim" element={<UserAccountPage />} />
+
+          {/* Legal Rotalar */}
+          <Route path="/mesafeli-satis-sozlesmesi" element={<TermsOfService />} />
+          <Route path="/gizlilik-politikasi" element={<PrivacyPolicy />} />
+          <Route path="/iade-politikasi" element={<ReturnPolicy />} />
+          <Route path="/cerez-politikasi" element={<CookiePolicy />} />
+
+
+
+
           </Route>
 
           {/* Admin Giriş Rotası */}
