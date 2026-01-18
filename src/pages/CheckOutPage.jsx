@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, MapPin, CreditCard, Tag, Loader } from 'lucide-react';
-import Navbar from '../components/navbar';
-import Footer from '../components/Footer';
 import InvoiceForm from '../components/InvoiceForm'; 
 import toast from 'react-hot-toast';
 
@@ -209,7 +207,6 @@ const CheckoutPage = () => {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-gray-50 pt-20 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           
@@ -410,7 +407,6 @@ const CheckoutPage = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 };

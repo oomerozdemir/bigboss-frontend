@@ -108,21 +108,14 @@ urunlerin aciklamasi mutlaka olmali
 urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 
-toast bildirimi ekranin sag ustu yerine ortada 
 
+kupon adedi sinirlamasi backend de yapildi frontend de gosterelim duzenleyelim
 
-kupon adedi sinirlamasi
+urunlerin hepsini ana sayfada getirmeyelim sadece one cikanlari getiricez orada
 
-urunler sadece 40 tane gelıyor cozmunu bul
+mobil responsiveligi kontrol et her sayfa icin
 
-mobil responsivelik
-
-kargo numarası ekleme yerini ekle kargolandı derken 
-
-fatura bilgilerini kaydetmiyoruz backend de
-
-frontend fatura yerını duzenle
-
+kargo numarası ekleme yerini backend de ayarladik frontende de gosterelim
 
 toaster yapisinda sayfa sayfa yeni eklenen toasterlar duzenlenicek claude a at
 
