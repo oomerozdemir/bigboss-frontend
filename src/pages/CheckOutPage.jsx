@@ -1,246 +1,417 @@
-import React, { useState } from 'react';
-import { useCart } from '../context/CartContext';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ShoppingBag, MapPin, CreditCard, Tag, Loader } from 'lucide-react';
+import Navbar from '../components/navbar';
+import Footer from '../components/Footer';
+import InvoiceForm from '../components/InvoiceForm'; 
 import toast from 'react-hot-toast';
 
 const CheckoutPage = () => {
-  const { cartItems, clearCart, subTotal, grandTotal, discountAmount } = useCart(); 
   const navigate = useNavigate();
-  
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    address: '',
-    city: '',
-    phone: '',
-    cardNumber: '',
-    expiry: '',
-    cvc: ''
+  
+  // Sepet bilgileri
+  const [cartItems, setCartItems] = useState([]);
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  
+  // Kupon
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  
+  // ✅ YENİ: Fatura bilgileri state
+  const [invoiceData, setInvoiceData] = useState({
+    invoiceType: 'INDIVIDUAL',
+    tcNo: '',
+    companyName: '',
+    taxOffice: '',
+    taxNumber: '',
+    invoiceAddress: ''
   });
 
-  // Kargo Hesabı (2000 TL üzeri ücretsiz)
-  const SHIPPING_COST = subTotal > 2000 ? 0 : 59.90;
-  
-  // ÖDENECEK TUTAR = (İndirimli Sepet Tutarı) + Kargo
-  const FINAL_TOTAL = grandTotal + SHIPPING_COST;
+  // Kullanıcı bilgileri
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // Sepet ve adres bilgilerini yükle
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    fetchCart();
+    fetchAddresses();
+  }, []);
+
+  const fetchCart = async () => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    setCartItems(cart);
   };
 
- const handlePayment = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const fullAddress = `${formData.address}, ${formData.city} - ${formData.firstName} ${formData.lastName} (${formData.phone})`;
-    
-    // Sipariş verisini hazırla
-    const orderItems = cartItems.map(item => ({
-        productId: item.id,
-        price: item.price,
-        quantity: item.quantity,
-        // Varyant bilgisi (Beden ve Renk)
-        variant: `${item.selectedVariant?.size || 'Std'} / ${item.selectedVariant?.color || 'Std'}`
-    }));
-    
+  const fetchAddresses = async () => {
     try {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            toast.error("Sipariş vermek için giriş yapmalısınız.");
-            setLoading(false);
-            return;
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/address`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                items: orderItems,
-                total: FINAL_TOTAL, // Güncel Tutar
-                address: fullAddress,
-                couponCode: appliedCoupon ? appliedCoupon.code : null,
-                discountAmount: discountAmount
-            })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            throw new Error(data.error || "Sipariş oluşturulamadı");
-        }
-
-        toast.success("Siparişiniz başarıyla alındı! 🎉");
-        
-        if (clearCart) clearCart();
-        
-        // Kullanıcıyı yönlendir
-        navigate('/hesabim');
-
+      });
+      const data = await response.json();
+      setAddresses(data);
+      if (data.length > 0) {
+        setSelectedAddress(data[0]);
+      }
     } catch (error) {
-        console.error("Ödeme Hatası:", error);
-        toast.error(error.message || "Bir hata oluştu.");
-    } finally {
-        setLoading(false);
+      console.error('Adres yükleme hatası:', error);
     }
   };
 
-  // Sepet Boşsa
-  if (cartItems.length === 0) {
-    return (
-      <div className="container mx-auto px-4 py-20 text-center">
-        <h2 className="text-2xl font-bold mb-4">Sepetinizde ürün bulunmuyor.</h2>
-        <button 
-          onClick={() => navigate('/products')}
-          className="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition"
-        >
-          Alışverişe Başla
-        </button>
-      </div>
-    );
-  }
+  // Kupon uygula
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error('Lütfen kupon kodu girin');
+      return;
+    }
+
+    setCouponLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/coupons/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code: couponCode,
+          cartTotal: calculateSubtotal()
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setAppliedCoupon(data);
+        toast.success('Kupon başarıyla uygulandı!');
+      } else {
+        toast.error(data.error || 'Geçersiz kupon');
+      }
+    } catch (error) {
+      toast.error('Kupon kontrol edilemedi');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  // Hesaplamalar
+  const calculateSubtotal = () => {
+    return cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const calculateDiscount = () => {
+    if (!appliedCoupon) return 0;
+    
+    if (appliedCoupon.discountType === 'PERCENTAGE') {
+      return (calculateSubtotal() * parseFloat(appliedCoupon.discountValue)) / 100;
+    } else {
+      return parseFloat(appliedCoupon.discountValue);
+    }
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() - calculateDiscount();
+  };
+
+  // ✅ Sipariş oluştur (Fatura bilgileri ile)
+  const handleCheckout = async () => {
+    // Validasyonlar
+    if (cartItems.length === 0) {
+      toast.error('Sepetiniz boş');
+      return;
+    }
+
+    if (!selectedAddress) {
+      toast.error('Lütfen teslimat adresi seçin');
+      return;
+    }
+
+    // ✅ Fatura bilgileri validasyonu
+    if (invoiceData.invoiceType === 'INDIVIDUAL') {
+      if (!invoiceData.tcNo || invoiceData.tcNo.length !== 11) {
+        toast.error('Lütfen geçerli bir TC Kimlik No girin');
+        return;
+      }
+    } else if (invoiceData.invoiceType === 'CORPORATE') {
+      if (!invoiceData.companyName || !invoiceData.taxOffice || !invoiceData.taxNumber) {
+        toast.error('Lütfen tüm kurumsal fatura bilgilerini doldurun');
+        return;
+      }
+      if (invoiceData.taxNumber.length !== 10) {
+        toast.error('Vergi numarası 10 haneli olmalıdır');
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    try {
+      const orderData = {
+        items: cartItems.map(item => ({
+          productId: item.id,
+          price: item.price,
+          quantity: item.quantity,
+          variant: item.selectedVariant ? 
+            `${item.selectedVariant.size} / ${item.selectedVariant.color}` : 
+            'Standart'
+        })),
+        total: calculateTotal(),
+        address: `${selectedAddress.title}\n${selectedAddress.address}\n${selectedAddress.city}\nTelefon: ${selectedAddress.phone}`,
+        couponCode: appliedCoupon?.code || null,
+        discountAmount: calculateDiscount(),
+        paymentMethod: 'PAYTR',
+        
+        // ✅ YENİ: Fatura bilgileri
+        invoiceType: invoiceData.invoiceType,
+        tcNo: invoiceData.invoiceType === 'INDIVIDUAL' ? invoiceData.tcNo : null,
+        companyName: invoiceData.invoiceType === 'CORPORATE' ? invoiceData.companyName : null,
+        taxOffice: invoiceData.invoiceType === 'CORPORATE' ? invoiceData.taxOffice : null,
+        taxNumber: invoiceData.invoiceType === 'CORPORATE' ? invoiceData.taxNumber : null,
+        invoiceAddress: invoiceData.invoiceAddress || null
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Sepeti temizle
+        localStorage.removeItem('cart');
+        
+        toast.success('Sipariş başarıyla oluşturuldu!');
+        
+        // Ödeme sayfasına yönlendir (veya PayTR entegrasyonu)
+        navigate('/payment-success');
+      } else {
+        toast.error(result.error || 'Sipariş oluşturulamadı');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error('Bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="bg-gray-50 min-h-screen py-12">
-      <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-8 text-center font-serif tracking-wider">ÖDEME & TESLİMAT</h1>
-        
-        <div className="flex flex-col lg:flex-row gap-8">
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-gray-50 pt-20 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           
-          {/* SOL KOLON: ADRES VE ÖDEME FORMU */}
-          <div className="lg:w-2/3">
-            <form onSubmit={handlePayment} className="bg-white p-6 rounded-lg shadow-sm">
-              
-              <h2 className="text-xl font-semibold mb-4 border-b pb-2">Teslimat Bilgileri</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ad</label>
-                  <input required name="firstName" onChange={handleInputChange} type="text" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none transition" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Soyad</label>
-                  <input required name="lastName" onChange={handleInputChange} type="text" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none transition" />
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
-                <input required name="email" onChange={handleInputChange} type="email" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none transition" />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
-                <input required name="phone" onChange={handleInputChange} type="tel" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none transition" placeholder="05XX XXX XX XX" />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Adres</label>
-                <textarea required name="address" onChange={handleInputChange} rows="3" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none transition"></textarea>
-              </div>
-
-              <div className="mb-8">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Şehir</label>
-                <input required name="city" onChange={handleInputChange} type="text" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none transition" />
-              </div>
-
-              <h2 className="text-xl font-semibold mb-4 border-b pb-2">Ödeme Bilgileri</h2>
-              <div className="bg-gray-50 p-4 rounded mb-4 border border-gray-200">
-                  <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
-                      🔒 Güvenli Ödeme Altyapısı (Temsili)
-                  </p>
-                  <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Kart Numarası</label>
-                  <input required name="cardNumber" onChange={handleInputChange} type="text" placeholder="0000 0000 0000 0000" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                      <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Son Kullanma (Ay/Yıl)</label>
-                          <input required name="expiry" onChange={handleInputChange} type="text" placeholder="MM/YY" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none" />
-                      </div>
-                      <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">CVC</label>
-                          <input required name="cvc" onChange={handleInputChange} type="text" placeholder="123" className="w-full border border-gray-300 rounded p-2 focus:ring-black focus:border-black outline-none" />
-                      </div>
-                  </div>
-              </div>
-
-              <button 
-                type="submit" 
-                disabled={loading}
-                className={`w-full bg-black text-white py-4 rounded font-bold text-lg hover:bg-gray-800 transition duration-300 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-              >
-                {loading ? 'Sipariş Oluşturuluyor...' : `Ödemeyi Tamamla (${FINAL_TOTAL.toLocaleString('tr-TR')} TL)`}
-              </button>
-
-            </form>
+          {/* Başlık */}
+          <div className="mb-8">
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-2">
+              Ödeme Sayfası
+            </h1>
+            <p className="text-gray-600">Sipariş bilgilerinizi kontrol edin ve ödemenizi tamamlayın</p>
           </div>
 
-          {/* SAĞ KOLON: SİPARİŞ ÖZETİ */}
-          <div className="lg:w-1/3">
-            <div className="bg-white p-6 rounded-lg shadow-sm sticky top-4">
-              <h2 className="text-xl font-semibold mb-4 border-b pb-2">Sipariş Özeti</h2>
-              <div className="space-y-4 max-h-96 overflow-y-auto mb-4 pr-2">
-                {cartItems.map((item, index) => (
-                  <div key={`${item.id}-${index}`} className="flex gap-4 items-center border-b border-gray-50 pb-2 last:border-0">
-                    <div className="w-16 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                       <img 
-                          src={item.imageUrl || "https://via.placeholder.com/150"} 
-                          alt={item.name} 
-                          className="w-full h-full object-cover" 
-                       />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-medium line-clamp-2">{item.name}</h3>
-                      <p className="text-xs text-gray-500">
-                           {item.selectedVariant?.size || 'Std'} / {item.selectedVariant?.color || 'Std'}
-                      </p>
-                      <p className="text-xs text-gray-500">Adet: {item.quantity}</p>
-                    </div>
-                    <div className="font-semibold text-sm">
-                      {(item.price * item.quantity).toLocaleString('tr-TR')} TL
-                    </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Sol: Formlar */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Teslimat Adresi */}
+              <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <MapPin className="text-blue-600" size={24} />
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Teslimat Adresi</h2>
+                </div>
+
+                {addresses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600 mb-4">Henüz kayıtlı adresiniz yok</p>
+                    <button
+                      onClick={() => navigate('/adreslerim')}
+                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                    >
+                      Adres Ekle
+                    </button>
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-3">
+                    {addresses.map((address) => (
+                      <label
+                        key={address.id}
+                        className={`block p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          selectedAddress?.id === address.id
+                            ? 'border-blue-600 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="radio"
+                            name="address"
+                            checked={selectedAddress?.id === address.id}
+                            onChange={() => setSelectedAddress(address)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900">{address.title}</p>
+                            <p className="text-sm text-gray-600 mt-1">{address.address}</p>
+                            <p className="text-sm text-gray-600">{address.city}</p>
+                            <p className="text-sm text-gray-600">{address.phone}</p>
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="border-t pt-4 space-y-2 text-sm">
-                  <div className="flex justify-between text-gray-600">
-                      <span>Ara Toplam</span>
-                      <span>{subTotal.toLocaleString('tr-TR')} TL</span>
+              {/* ✅ YENİ: Fatura Bilgileri Komponenti */}
+              <InvoiceForm 
+                invoiceData={invoiceData}
+                setInvoiceData={setInvoiceData}
+              />
+
+              {/* Kupon Kodu */}
+              <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Tag className="text-blue-600" size={24} />
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">İndirim Kuponu</h2>
+                </div>
+
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Kupon kodunu girin"
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={appliedCoupon}
+                  />
+                  <button
+                    onClick={applyCoupon}
+                    disabled={couponLoading || appliedCoupon}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
+                  >
+                    {couponLoading ? 'Kontrol...' : appliedCoupon ? 'Uygulandı ✓' : 'Uygula'}
+                  </button>
+                </div>
+
+                {appliedCoupon && (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                    <span className="text-sm text-green-800">
+                      🎉 <strong>{appliedCoupon.code}</strong> kuponu uygulandı
+                    </span>
+                    <button
+                      onClick={() => {
+                        setAppliedCoupon(null);
+                        setCouponCode('');
+                      }}
+                      className="text-red-600 text-sm hover:underline"
+                    >
+                      Kaldır
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sağ: Sipariş Özeti */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 sticky top-24">
+                <div className="flex items-center gap-2 mb-4">
+                  <ShoppingBag className="text-blue-600" size={24} />
+                  <h2 className="text-xl font-bold text-gray-900">Sipariş Özeti</h2>
+                </div>
+
+                {/* Ürünler */}
+                <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
+                  {cartItems.map((item, index) => (
+                    <div key={index} className="flex gap-3 pb-3 border-b border-gray-200">
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+                        <p className="text-xs text-gray-600">{item.selectedVariant?.size} / {item.selectedVariant?.color}</p>
+                        <p className="text-sm text-gray-900 mt-1">
+                          {item.quantity} x {item.price} TL
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Hesaplama */}
+                <div className="space-y-2 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Ara Toplam:</span>
+                    <span className="font-semibold">{calculateSubtotal().toFixed(2)} TL</span>
                   </div>
                   
-                  {discountAmount > 0 && (
-                    <div className="flex justify-between text-green-600 font-bold">
-                        <span>İndirim</span>
-                        <span>- {discountAmount.toLocaleString('tr-TR')} TL</span>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-green-600">İndirim:</span>
+                      <span className="font-semibold text-green-600">-{calculateDiscount().toFixed(2)} TL</span>
                     </div>
                   )}
 
-                  <div className="flex justify-between text-gray-600">
-                      <span>Kargo</span>
-                      {SHIPPING_COST === 0 ? (
-                          <span className="text-green-600 font-medium">Ücretsiz</span>
-                      ) : (
-                          <span>{SHIPPING_COST.toLocaleString('tr-TR')} TL</span>
-                      )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Kargo:</span>
+                    <span className="font-semibold text-green-600">Ücretsiz</span>
                   </div>
-                  <div className="flex justify-between text-xl font-bold border-t pt-2 mt-2">
-                      <span>Toplam</span>
-                      <span>{FINAL_TOTAL.toLocaleString('tr-TR')} TL</span>
+
+                  <div className="border-t border-gray-300 pt-2 mt-2">
+                    <div className="flex justify-between">
+                      <span className="text-lg font-bold text-gray-900">Toplam:</span>
+                      <span className="text-2xl font-black text-blue-600">{calculateTotal().toFixed(2)} TL</span>
+                    </div>
                   </div>
+                </div>
+
+                {/* Ödeme Butonu */}
+                <button
+                  onClick={handleCheckout}
+                  disabled={loading || !selectedAddress || cartItems.length === 0}
+                  className="w-full bg-green-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                >
+                  {loading ? (
+                    <>
+                      <Loader className="animate-spin" size={20} />
+                      <span>İşleniyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard size={20} />
+                      <span>Ödemeye Geç</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Güvenlik */}
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-gray-500">
+                    🔒 Güvenli ödeme • 3D Secure
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 

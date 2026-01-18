@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from './components/MainLayout';
-import { Toaster } from 'react-hot-toast';
 
+import ToastContainer from "./config/toastConfig";
 
 import Hero from './components/heroSection';
 import Products from './components/Products';
@@ -57,26 +57,7 @@ function App() {
     <FavoritesProvider>
     <Router>
       <div className="font-sans">
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#333',
-              color: '#fff',
-            },
-            success: {
-              style: {
-                background: 'green',
-              },
-            },
-            error: {
-              style: {
-                background: 'red',
-              },
-            },
-          }}
-        />
+        <ToastContainer />
         <CartProvider>
         <Routes>
           <Route element={<MainLayout />}>
@@ -139,6 +120,12 @@ mobil responsivelik
 kargo numarası ekleme yerini ekle kargolandı derken 
 
 fatura bilgilerini kaydetmiyoruz backend de
+
+frontend fatura yerını duzenle
+
+
+toaster yapisinda sayfa sayfa yeni eklenen toasterlar duzenlenicek claude a at
+
 
 odeme sistemini test et
 mail sistemini test
