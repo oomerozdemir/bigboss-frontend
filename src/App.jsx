@@ -20,7 +20,8 @@ import CartPage from './pages/CartPage';
 import FAQPage from './pages/FaqPage';
 import CheckoutPage from './pages/CheckOutPage';
 import UserAccountPage from './pages/UserAccountPage';
-
+import PaymentFailed from './pages/PaymentFailed';
+import PaymentSuccess from './pages/PaymentSuccess';
 
 import TermsOfService from './pages/LegalPages/TermsOfService';
 import PrivacyPolicy from './pages/LegalPages/PrivacyPolicy';
@@ -89,6 +90,9 @@ function App() {
           <Route path="/sss" element={<FAQPage />} />
           <Route path="/odeme-sayfasi" element={<CheckoutPage />} />
           <Route path="/hesabim" element={<UserAccountPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-failed" element={<PaymentFailed />} />
+
 
           {/* Legal Rotalar */}
           <Route path="/mesafeli-satis-sozlesmesi" element={<TermsOfService />} />
@@ -125,13 +129,19 @@ urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 toast bildirimi ekranin sag ustu yerine ortada 
 
-sipariş sonrası mail gönderimi yapısı sipariş alındığında, kargoya verildiğinde ve teslim edildiğindee mail gitmeli
 
 kupon adedi sinirlamasi
 
 urunler sadece 40 tane gelıyor cozmunu bul
 
 mobil responsivelik
+
+kargo numarası ekleme yerini ekle kargolandı derken 
+
+fatura bilgilerini kaydetmiyoruz backend de
+
+odeme sistemini test et
+mail sistemini test
 
 
 ### Sonra Yap (İleride)
