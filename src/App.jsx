@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from './components/MainLayout';
 
-import ToastContainer from "./config/toastConfig.js";
+import ToastContainer from "./config/toastConfig";
 
 import Hero from './components/heroSection';
 import Products from './components/Products';
