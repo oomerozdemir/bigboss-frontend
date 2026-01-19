@@ -317,7 +317,7 @@ const CouponManager = () => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="PERCENTAGE">Yüzde (%)</option>
-                    <option value="FIXED">Sabit Tutar (TL)</option>
+                    <option value="FIXED_AMOUNT">Sabit Tutar (TL)</option>
                   </select>
                 </div>
 
