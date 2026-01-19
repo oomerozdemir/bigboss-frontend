@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 const UserAccountPage = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('orders'); // Varsayılan sekme
+  const [activeTab, setActiveTab] = useState('orders');
   const [user, setUser] = useState(null);
   
   // Veriler
@@ -66,14 +66,20 @@ const UserAccountPage = () => {
   const fetchOrders = async () => {
     setLoadingOrders(true);
     try {
-      // Backend rotanıza göre burayı '/api/orders/my-orders' veya '/api/orders' yapın
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/my-orders`, {
+      // 🟢 DÜZELTME BURADA YAPILDI: '/api/orders/my-orders' yerine '/api/orders'
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
-      if (Array.isArray(data)) setOrders(data);
+      if (Array.isArray(data)) {
+          setOrders(data);
+      } else {
+          console.error("Sipariş verisi hatalı:", data);
+          setOrders([]);
+      }
     } catch (error) {
       console.error("Sipariş hatası:", error);
+      toast.error("Siparişler yüklenemedi");
     } finally {
       setLoadingOrders(false);
     }
@@ -110,7 +116,7 @@ const UserAccountPage = () => {
 
         if (res.ok) {
             toast.success("İade talebiniz alındı.");
-            fetchOrders(); // Durumu güncellemek için listeyi yenile
+            fetchOrders(); 
         } else {
             const data = await res.json();
             toast.error(data.error || "İşlem başarısız.");

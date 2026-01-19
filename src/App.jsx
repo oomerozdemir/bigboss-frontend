@@ -105,6 +105,7 @@ urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 
 kupon adedi sinirlamasi backend de yapildi frontend de gosterelim duzenleyelim
+kupon yapisini test et
 
 kargo numarası ekleme yerini backend de ayarladik frontende de gosterelim
 
