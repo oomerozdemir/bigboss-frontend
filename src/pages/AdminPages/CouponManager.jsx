@@ -26,7 +26,7 @@ const CouponManager = () => {
 
   const fetchCoupons = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/coupons/admin`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/coupons/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
