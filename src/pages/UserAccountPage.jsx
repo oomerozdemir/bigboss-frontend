@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { User, Package, MapPin, Heart, LogOut, Plus, Trash2, X, RefreshCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Package, MapPin, User, LogOut, ChevronDown, ChevronUp, Truck, FileText, Box, RefreshCcw, Plus, Trash2, X, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const UserAccountPage = () => {
-  const [activeTab, setActiveTab] = useState('profile');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('orders'); // Varsayılan sekme
   const [user, setUser] = useState(null);
-  const [addresses, setAddresses] = useState([]);
-  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-  const [orders, setOrders] = useState([]);
   
-  // DÜZELTME 1: returnStatus burada tanımlanmaz, aşağıda map içinde kullanılacak.
-
-  // Adres Form State
+  // Veriler
+  const [orders, setOrders] = useState([]);
+  const [addresses, setAddresses] = useState([]);
+  
+  // Yüklenme Durumları
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  
+  // UI Kontrolleri
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  
+  // Yeni Adres Formu
   const [newAddress, setNewAddress] = useState({
     title: 'Ev',
     city: '',
@@ -20,69 +28,78 @@ const UserAccountPage = () => {
     phone: ''
   });
 
-  const navigate = useNavigate();
+  const token = localStorage.getItem('token');
 
-  // Enum -> Türkçe Çeviri Haritası
+  // --- DURUM ÇEVİRİLERİ ---
   const STATUS_MAP = {
-    "SIPARIS_ALINDI": "Sipariş Alındı",
-    "HAZIRLANIYOR": "Hazırlanıyor",
-    "KARGOLANDI": "Kargolandı",
-    "TESLIM_EDILDI": "Teslim Edildi",
-    "IPTAL_EDILDI": "İptal Edildi",
-    "IADE_TALEP_EDILDI": "İade Talebi Alındı",
-    "IADE_ONAYLANDI": "İade Edildi",
-    "IADE_REDDEDILDI": "İade Reddedildi",
-    "IADE_EDILDI": "İade Edildi"
+    "SIPARIS_ALINDI": { label: "Sipariş Alındı", color: "bg-blue-100 text-blue-700" },
+    "HAZIRLANIYOR": { label: "Hazırlanıyor", color: "bg-yellow-100 text-yellow-700" },
+    "KARGOLANDI": { label: "Kargoya Verildi", color: "bg-orange-100 text-orange-700" },
+    "SHIPPED": { label: "Kargoya Verildi", color: "bg-orange-100 text-orange-700" },
+    "TESLIM_EDILDI": { label: "Teslim Edildi", color: "bg-green-100 text-green-700" },
+    "DELIVERED": { label: "Teslim Edildi", color: "bg-green-100 text-green-700" },
+    "IPTAL_EDILDI": { label: "İptal Edildi", color: "bg-red-100 text-red-700" },
+    "IADE_EDILDI": { label: "İade Edildi", color: "bg-gray-100 text-gray-700" },
+    "ODEME_BEKLENIYOR": { label: "Ödeme Bekleniyor", color: "bg-purple-100 text-purple-700" }
   };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-      fetchAddresses(token);
-      fetchOrders(token);
+    if (!token || !storedUser) {
+      navigate('/login');
     } else {
-      navigate('/');
+      setUser(JSON.parse(storedUser));
+      fetchOrders();
+      fetchAddresses();
     }
-  }, [navigate]);
+  }, [navigate, token]);
 
-  const fetchOrders = async (token) => {
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('cart');
+    navigate('/');
+    window.location.reload();
+  };
+
+  // --- VERİ ÇEKME İŞLEMLERİ ---
+  const fetchOrders = async () => {
+    setLoadingOrders(true);
     try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            const data = await res.json();
-            setOrders(data);
-        }
+      // Backend rotanıza göre burayı '/api/orders/my-orders' veya '/api/orders' yapın
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/my-orders`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (Array.isArray(data)) setOrders(data);
     } catch (error) {
-        console.error("Siparişler çekilemedi");
+      console.error("Sipariş hatası:", error);
+    } finally {
+      setLoadingOrders(false);
     }
   };
 
-  const fetchAddresses = async (token) => {
+  const fetchAddresses = async () => {
+    setLoadingAddresses(true);
     try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/address`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            const data = await res.json();
-            setAddresses(data);
-        }
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/address`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (Array.isArray(data)) setAddresses(data);
     } catch (error) {
-        console.error("Adresler çekilemedi");
+      console.error("Adres hatası:", error);
+    } finally {
+      setLoadingAddresses(false);
     }
   };
 
-  // --- İADE TALEBİ OLUŞTURMA ---
+  // --- İADE İŞLEMİ ---
   const handleReturnRequest = async (orderId) => {
-    if (!window.confirm("Bu sipariş için iade talebi oluşturmak istediğinize emin misiniz?")) return;
+    if (!window.confirm("Bu sipariş için iade talebi oluşturmak istiyor musunuz?")) return;
 
     try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/returns`, { // Rotayı /api/returns olarak varsaydık
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/returns`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -93,7 +110,7 @@ const UserAccountPage = () => {
 
         if (res.ok) {
             toast.success("İade talebiniz alındı.");
-            fetchOrders(token); // Listeyi yenile
+            fetchOrders(); // Durumu güncellemek için listeyi yenile
         } else {
             const data = await res.json();
             toast.error(data.error || "İşlem başarısız.");
@@ -103,10 +120,9 @@ const UserAccountPage = () => {
     }
   };
 
+  // --- ADRES EKLEME / SİLME ---
   const handleAddAddress = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-
     try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/address`, {
             method: 'POST',
@@ -121,9 +137,9 @@ const UserAccountPage = () => {
             toast.success("Adres eklendi");
             setIsAddressModalOpen(false);
             setNewAddress({ title: 'Ev', city: '', address: '', phone: '' }); 
-            fetchAddresses(token); 
+            fetchAddresses(); 
         } else {
-            toast.error("Adres eklenirken hata oluştu");
+            toast.error("Hata oluştu");
         }
     } catch (error) {
         toast.error("Bir hata oluştu");
@@ -131,327 +147,347 @@ const UserAccountPage = () => {
   };
 
   const handleDeleteAddress = async (id) => {
-    if(!window.confirm("Bu adresi silmek istediğinize emin misiniz?")) return;
-
-    const token = localStorage.getItem("token");
+    if(!window.confirm("Adresi silmek istediğinize emin misiniz?")) return;
     try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/address/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-
         if (res.ok) {
             toast.success("Adres silindi");
-            fetchAddresses(token);
+            fetchAddresses();
         }
     } catch (error) {
         toast.error("Silinemedi");
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/");
-    window.location.reload();
+  // --- YARDIMCI FONKSİYONLAR ---
+  const toggleOrderDetails = (orderId) => {
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
-  if (!user) return null;
+  const getStatusInfo = (status) => {
+    return STATUS_MAP[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
+  };
 
   const tabs = [
-    { id: 'profile', label: 'Profil Bilgilerim', icon: User },
+    { id: 'profile', label: 'Profilim', icon: User },
     { id: 'orders', label: 'Siparişlerim', icon: Package },
     { id: 'addresses', label: 'Adreslerim', icon: MapPin },
     { id: 'favorites', label: 'Favorilerim', icon: Heart, action: () => navigate('/favoriler') },
   ];
 
+  if (!user) return null;
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 relative">
-      <div className="container mx-auto px-4 max-w-5xl">
-        <h1 className="text-3xl font-black uppercase tracking-tight mb-8 text-center md:text-left">Hesabım</h1>
+    <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
         
-        <div className="flex flex-col md:flex-row gap-8">
+        {/* Üst Başlık ve Çıkış */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase">Hesabım</h1>
+            <button onClick={handleLogout} className="flex items-center gap-2 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors font-medium">
+                <LogOut size={18} /> Çıkış Yap
+            </button>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* SOL: Sidebar Menü */}
-          <div className="w-full md:w-72 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center text-lg font-bold">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Hoşgeldin</p>
+          {/* SOL MENÜ */}
+          <div className="lg:w-64 flex-shrink-0">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
+                <div className="p-6 border-b border-gray-50 text-center">
+                    <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3">
+                        {user.name.charAt(0).toUpperCase()}
+                    </div>
                     <p className="font-bold text-gray-900 truncate">{user.name}</p>
-                  </div>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
                 </div>
-              </div>
-              
-              <nav className="p-2 space-y-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => tab.action ? tab.action() : setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      activeTab === tab.id 
-                        ? 'bg-black text-white shadow-md' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-black'
-                    }`}
-                  >
-                    <tab.icon size={18} strokeWidth={2} />
-                    {tab.label}
-                  </button>
-                ))}
-                
-                <div className="pt-2 mt-2 border-t border-gray-100">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <LogOut size={18} strokeWidth={2} />
-                    Çıkış Yap
-                  </button>
-                </div>
-              </nav>
+                <nav className="p-2">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => tab.action ? tab.action() : setActiveTab(tab.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all ${
+                                activeTab === tab.id 
+                                ? 'bg-black text-white shadow-md' 
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-black'
+                            }`}
+                        >
+                            <tab.icon size={18}/> {tab.label}
+                        </button>
+                    ))}
+                </nav>
             </div>
           </div>
 
-          {/* SAĞ: İçerik Alanı */}
+          {/* SAĞ İÇERİK */}
           <div className="flex-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8 min-h-[500px]">
-              
-              {/* --- PROFİL --- */}
-              {activeTab === 'profile' && (
-                <div className="animate-in fade-in duration-300">
-                  <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                    <User size={24} className="text-gray-400"/> Profil Bilgileri
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Ad Soyad</label>
-                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-900">
-                        {user.name}
-                      </div>
+            
+            {/* --- PROFİL SEKMESİ --- */}
+            {activeTab === 'profile' && (
+                <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 animate-in fade-in">
+                    <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                        <User size={24} className="text-blue-600"/> Üyelik Bilgileri
+                    </h2>
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            <label className="text-xs font-bold text-gray-400 uppercase">Ad Soyad</label>
+                            <p className="font-semibold text-gray-900 text-lg">{user.name}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                            <label className="text-xs font-bold text-gray-400 uppercase">E-posta</label>
+                            <p className="font-semibold text-gray-900 text-lg">{user.email}</p>
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">E-posta Adresi</label>
-                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg font-medium text-gray-900">
-                        {user.email}
-                      </div>
-                    </div>
-                  </div>
                 </div>
-              )}
+            )}
 
-              {/* --- SİPARİŞLER --- */}
-              {activeTab === 'orders' && (
-                <div className="animate-in fade-in duration-300">
-                  <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-                    <Package size={24} className="text-gray-400"/> Siparişlerim
-                  </h2>
-                  
-                  {orders.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-100 rounded-xl">
-                        <Package size={48} className="text-gray-300 mb-4"/>
-                        <h3 className="text-lg font-bold text-gray-900 mb-1">Henüz Siparişiniz Yok</h3>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                        {orders.map((order) => {
-                            // DÜZELTME 2: Return Status her sipariş için burada çekilir
+            {/* --- SİPARİŞLER SEKMESİ --- */}
+            {activeTab === 'orders' && (
+                <div className="space-y-6 animate-in fade-in">
+                    <h2 className="text-xl font-bold flex items-center gap-2 mb-2">
+                        <Package size={24} className="text-blue-600"/> Sipariş Geçmişi
+                    </h2>
+
+                    {loadingOrders ? (
+                        <p className="text-center py-10 text-gray-500">Siparişler yükleniyor...</p>
+                    ) : orders.length === 0 ? (
+                        <div className="bg-white p-10 text-center rounded-xl border border-dashed border-gray-300">
+                            <Package size={48} className="mx-auto text-gray-300 mb-3"/>
+                            <p className="text-gray-500 font-medium">Henüz bir siparişiniz bulunmuyor.</p>
+                            <button onClick={() => navigate('/products')} className="mt-4 text-blue-600 hover:underline">Alışverişe Başla</button>
+                        </div>
+                    ) : (
+                        orders.map(order => {
+                            const statusInfo = getStatusInfo(order.status);
                             const returnStatus = order.returnRequest?.status;
 
                             return (
-                            <div key={order.id} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                                {/* Sipariş Başlığı */}
-                                <div className="bg-gray-50 p-4 border-b border-gray-200 flex flex-wrap justify-between items-center gap-4 text-sm">
-                                    <div>
-                                        <p className="text-gray-500 text-xs uppercase font-bold">Sipariş Tarihi</p>
-                                        <p className="font-medium text-gray-900">
-                                            {new Date(order.createdAt).toLocaleDateString('tr-TR')}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 text-xs uppercase font-bold">Toplam Tutar</p>
-                                        <p className="font-bold text-green-600">
-                                            {parseFloat(order.total).toLocaleString('tr-TR')} TL
-                                        </p>
-                                        {parseFloat(order.discountAmount) > 0 && (
-        <div className="text-xs text-orange-600 font-medium flex flex-col mt-1">
-            <span>Kupon: {order.couponCode}</span>
-            <span>-{parseFloat(order.discountAmount).toLocaleString('tr-TR')} TL İndirim</span>
-        </div>
-    )}
-                                    </div>
-                                    <div>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                                            order.status === 'TESLIM_EDILDI' || order.status === 'IADE_EDILDI' 
-                                            ? 'bg-green-100 text-green-700' 
-                                            : 'bg-yellow-100 text-yellow-700'
-                                        }`}>
-                                            {/* DÜZELTME 3: Enum Map kullanıldı */}
-                                            {STATUS_MAP[order.status] || order.status}
-                                        </span>
-                                    </div>
-                                </div>
+                                <div key={order.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                                    
+                                    {/* Sipariş Özeti (Header) */}
+                                    <div 
+                                        onClick={() => toggleOrderDetails(order.id)}
+                                        className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <div className="flex gap-6">
+                                            <div>
+                                                <p className="text-xs text-gray-500 font-bold uppercase mb-1">Sipariş No</p>
+                                                <p className="font-bold text-gray-900">#{order.id}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 font-bold uppercase mb-1">Tarih</p>
+                                                <p className="font-medium text-gray-700">{new Date(order.createdAt).toLocaleDateString('tr-TR')}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 font-bold uppercase mb-1">Tutar</p>
+                                                <p className="font-bold text-green-600">{parseFloat(order.total).toLocaleString('tr-TR')} TL</p>
+                                            </div>
+                                        </div>
 
-                                {/* Sipariş Ürünleri */}
-                                <div className="p-4 space-y-4">
-                                    {order.items.map((item) => (
-                                        <div key={item.id} className="flex gap-4 items-center">
-                                            <div className="w-16 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                                                <img 
-                                                    src={item.product?.imageUrl || "https://via.placeholder.com/100"} 
-                                                    alt={item.product?.name} 
-                                                    className="w-full h-full object-cover" 
-                                                />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-bold text-sm text-gray-900 line-clamp-1">{item.product?.name}</h4>
-                                                <p className="text-xs text-gray-500">
-                                                    {item.variant} | {item.quantity} Adet
-                                                </p>
-                                                <p className="text-sm font-semibold mt-1">
-                                                    {parseFloat(item.price).toLocaleString('tr-TR')} TL
-                                                </p>
-                                            </div>
+                                        <div className="flex items-center gap-4">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusInfo.color}`}>
+                                                {statusInfo.label}
+                                            </span>
+                                            {expandedOrderId === order.id ? <ChevronUp size={20} className="text-gray-400"/> : <ChevronDown size={20} className="text-gray-400"/>}
                                         </div>
-                                    ))}
-                                </div>
-                                
-                                {/* --- DÜZELTME 4: İADE BUTONU VE DURUM ALANI --- */}
-                                <div className="px-4 pb-4 flex justify-end">
-                                    {returnStatus ? (
-                                        <div className="flex items-center gap-2 text-xs font-bold border border-gray-100 bg-gray-50 px-3 py-1.5 rounded-lg">
-                                            <RefreshCcw size={14} className="text-gray-500"/>
-                                            <span className="text-gray-500">İade Durumu:</span>
-                                            {returnStatus === 'BEKLIYOR' && <span className="text-orange-500">İnceleniyor</span>}
-                                            {returnStatus === 'ONAYLANDI' && <span className="text-green-600">Onaylandı</span>}
-                                            {returnStatus === 'REDDEDILDI' && <span className="text-red-500">Reddedildi</span>}
+                                    </div>
+
+                                    {/* Genişletilmiş Detaylar (Accordion Body) */}
+                                    {expandedOrderId === order.id && (
+                                        <div className="p-6 border-t border-gray-100 bg-white">
+                                            
+                                            {/* 1. Kargo Takip (Varsa) */}
+                                            {(order.status === 'KARGOLANDI' || order.status === 'SHIPPED' || order.trackingNumber) && (
+                                                <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-4">
+                                                    <div className="p-3 bg-white rounded-full text-blue-600 shadow-sm"><Truck size={24}/></div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-blue-900">Kargo Bilgileri</p>
+                                                        <p className="text-sm text-blue-700">Firma: <strong>{order.cargoCompany || 'Belirtilmedi'}</strong></p>
+                                                        <p className="text-sm text-blue-700">Takip No: <strong>{order.trackingNumber || 'Henüz girilmedi'}</strong></p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                                {/* 2. Adresler */}
+                                                <div>
+                                                    <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3 text-sm uppercase">
+                                                        <MapPin size={16}/> Teslimat Adresi
+                                                    </h4>
+                                                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border border-gray-100 leading-relaxed whitespace-pre-line">
+                                                        {order.addressSnapshot}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3 text-sm uppercase">
+                                                        <FileText size={16}/> Fatura Adresi
+                                                    </h4>
+                                                    <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded border border-gray-100">
+                                                        {order.invoiceType === 'CORPORATE' ? (
+                                                            <>
+                                                                <p><strong>Firma:</strong> {order.companyName}</p>
+                                                                <p><strong>V.D:</strong> {order.taxOffice} - <strong>V.No:</strong> {order.taxNumber}</p>
+                                                            </>
+                                                        ) : (
+                                                            <p><strong>TCKN:</strong> {order.tcNo || 'Belirtilmedi'}</p>
+                                                        )}
+                                                        <p className="mt-2 pt-2 border-t border-gray-200 whitespace-pre-line">
+                                                            {order.invoiceAddress || order.addressSnapshot}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* 3. Ürün Listesi */}
+                                            <div>
+                                                <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3 text-sm uppercase">
+                                                    <Box size={16}/> Sipariş İçeriği
+                                                </h4>
+                                                <div className="border rounded-lg overflow-hidden">
+                                                    {order.items?.map((item) => (
+                                                        <div key={item.id} className="flex items-center gap-4 p-4 border-b last:border-0 hover:bg-gray-50">
+                                                            <img 
+                                                                src={item.product?.imageUrl || "https://via.placeholder.com/80"} 
+                                                                alt={item.product?.name} 
+                                                                className="w-16 h-16 object-cover rounded border"
+                                                            />
+                                                            <div className="flex-1">
+                                                                <p className="font-bold text-sm text-gray-900">{item.product?.name}</p>
+                                                                <p className="text-xs text-gray-500">{item.variant}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-sm font-medium">{item.quantity} Adet</p>
+                                                                <p className="text-sm font-bold text-gray-900">{parseFloat(item.price).toLocaleString('tr-TR')} TL</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* 4. Alt Toplam ve İade Butonu */}
+                                            <div className="flex flex-col md:flex-row justify-between items-center mt-6 pt-4 border-t border-gray-100 gap-4">
+                                                <div className="w-full md:w-auto">
+                                                    {/* İade Durum Kontrolü */}
+                                                    {returnStatus ? (
+                                                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-xs font-bold border">
+                                                            <RefreshCcw size={14}/>
+                                                            İade Durumu: 
+                                                            <span className={
+                                                                returnStatus === 'ONAYLANDI' ? 'text-green-600' : 
+                                                                returnStatus === 'REDDEDILDI' ? 'text-red-600' : 'text-orange-600'
+                                                            }>
+                                                                {returnStatus === 'BEKLIYOR' ? 'İnceleniyor' : returnStatus}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        (order.status === 'TESLIM_EDILDI' || order.status === 'DELIVERED') && (
+                                                            <button 
+                                                                onClick={() => handleReturnRequest(order.id)}
+                                                                className="flex items-center gap-2 text-red-600 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+                                                            >
+                                                                <RefreshCcw size={16}/> İade Talep Et
+                                                            </button>
+                                                        )
+                                                    )}
+                                                </div>
+
+                                                <div className="text-right">
+                                                    {parseFloat(order.discountAmount) > 0 && (
+                                                        <p className="text-sm text-green-600 font-medium mb-1">
+                                                            İndirim: -{parseFloat(order.discountAmount).toLocaleString('tr-TR')} TL
+                                                        </p>
+                                                    )}
+                                                    <p className="text-xl font-black text-gray-900">
+                                                        Toplam: {parseFloat(order.total).toLocaleString('tr-TR')} TL
+                                                    </p>
+                                                </div>
+                                            </div>
+
                                         </div>
-                                    ) : (
-                                        order.status === 'TESLIM_EDILDI' && (
-                                            <button 
-                                                onClick={() => handleReturnRequest(order.id)}
-                                                className="text-xs font-bold text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-red-100 flex items-center gap-1"
-                                            >
-                                                <RefreshCcw size={14}/>
-                                                İade Talep Et
-                                            </button>
-                                        )
                                     )}
                                 </div>
+                            );
+                        })
+                    )}
+                </div>
+            )}
 
-                            </div>
-                            )
-                        })}
+            {/* --- ADRESLER SEKMESİ --- */}
+            {activeTab === 'addresses' && (
+                <div className="animate-in fade-in">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                            <MapPin size={24} className="text-blue-600"/> Kayıtlı Adreslerim
+                        </h2>
                     </div>
-                  )}
-                </div>
-              )}
-              
-              {/* --- ADRESLER --- */}
-              {activeTab === 'addresses' && (
-                <div className="animate-in fade-in duration-300">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                      <MapPin size={24} className="text-gray-400"/> Kayıtlı Adresler
-                    </h2>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {addresses.map((addr) => (
-                        <div key={addr.id} className="border border-gray-200 rounded-xl p-5 relative group hover:border-black hover:shadow-md transition-all duration-300 bg-white">
-                            <button 
-                                onClick={() => handleDeleteAddress(addr.id)}
-                                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-                            >
-                                <Trash2 size={16} />
-                            </button>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded uppercase">{addr.title}</span>
-                            </div>
-                            <p className="text-sm text-gray-600 leading-relaxed">
-                                <span className="font-bold text-gray-900 block mb-1">{user.name}</span>
-                                {addr.address}<br/>
-                                <span className="font-semibold text-black mt-1 block">{addr.city}</span>
-                                <span className="text-xs text-gray-400 mt-1 block">{addr.phone}</span>
-                            </p>
-                        </div>
-                      ))}
-                      
-                      <button 
-                        onClick={() => setIsAddressModalOpen(true)}
-                        className="border-2 border-dashed border-gray-200 rounded-xl p-5 flex flex-col items-center justify-center text-gray-400 hover:border-black hover:text-black hover:bg-gray-50 transition-all duration-300 min-h-[160px]"
-                      >
-                        <Plus size={32} className="mb-2" />
-                        <span className="font-bold text-sm">YENİ ADRES EKLE</span>
-                      </button>
-                  </div>
-                </div>
-              )}
 
-            </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        {/* Adres Listesi */}
+                        {addresses.map(addr => (
+                            <div key={addr.id} className="border border-gray-200 rounded-xl p-5 relative bg-white group hover:border-black transition-colors">
+                                <button onClick={() => handleDeleteAddress(addr.id)} className="absolute top-4 right-4 text-gray-400 hover:text-red-600 p-1">
+                                    <Trash2 size={18}/>
+                                </button>
+                                <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded uppercase mb-2 inline-block">
+                                    {addr.title}
+                                </span>
+                                <p className="text-sm text-gray-700 leading-relaxed">
+                                    {addr.address} <br/>
+                                    <span className="font-semibold text-black">{addr.city}</span> <br/>
+                                    <span className="text-xs text-gray-500">{addr.phone}</span>
+                                </p>
+                            </div>
+                        ))}
+
+                        {/* Adres Ekle Butonu */}
+                        <button 
+                            onClick={() => setIsAddressModalOpen(true)}
+                            className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-gray-400 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all min-h-[180px]"
+                        >
+                            <Plus size={32} className="mb-2"/>
+                            <span className="font-bold text-sm">YENİ ADRES EKLE</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
           </div>
         </div>
       </div>
 
-      {/* --- ADRES EKLEME MODALI --- */}
+      {/* ADRES EKLEME MODALI */}
       {isAddressModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="p-4 border-b flex justify-between items-center bg-gray-50">
-                    <h3 className="font-bold text-lg">Yeni Adres Ekle</h3>
-                    <button onClick={() => setIsAddressModalOpen(false)}><X size={20} className="text-gray-500" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+                <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-900">Yeni Adres Ekle</h3>
+                    <button onClick={() => setIsAddressModalOpen(false)} className="text-gray-500 hover:text-black"><X size={20}/></button>
                 </div>
                 <form onSubmit={handleAddAddress} className="p-6 space-y-4">
                     <div>
-                        <label className="block text-xs font-bold uppercase mb-1">Adres Başlığı</label>
-                        <input 
-                            type="text" 
-                            placeholder="Örn: Ev, İş" 
-                            className="w-full border rounded-lg p-3 text-sm focus:ring-black focus:border-black"
-                            value={newAddress.title}
-                            onChange={(e) => setNewAddress({...newAddress, title: e.target.value})}
-                            required
-                        />
+                        <label className="block text-xs font-bold uppercase mb-1">Başlık (Ev, İş)</label>
+                        <input type="text" className="w-full border rounded-lg p-2.5 text-sm focus:border-black outline-none" 
+                            value={newAddress.title} onChange={e => setNewAddress({...newAddress, title: e.target.value})} required/>
                     </div>
                     <div>
                         <label className="block text-xs font-bold uppercase mb-1">Şehir</label>
-                        <input 
-                            type="text" 
-                            placeholder="İstanbul" 
-                            className="w-full border rounded-lg p-3 text-sm focus:ring-black focus:border-black"
-                            value={newAddress.city}
-                            onChange={(e) => setNewAddress({...newAddress, city: e.target.value})}
-                            required
-                        />
+                        <input type="text" className="w-full border rounded-lg p-2.5 text-sm focus:border-black outline-none" 
+                            value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} required/>
                     </div>
                     <div>
                         <label className="block text-xs font-bold uppercase mb-1">Telefon</label>
-                        <input 
-                            type="text" 
-                            placeholder="05XX..." 
-                            className="w-full border rounded-lg p-3 text-sm focus:ring-black focus:border-black"
-                            value={newAddress.phone}
-                            onChange={(e) => setNewAddress({...newAddress, phone: e.target.value})}
-                            required
-                        />
+                        <input type="text" className="w-full border rounded-lg p-2.5 text-sm focus:border-black outline-none" 
+                            value={newAddress.phone} onChange={e => setNewAddress({...newAddress, phone: e.target.value})} required/>
                     </div>
                     <div>
                         <label className="block text-xs font-bold uppercase mb-1">Açık Adres</label>
-                        <textarea 
-                            rows="3"
-                            placeholder="Mahalle, Cadde, Sokak, No..." 
-                            className="w-full border rounded-lg p-3 text-sm focus:ring-black focus:border-black"
-                            value={newAddress.address}
-                            onChange={(e) => setNewAddress({...newAddress, address: e.target.value})}
-                            required
-                        ></textarea>
+                        <textarea rows="3" className="w-full border rounded-lg p-2.5 text-sm focus:border-black outline-none" 
+                            value={newAddress.address} onChange={e => setNewAddress({...newAddress, address: e.target.value})} required></textarea>
                     </div>
-                    <button type="submit" className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
-                        KAYDET
-                    </button>
+                    <button type="submit" className="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800">KAYDET</button>
                 </form>
             </div>
         </div>
