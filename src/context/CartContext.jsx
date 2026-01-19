@@ -4,21 +4,33 @@ import toast from 'react-hot-toast';
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  // 1. Sepeti Başlat
+  // 1. Sepeti Güvenli Başlat (Hata varsa boş dizi döner)
   const [cartItems, setCartItems] = useState(() => {
-    const storedCart = localStorage.getItem("cart");
-    return storedCart ? JSON.parse(storedCart) : [];
+    try {
+      const storedCart = localStorage.getItem("cart");
+      const parsedCart = storedCart ? JSON.parse(storedCart) : [];
+      return Array.isArray(parsedCart) ? parsedCart : [];
+    } catch (error) {
+      console.error("Sepet verisi okunamadı:", error);
+      return [];
+    }
   });
 
   const [appliedCoupon, setAppliedCoupon] = useState(() => {
-    const storedCoupon = localStorage.getItem("appliedCoupon");
-    return storedCoupon ? JSON.parse(storedCoupon) : null;
+    try {
+      const storedCoupon = localStorage.getItem("appliedCoupon");
+      return storedCoupon ? JSON.parse(storedCoupon) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [discountAmount, setDiscountAmount] = useState(0);
 
-  // 2. Tutar Hesaplama (Güvenli)
-  const subTotal = cartItems.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
+  // 2. Alt Toplam (Dizi kontrolü ekledik)
+  const subTotal = Array.isArray(cartItems) 
+    ? cartItems.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0)
+    : 0;
 
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
@@ -41,7 +53,6 @@ export const CartProvider = ({ children }) => {
     }
   }, [cartItems, appliedCoupon, subTotal]);
 
-  // 3. Genel Toplamlar
   const shippingCost = (subTotal > 2000 || subTotal === 0) ? 0 : 59.90;
   const grandTotal = subTotal - discountAmount;
   const finalTotal = grandTotal + shippingCost;
@@ -49,29 +60,30 @@ export const CartProvider = ({ children }) => {
   // --- FONKSİYONLAR ---
   const addToCart = (product, variant, quantity = 1) => {
     setCartItems(prev => {
-      const existing = prev.find(item => 
+      const safePrev = Array.isArray(prev) ? prev : []; // Ekstra güvenlik
+      const existing = safePrev.find(item => 
         item.id === product.id && 
         item.selectedVariant?.size === variant?.size && 
         item.selectedVariant?.color === variant?.color
       );
       if (existing) {
         toast.success("Sepet güncellendi");
-        return prev.map(item => item === existing ? { ...item, quantity: item.quantity + quantity } : item);
+        return safePrev.map(item => item === existing ? { ...item, quantity: item.quantity + quantity } : item);
       }
       toast.success("Sepete eklendi");
-      return [...prev, { ...product, selectedVariant: variant, quantity }];
+      return [...safePrev, { ...product, selectedVariant: variant, quantity }];
     });
   };
 
   const removeFromCart = (id, variantSize, variantColor) => {
-    setCartItems(prev => prev.filter(item => 
+    setCartItems(prev => (Array.isArray(prev) ? prev : []).filter(item => 
         !(item.id === id && item.selectedVariant?.size === variantSize && item.selectedVariant?.color === variantColor)
     ));
     toast.success("Ürün çıkarıldı");
   };
 
   const updateQuantity = (id, variantSize, variantColor, amount) => {
-    setCartItems(prev => prev.map(item => {
+    setCartItems(prev => (Array.isArray(prev) ? prev : []).map(item => {
       if (item.id === id && item.selectedVariant?.size === variantSize && item.selectedVariant?.color === variantColor) {
         return { ...item, quantity: Math.max(1, item.quantity + amount) };
       }
@@ -92,7 +104,7 @@ export const CartProvider = ({ children }) => {
 
   return (
     <CartContext.Provider value={{ 
-        cartItems, // 👈 BURASI ÇOK ÖNEMLİ (Undefined hatasını çözen yer)
+        cartItems: Array.isArray(cartItems) ? cartItems : [], // Dışarıya ASLA undefined gitmez
         setCartItems,
         subTotal,
         discountAmount,

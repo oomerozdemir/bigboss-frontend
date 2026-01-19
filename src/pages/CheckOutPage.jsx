@@ -4,7 +4,7 @@ import { ShoppingBag, MapPin, CreditCard, Tag, ArrowLeft } from 'lucide-react';
 import InvoiceForm from '../components/InvoiceForm'; 
 import PayTRPayment from '../components/PayTRPayment'; 
 import toast from 'react-hot-toast';
-import { useCart } from '../context/CartContext'; // ✅ Context Import Edildi
+import { useCart } from '../context/CartContext'; 
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -12,17 +12,22 @@ const CheckoutPage = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState(null);
 
-  // ✅ Context'ten Verileri Çekiyoruz (Undefined hatası burada çözülür)
+  // Context verilerini güvenli çek
+  const cartContext = useCart();
+  // Eğer context yüklenemediyse boş obje ata
   const { 
-    cartItems = [], // Varsayılan değer [] atadık, hata riskini sıfırladık
-    subTotal, 
-    discountAmount, 
-    shippingCost, 
-    finalTotal, 
+    cartItems = [], 
+    subTotal = 0, 
+    discountAmount = 0, 
+    shippingCost = 0, 
+    finalTotal = 0, 
     appliedCoupon, 
     setAppliedCoupon,
     clearCart
-  } = useCart();
+  } = cartContext || {};
+
+  // Güvenli Sepet Listesi (Null/Undefined olsa bile [] döner)
+  const safeCartItems = Array.isArray(cartItems) ? cartItems : [];
 
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -48,16 +53,20 @@ const CheckoutPage = () => {
 
   const fetchAddresses = async () => {
     try {
-      // ✅ API URL .env'den geliyor
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/address`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if(response.ok) {
+      if (response.ok) {
         const data = await response.json();
-        setAddresses(Array.isArray(data) ? data : []);
-        if (Array.isArray(data) && data.length > 0) setSelectedAddress(data[0]);
+        // Gelen veri dizi mi kontrol et
+        const addressList = Array.isArray(data) ? data : [];
+        setAddresses(addressList);
+        if (addressList.length > 0) setSelectedAddress(addressList[0]);
       }
-    } catch (error) { console.error('Adres hatası:', error); }
+    } catch (error) { 
+        console.error('Adres hatası:', error); 
+        setAddresses([]); // Hata durumunda boş dizi
+    }
   };
 
   const applyCoupon = async () => {
@@ -82,7 +91,7 @@ const CheckoutPage = () => {
   };
 
   const handleCreateOrder = async () => {
-    if (cartItems.length === 0) return toast.error('Sepetiniz boş');
+    if (safeCartItems.length === 0) return toast.error('Sepetiniz boş');
     if (!selectedAddress) return toast.error('Teslimat adresi seçin');
 
     if (invoiceData.invoiceType === 'INDIVIDUAL' && (!invoiceData.tcNo || invoiceData.tcNo.length !== 11)) 
@@ -92,7 +101,7 @@ const CheckoutPage = () => {
 
     try {
       const orderData = {
-        items: cartItems.map(item => ({
+        items: safeCartItems.map(item => ({
           productId: item.id,
           price: item.price,
           quantity: item.quantity,
@@ -141,16 +150,15 @@ const CheckoutPage = () => {
   };
 
   const handlePaymentSuccess = () => {
-    clearCart();
+    if (clearCart) clearCart();
     navigate('/payment-success');
   };
 
-  // PayTR için veri hazırlığı
   const getPayTRData = () => {
     return {
         merchant_oid: createdOrderId,
         payment_amount: Math.round(finalTotal * 100),
-        user_basket: JSON.stringify(cartItems.map(item => [item.name, item.price.toString(), item.quantity])),
+        user_basket: JSON.stringify(safeCartItems.map(item => [item.name, item.price.toString(), item.quantity])),
         user_email: user.email,
         user_name: user.name || 'Misafir',
         user_address: `${selectedAddress?.address} ${selectedAddress?.city}`,
@@ -181,7 +189,6 @@ const CheckoutPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 <div className="lg:col-span-2 space-y-6">
-                    {/* Adres Bölümü */}
                     <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
                     <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
                         <MapPin className="text-blue-600" /> Teslimat Adresi
@@ -204,7 +211,6 @@ const CheckoutPage = () => {
 
                     <InvoiceForm invoiceData={invoiceData} setInvoiceData={setInvoiceData} />
 
-                    {/* Kupon Bölümü */}
                     <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
                     <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><Tag className="text-blue-600" /> İndirim Kuponu</h2>
                     <div className="flex gap-3">
@@ -215,12 +221,12 @@ const CheckoutPage = () => {
                     </div>
                 </div>
 
-                {/* Özet Bölümü */}
                 <div className="lg:col-span-1">
                     <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 sticky top-24">
                     <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><ShoppingBag className="text-blue-600" /> Sipariş Özeti</h2>
                     <div className="space-y-3 mb-6 max-h-80 overflow-y-auto pr-1">
-                        {cartItems.map((item, idx) => (
+                        {/* 🔴 HATA BURADAYDI: safeCartItems kullanarak çözdük */}
+                        {safeCartItems.map((item, idx) => (
                         <div key={idx} className="flex gap-3 text-sm border-b pb-3">
                             <img src={item.imageUrl} className="w-12 h-16 object-cover rounded" />
                             <div className="flex-1">
@@ -232,12 +238,12 @@ const CheckoutPage = () => {
                         ))}
                     </div>
                     <div className="space-y-2 text-sm text-gray-600 border-t pt-4">
-                        <div className="flex justify-between"><span>Ara Toplam</span><span className="font-bold text-gray-900">{subTotal.toFixed(2)} TL</span></div>
-                        {appliedCoupon && <div className="flex justify-between text-green-600"><span>İndirim</span><span className="font-bold">-{discountAmount.toFixed(2)} TL</span></div>}
+                        <div className="flex justify-between"><span>Ara Toplam</span><span className="font-bold text-gray-900">{Number(subTotal).toFixed(2)} TL</span></div>
+                        {appliedCoupon && <div className="flex justify-between text-green-600"><span>İndirim</span><span className="font-bold">-{Number(discountAmount).toFixed(2)} TL</span></div>}
                         <div className="flex justify-between"><span>Kargo</span>{shippingCost === 0 ? <span className="text-green-600 font-bold">Ücretsiz</span> : <span>{shippingCost} TL</span>}</div>
-                        <div className="flex justify-between text-lg font-black text-black pt-2 border-t mt-2"><span>TOPLAM</span><span>{finalTotal.toFixed(2)} TL</span></div>
+                        <div className="flex justify-between text-lg font-black text-black pt-2 border-t mt-2"><span>TOPLAM</span><span>{Number(finalTotal).toFixed(2)} TL</span></div>
                     </div>
-                    <button onClick={handleCreateOrder} disabled={loading || cartItems.length === 0} className="w-full bg-blue-600 text-white py-4 rounded-lg font-bold mt-6 hover:bg-blue-700 disabled:bg-gray-400 flex justify-center items-center gap-2">
+                    <button onClick={handleCreateOrder} disabled={loading || safeCartItems.length === 0} className="w-full bg-blue-600 text-white py-4 rounded-lg font-bold mt-6 hover:bg-blue-700 disabled:bg-gray-400 flex justify-center items-center gap-2">
                         {loading ? 'İşleniyor...' : <><CreditCard size={20}/> Ödemeye Geç</>}
                     </button>
                     </div>
