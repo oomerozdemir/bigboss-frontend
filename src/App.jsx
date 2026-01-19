@@ -103,10 +103,6 @@ export default App;
 urunlerin aciklamasi mutlaka olmali
 urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
-
-kupon adedi sinirlamasi backend de yapildi frontend de gosterelim duzenleyelim
-kupon yapisini test et
-
 odemeyi yapmadan daha odeme sayfasina gecmeden paytr ok demeden siparis maili gidiyor ve siparislerime kaydediyor bunu duzeltelim
 paytr tarafinda ok dendiginde ancak mail gitsin ve backende kaydetsin gereksiz kayit olmasin
 
