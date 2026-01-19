@@ -106,10 +106,6 @@ urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 kupon adedi sinirlamasi backend de yapildi frontend de gosterelim duzenleyelim
 
-urunlerin hepsini ana sayfada getirmeyelim sadece one cikanlari getiricez orada
-
-
-
 kargo numarası ekleme yerini backend de ayarladik frontende de gosterelim
 
 toaster yapisinda sayfa sayfa yeni eklenen toasterlar duzenlenicek claude a at
@@ -117,6 +113,8 @@ toaster yapisinda sayfa sayfa yeni eklenen toasterlar duzenlenicek claude a at
 
 odeme sistemini test et
 mail sistemini test
+
+urunler cok fazla hepsini duzenlerken tek tek ugrasmamak toplu duzenleme yapmak icin cozum bulalim
 
 mobil responsiveligi kontrol et her sayfa icin
 
