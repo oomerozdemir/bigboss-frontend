@@ -118,6 +118,7 @@ urunler cok fazla hepsini duzenlerken tek tek ugrasmamak toplu duzenleme yapmak 
 
 mobil responsiveligi kontrol et her sayfa icin
 
+sepetinde urun biraknalara mail gonderelim zamanla dongu halinde 
 ahfres kaydet
 
 ### Sonra Yap (İleride)
