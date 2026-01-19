@@ -4,13 +4,12 @@ import toast from 'react-hot-toast';
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  // 1. Cart Items'ı LocalStorage'dan al
+  // 1. Sepeti Başlat
   const [cartItems, setCartItems] = useState(() => {
     const storedCart = localStorage.getItem("cart");
     return storedCart ? JSON.parse(storedCart) : [];
   });
 
-  // 2. Kuponu LocalStorage'dan al (Kalıcılık için)
   const [appliedCoupon, setAppliedCoupon] = useState(() => {
     const storedCoupon = localStorage.getItem("appliedCoupon");
     return storedCoupon ? JSON.parse(storedCoupon) : null;
@@ -18,10 +17,9 @@ export const CartProvider = ({ children }) => {
 
   const [discountAmount, setDiscountAmount] = useState(0);
 
-  // 3. Alt Toplam Hesapla
+  // 2. Tutar Hesaplama (Güvenli)
   const subTotal = cartItems.reduce((acc, item) => acc + (parseFloat(item.price) * item.quantity), 0);
 
-  // 4. Değişiklikleri LocalStorage'a Kaydet
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
@@ -29,68 +27,53 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     if (appliedCoupon) {
       localStorage.setItem("appliedCoupon", JSON.stringify(appliedCoupon));
-    } else {
-      localStorage.removeItem("appliedCoupon");
-    }
-  }, [appliedCoupon]);
-
-  // 5. İndirim Hesaplama
-  useEffect(() => {
-    if (appliedCoupon) {
         let discount = 0;
         if (appliedCoupon.discountType === 'PERCENTAGE') {
             discount = (subTotal * parseFloat(appliedCoupon.discountValue)) / 100;
         } else {
             discount = parseFloat(appliedCoupon.discountValue);
         }
-        
-        // İndirim tutarı sepet tutarından büyük olamaz
         if (discount > subTotal) discount = subTotal;
-        
         setDiscountAmount(discount);
     } else {
+        localStorage.removeItem("appliedCoupon");
         setDiscountAmount(0);
     }
   }, [cartItems, appliedCoupon, subTotal]);
 
-  // 6. Genel Toplamlar ve Kargo Kuralı (Merkezi Yönetim)
+  // 3. Genel Toplamlar
   const shippingCost = (subTotal > 2000 || subTotal === 0) ? 0 : 59.90;
   const grandTotal = subTotal - discountAmount;
-  const finalTotal = grandTotal + shippingCost; // Ödenecek Son Tutar
+  const finalTotal = grandTotal + shippingCost;
 
   // --- FONKSİYONLAR ---
   const addToCart = (product, variant, quantity = 1) => {
-    const existingItem = cartItems.find(item => 
-      item.id === product.id && 
-      item.selectedVariant?.size === variant?.size && 
-      item.selectedVariant?.color === variant?.color
-    );
-
-    if (existingItem) {
-      toast.success("Ürün adedi güncellendi");
-      setCartItems(prev => prev.map(item => 
-        (item.id === product.id && item.selectedVariant?.size === variant?.size && item.selectedVariant?.color === variant?.color)
-          ? { ...item, quantity: item.quantity + quantity }
-          : item
-      ));
-    } else {
+    setCartItems(prev => {
+      const existing = prev.find(item => 
+        item.id === product.id && 
+        item.selectedVariant?.size === variant?.size && 
+        item.selectedVariant?.color === variant?.color
+      );
+      if (existing) {
+        toast.success("Sepet güncellendi");
+        return prev.map(item => item === existing ? { ...item, quantity: item.quantity + quantity } : item);
+      }
       toast.success("Sepete eklendi");
-      setCartItems(prev => [...prev, { ...product, selectedVariant: variant, quantity }]);
-    }
+      return [...prev, { ...product, selectedVariant: variant, quantity }];
+    });
   };
 
   const removeFromCart = (id, variantSize, variantColor) => {
     setCartItems(prev => prev.filter(item => 
         !(item.id === id && item.selectedVariant?.size === variantSize && item.selectedVariant?.color === variantColor)
     ));
-    toast.success("Ürün sepetten çıkarıldı");
+    toast.success("Ürün çıkarıldı");
   };
 
   const updateQuantity = (id, variantSize, variantColor, amount) => {
     setCartItems(prev => prev.map(item => {
       if (item.id === id && item.selectedVariant?.size === variantSize && item.selectedVariant?.color === variantColor) {
-        const newQuantity = Math.max(1, item.quantity + amount);
-        return { ...item, quantity: newQuantity };
+        return { ...item, quantity: Math.max(1, item.quantity + amount) };
       }
       return item;
     }));
@@ -98,7 +81,7 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => {
     setCartItems([]);
-    setAppliedCoupon(null); // Sepet temizlenince kuponu da sil
+    setAppliedCoupon(null);
   };
 
   const removeCoupon = () => {
@@ -109,13 +92,13 @@ export const CartProvider = ({ children }) => {
 
   return (
     <CartContext.Provider value={{ 
-        cartItems, 
+        cartItems, // 👈 BURASI ÇOK ÖNEMLİ (Undefined hatasını çözen yer)
         setCartItems,
         subTotal,
         discountAmount,
-        grandTotal, // Sadece ürünler - indirim
-        shippingCost, // Kargo ücreti
-        finalTotal, // Her şey dahil ödenecek tutar
+        grandTotal,
+        shippingCost,
+        finalTotal,
         appliedCoupon,
         setAppliedCoupon,
         addToCart,

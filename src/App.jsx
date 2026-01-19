@@ -103,12 +103,6 @@ export default App;
 urunlerin aciklamasi mutlaka olmali
 urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
-odemeyi yapmadan daha odeme sayfasina gecmeden paytr ok demeden siparis maili gidiyor ve siparislerime kaydediyor bunu duzeltelim
-paytr tarafinda ok dendiginde ancak mail gitsin ve backende kaydetsin gereksiz kayit olmasin
-
-kargo numarası ekleme yerini backend de ayarladik frontende de gosterelim
-
-toaster yapisinda sayfa sayfa yeni eklenen toasterlar duzenlenicek claude a at
 
 urunler cok fazla hepsini duzenlerken tek tek ugrasmamak toplu duzenleme yapmak icin cozum bulalim
 
