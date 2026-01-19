@@ -106,6 +106,10 @@ urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
 urunler cok fazla hepsini duzenlerken tek tek ugrasmamak toplu duzenleme yapmak icin cozum bulalim
 
+odeme basarili ise paytr den gelen payment-succes page e gitsin degilse payment-failed
+
+paytr den bildirim durumu basarili degilse siparis basarili demesin
+
 mobil responsiveligi kontrol et her sayfa icin
 
 
