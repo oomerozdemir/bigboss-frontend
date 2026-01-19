@@ -31,7 +31,7 @@ const Products = () => {
         }
 
         // Ürünleri getir
-        const prodRes = await fetch(`${apiUrl}/api/products`);
+        const prodRes = await fetch(`${apiUrl}/api/products?isFeatured=true&limit=100`);
         const prodData = await prodRes.json();
         
         let productsArray = [];

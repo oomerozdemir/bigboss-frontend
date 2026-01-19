@@ -100,20 +100,15 @@ function App() {
 export default App;
 
 /* 
-
-
-
-
 urunlerin aciklamasi mutlaka olmali
 urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
-
 
 
 kupon adedi sinirlamasi backend de yapildi frontend de gosterelim duzenleyelim
 
 urunlerin hepsini ana sayfada getirmeyelim sadece one cikanlari getiricez orada
 
-mobil responsiveligi kontrol et her sayfa icin
+
 
 kargo numarası ekleme yerini backend de ayarladik frontende de gosterelim
 
@@ -123,6 +118,9 @@ toaster yapisinda sayfa sayfa yeni eklenen toasterlar duzenlenicek claude a at
 odeme sistemini test et
 mail sistemini test
 
+mobil responsiveligi kontrol et her sayfa icin
+
+ahfres kaydet
 
 ### Sonra Yap (İleride)
 🔄 **Level 2-3 için plan yap**
