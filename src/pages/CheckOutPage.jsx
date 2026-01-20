@@ -1,3 +1,5 @@
+// pages/CheckOutPage.jsx - COMPLETE FIX FOR PAYTR VALIDATION
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, MapPin, CreditCard, Tag, ArrowLeft, Loader } from 'lucide-react';
@@ -12,10 +14,7 @@ const CheckoutPage = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState(null);
 
-  // ✅ Context'i güvenli şekilde al
   const cartContext = useCart();
-  
-  // ✅ HATA DÜZELTMESİ: Context yoksa veya undefined ise varsayılan değerler
   const { 
     cartItems, 
     subTotal, 
@@ -27,7 +26,6 @@ const CheckoutPage = () => {
     clearCart
   } = cartContext || {};
 
-  // ✅ KRITIK: Array'lerin her zaman dizi olduğundan emin ol
   const safeCartItems = Array.isArray(cartItems) ? cartItems : [];
 
   const [addresses, setAddresses] = useState([]);
@@ -97,13 +95,18 @@ const CheckoutPage = () => {
   };
 
   const handleCreateOrder = async () => {
-    // ✅ Güvenli kontroller
+    // ✅ Validasyonlar
     if (!safeCartItems || safeCartItems.length === 0) {
       return toast.error('Sepetiniz boş');
     }
     
     if (!selectedAddress) {
       return toast.error('Teslimat adresi seçin');
+    }
+
+    // ✅ KRITIK: Email kontrolü (PayTR için zorunlu!)
+    if (!user.email || user.email.trim() === '') {
+      return toast.error('Email adresiniz eksik. Lütfen hesap bilgilerinizi güncelleyin.');
     }
 
     if (invoiceData.invoiceType === 'INDIVIDUAL') {
@@ -156,6 +159,7 @@ const CheckoutPage = () => {
       const result = await response.json();
 
       if (response.ok) {
+        console.log('✅ Sipariş oluşturuldu:', result.id);
         setCreatedOrderId(result.id);
         setShowPayment(true);
         toast.success('Ödeme ekranına yönlendiriliyorsunuz...');
@@ -170,47 +174,70 @@ const CheckoutPage = () => {
     }
   };
 
-const handlePaymentSuccess = (data) => {
-  console.log("✅ Başarılı Ödeme Callback:", data);
-  
-  if (clearCart) {
-    clearCart();
-  }
-  
-  
-};
+  const handlePaymentSuccess = (data) => {
+    console.log("✅ Callback: Ödeme başarılı", data);
+    if (clearCart) clearCart();
+  };
 
+  const handlePaymentFail = (reason) => {
+    console.error("❌ Callback: Ödeme başarısız", reason);
+  };
 
- const handlePaymentFail = (reason) => {
-  console.error("❌ Başarısız Ödeme Callback:", reason);
-};
-
-  // ✅ PayTR için güvenli veri hazırlama
+  // ✅ DÜZELTME: PayTR için tüm gerekli alanları hazırla
   const getPayTRData = () => {
     if (!createdOrderId || !safeCartItems || safeCartItems.length === 0) {
+      console.error('❌ PayTR data hazırlanamadı:', { 
+        createdOrderId, 
+        cartLength: safeCartItems.length 
+      });
       return null;
     }
 
-    return {
+    // ✅ Email kontrolü
+    if (!user.email || user.email.trim() === '') {
+      console.error('❌ Email eksik!');
+      toast.error('Email adresiniz gerekli!');
+      return null;
+    }
+
+    const paytrData = {
+      // ✅ Sipariş ID (merchant_oid) - String olarak
+      merchant_oid: createdOrderId.toString(),
       orderId: createdOrderId,
+      
+      // ✅ Toplam tutar
       totalAmount: finalTotal || 0,
+      payment_amount: Math.round((finalTotal || 0) * 100).toString(), // Kuruş cinsinden
+      
+      // ✅ Sepet ürünleri
       items: safeCartItems.map(item => ({
-        name: item.name || 'Ürün',
+        name: (item.name || 'Ürün').substring(0, 50),
         price: parseFloat(item.price) || 0,
         quantity: parseInt(item.quantity) || 1
       })),
-      user: {
-        name: user.name || 'Misafir',
-        email: user.email || 'test@test.com',
-        phone: selectedAddress?.phone || '05555555555'
-      },
-      shippingAddress: selectedAddress 
+      
+      // ✅ Kullanıcı bilgileri (ÖNEMLİ!)
+      user_name: user.name || 'Misafir',
+      user_email: user.email, // ✅ Zorunlu!
+      user_phone: selectedAddress?.phone || '05555555555',
+      user_address: selectedAddress 
         ? `${selectedAddress.address}, ${selectedAddress.city}` 
-        : 'Adres belirtilmemiş'
+        : 'Adres belirtilmemiş',
+      
+      // ✅ IP adresi (backend'de alınacak)
+      user_ip: '0.0.0.0'
     };
+
+    console.log('✅ PayTR data hazırlandı:', {
+      merchant_oid: paytrData.merchant_oid,
+      email: paytrData.user_email,
+      amount: paytrData.payment_amount,
+      items: paytrData.items.length
+    });
+
+    return paytrData;
   };
 
-  // ✅ Loading state
   if (!cartContext) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -225,7 +252,6 @@ const handlePaymentSuccess = (data) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           
           {showPayment && createdOrderId ? (
-            // ✅ Ödeme Ekranı
             <div className="max-w-4xl mx-auto">
               <button 
                 onClick={() => setShowPayment(false)} 
@@ -242,20 +268,31 @@ const handlePaymentSuccess = (data) => {
                 />
               ) : (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                  <p className="text-red-600 font-semibold">
-                    Ödeme verisi hazırlanamadı. Lütfen sepeti kontrol edin.
+                  <p className="text-red-600 font-semibold mb-4">
+                    Ödeme verisi hazırlanamadı. Lütfen bilgilerinizi kontrol edin.
                   </p>
+                  <ul className="text-sm text-red-600 mb-4 list-disc list-inside">
+                    {!user.email && <li>Email adresi eksik</li>}
+                    {!createdOrderId && <li>Sipariş ID bulunamadı</li>}
+                    {safeCartItems.length === 0 && <li>Sepet boş</li>}
+                  </ul>
                   <button
-                    onClick={() => navigate('/sepet')}
-                    className="mt-4 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
+                    onClick={() => {
+                      setShowPayment(false);
+                      if (!user.email) {
+                        navigate('/hesabim');
+                      } else {
+                        navigate('/sepet');
+                      }
+                    }}
+                    className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
                   >
-                    Sepete Dön
+                    {!user.email ? 'Hesaba Git' : 'Sepete Dön'}
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            // ✅ Checkout Formu
             <>
               <div className="mb-8">
                 <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-2">
@@ -266,7 +303,6 @@ const handlePaymentSuccess = (data) => {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* Sol Kolon - Formlar */}
                 <div className="lg:col-span-2 space-y-6">
                   
                   {/* Teslimat Adresi */}
@@ -305,13 +341,9 @@ const handlePaymentSuccess = (data) => {
                               />
                               <div className="flex-1">
                                 <span className="font-bold text-gray-900 block">{addr.title}</span>
-                                <span className="text-sm text-gray-600 mt-1 block">
-                                  {addr.address}
-                                </span>
+                                <span className="text-sm text-gray-600 mt-1 block">{addr.address}</span>
                                 <span className="text-sm text-gray-600">{addr.city}</span>
-                                <span className="text-sm text-gray-600 block mt-1">
-                                  Tel: {addr.phone}
-                                </span>
+                                <span className="text-sm text-gray-600 block mt-1">Tel: {addr.phone}</span>
                               </div>
                             </div>
                           </label>
@@ -320,13 +352,12 @@ const handlePaymentSuccess = (data) => {
                     )}
                   </div>
 
-                  {/* Fatura Bilgileri */}
                   <InvoiceForm 
                     invoiceData={invoiceData} 
                     setInvoiceData={setInvoiceData} 
                   />
 
-                  {/* Kupon Kodu */}
+                  {/* Kupon */}
                   <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100">
                     <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 mb-4">
                       <Tag className="text-blue-600" size={24} /> İndirim Kuponu
@@ -370,14 +401,13 @@ const handlePaymentSuccess = (data) => {
                   </div>
                 </div>
 
-                {/* Sağ Kolon - Sipariş Özeti */}
+                {/* Sipariş Özeti */}
                 <div className="lg:col-span-1">
                   <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-100 sticky top-24">
                     <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2 mb-4">
                       <ShoppingBag className="text-blue-600" size={24} /> Sipariş Özeti
                     </h2>
                     
-                    {/* Ürünler */}
                     <div className="space-y-3 mb-6 max-h-80 overflow-y-auto pr-1">
                       {safeCartItems.length > 0 ? (
                         safeCartItems.map((item, idx) => (
@@ -404,13 +434,10 @@ const handlePaymentSuccess = (data) => {
                       )}
                     </div>
                     
-                    {/* Toplam */}
                     <div className="space-y-2 text-sm text-gray-600 border-t pt-4">
                       <div className="flex justify-between">
                         <span>Ara Toplam:</span>
-                        <span className="font-bold text-gray-900">
-                          {(subTotal || 0).toFixed(2)} TL
-                        </span>
+                        <span className="font-bold text-gray-900">{(subTotal || 0).toFixed(2)} TL</span>
                       </div>
                       
                       {appliedCoupon && discountAmount > 0 && (
@@ -435,10 +462,9 @@ const handlePaymentSuccess = (data) => {
                       </div>
                     </div>
                     
-                    {/* Ödeme Butonu */}
                     <button 
                       onClick={handleCreateOrder} 
-                      disabled={loading || safeCartItems.length === 0 || !selectedAddress} 
+                      disabled={loading || safeCartItems.length === 0 || !selectedAddress || !user.email} 
                       className="w-full bg-green-600 text-white py-4 rounded-lg font-bold mt-6 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex justify-center items-center gap-2 transition-colors"
                     >
                       {loading ? (
@@ -454,11 +480,14 @@ const handlePaymentSuccess = (data) => {
                       )}
                     </button>
 
-                    {/* Güvenlik */}
-                    <div className="mt-4 text-center">
-                      <p className="text-xs text-gray-500">
-                        🔒 Güvenli ödeme • 3D Secure
+                    {!user.email && (
+                      <p className="text-xs text-red-600 mt-2 text-center">
+                        ⚠️ Email adresiniz eksik. Lütfen hesap bilgilerinizi güncelleyin.
                       </p>
+                    )}
+
+                    <div className="mt-4 text-center">
+                      <p className="text-xs text-gray-500">🔒 Güvenli ödeme • 3D Secure</p>
                     </div>
                   </div>
                 </div>
