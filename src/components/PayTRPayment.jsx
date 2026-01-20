@@ -87,122 +87,49 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
     }
   }, [orderData]);
 
-  // ✅ KRITIK: PostMessage Listener (DETAYLI LOG İLE)
-  useEffect(() => {
-    console.log('🎧 PostMessage listener kuruldu');
-
+useEffect(() => {
     const handleMessage = (event) => {
-      console.log('📨 Mesaj alındı!');
-      console.log('  - Origin:', event.origin);
-      console.log('  - Data:', event.data);
-      console.log('  - Data Type:', typeof event.data);
+      // 1. Güvenlik: Sadece izin verilen kaynaklardan gelen mesajları işle
+      const allowedOrigins = ['https://www.paytr.com', 'https://bigboss-backend.onrender.com', 'https://www.bigbosstextil.com'];
+      if (!allowedOrigins.includes(event.origin)) return;
 
-      // ✅ Tüm origin'lere izin ver (test için)
-      // Production'da sadece PayTR ve backend origin'lerine izin ver
-      const allowedOrigins = [
-        'https://www.paytr.com',
-        'https://bigboss-backend.onrender.com',
-        'https://bigbosstextil.com',
-        import.meta.env.VITE_API_URL
-      ];
-      
-      // TEST: Origin kontrolünü geçici olarak kapat
-      // if (!allowedOrigins.includes(event.origin)) {
-      //   console.log('🚫 İzin verilmeyen origin:', event.origin);
-      //   return;
-      // }
+      let data;
 
+      // 2. Gelen veriyi güvenli bir şekilde ayrıştır (Parse)
       try {
-        let data;
-        
-        // Data parse et
         if (typeof event.data === 'string') {
-          console.log('📝 String data parse ediliyor...');
-          data = JSON.parse(event.data);
+          // Eğer mesaj "shrink" gibi düz bir yazıysa, JSON.parse hata verir.
+          // Bunu engellemek için try-catch kullanıyoruz.
+          try {
+             data = JSON.parse(event.data);
+          } catch (jsonError) {
+             // JSON değilse (örn: "shrink"), bu mesajı yoksay ve işlem yapma
+             return; 
+          }
         } else {
-          console.log('📦 Object data direkt kullanılıyor...');
           data = event.data;
         }
-        
-        console.log('✅ Parse edilmiş data:', data);
-        
-        // ✅ BAŞARILI ÖDEME
-        if (data.status === 'success') {
-          console.log('🎉 ÖDEME BAŞARILI!');
-          console.log('  - Sipariş:', data.merchant_oid);
-          
-          toast.success('Ödeme başarılı! Yönlendiriliyorsunuz...', { 
-            duration: 2000,
-            icon: '🎉'
-          });
-          
-          // Sepeti temizle
-          console.log('🗑️ Sepet temizleniyor...');
-          localStorage.removeItem('cart');
-          localStorage.removeItem('appliedCoupon');
-          
-          // Callback varsa çağır
-          if (onSuccess) {
-            console.log('📞 onSuccess callback çağrılıyor...');
-            onSuccess(data);
-          }
-          
-          // Yönlendirme
-          console.log('🚀 Yönlendirme başlıyor...');
-          const redirectUrl = data.merchant_oid 
-            ? `/payment-success?merchant_oid=${data.merchant_oid}`
-            : '/payment-success';
-          
-          console.log('🎯 Yönlendirilecek URL:', redirectUrl);
-          
-          setTimeout(() => {
-            console.log('⏰ navigate() çağrılıyor...');
-            navigate(redirectUrl);
-          }, 1500);
-        } 
-        // ❌ BAŞARISIZ ÖDEME
-        else if (data.status === 'failed') {
-          console.log('❌ ÖDEME BAŞARISIZ!');
-          console.log('  - Sebep:', data.reason);
-          
-          toast.error('Ödeme başarısız oldu', { 
-            duration: 2000,
-            icon: '❌'
-          });
-          
-          // Callback varsa çağır
-          if (onFail) {
-            console.log('📞 onFail callback çağrılıyor...');
-            onFail(data.reason || 'Bilinmeyen hata');
-          }
-          
-          // Yönlendirme
-          console.log('🚀 Hata sayfasına yönlendirme başlıyor...');
-          const reason = encodeURIComponent(data.reason || 'Ödeme işlemi başarısız oldu');
-          const redirectUrl = `/payment-failed?reason=${reason}`;
-          
-          console.log('🎯 Yönlendirilecek URL:', redirectUrl);
-          
-          setTimeout(() => {
-            console.log('⏰ navigate() çağrılıyor...');
-            navigate(redirectUrl);
-          }, 1500);
-        } else {
-          console.log('⚠️ Bilinmeyen mesaj tipi:', data);
-        }
       } catch (e) {
-        console.error('❌ PayTR mesaj parse hatası:', e);
-        console.error('  - Raw data:', event.data);
+        return; // Beklenmeyen bir hata olursa dur
+      }
+
+      // 3. Sadece Ödeme Durumu Mesajlarını İşle (Resize vb. mesajları ele)
+      if (data && data.status) {
+        if (data.status === 'success') {
+          console.log("✅ Ödeme Başarılı!");
+          toast.success('Ödeme başarılı! Yönlendiriliyorsunuz...');
+          if (onSuccess) onSuccess(data); 
+        } else if (data.status === 'failed') {
+          console.error("❌ Ödeme Başarısız:", data.reason);
+          toast.error(`Ödeme başarısız: ${data.reason || 'Bilinmeyen hata'}`);
+          if (onFail) onFail(data.reason || 'Hata oluştu');
+        }
       }
     };
 
     window.addEventListener('message', handleMessage);
-    
-    return () => {
-      console.log('🔌 PostMessage listener kaldırıldı');
-      window.removeEventListener('message', handleMessage);
-    };
-  }, [onSuccess, onFail, navigate, orderData]);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onSuccess, onFail]);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
