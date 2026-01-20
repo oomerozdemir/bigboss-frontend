@@ -108,10 +108,16 @@ urunler cok fazla hepsini duzenlerken tek tek ugrasmamak toplu duzenleme yapmak 
 
 odeme basarili ise paytr den gelen payment-succes page e gitsin degilse payment-failed
 
-paytr den bildirim durumu basarili degilse siparis basarili demesin
+e-posta gitmiyor
+📧 Ödeme Onaylandı. Mail gönderiliyor: oomerozdemir40@gmail.com
+❌ E-posta Gönderme Hatası: TypeError: Cannot read properties of undefined (reading 'map')
+    at sendOrderConfirmationEmail (file:///opt/render/project/src/src/utils/emailService.js:22:40)
+    at paytrCallback (file:///opt/render/project/src/src/controller/paytrController.js:196:21)
 
 mobil responsiveligi kontrol et her sayfa icin
 
+
+console dan paytr istegini sil backend de
 
 ahfres kaydet
 
