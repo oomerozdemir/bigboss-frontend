@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { XCircle, AlertTriangle, RotateCcw, Home, HelpCircle } from 'lucide-react';
-import Navbar from '../components/navbar';
-import Footer from '../components/Footer';
 
 const PaymentFailed = () => {
   const navigate = useNavigate();
@@ -58,7 +56,6 @@ const PaymentFailed = () => {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-gray-50 pt-24 pb-12">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -161,7 +158,6 @@ const PaymentFailed = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 };

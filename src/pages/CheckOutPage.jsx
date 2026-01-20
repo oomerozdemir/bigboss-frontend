@@ -1,5 +1,3 @@
-// pages/CheckOutPage.jsx - HATA DÜZELTİLMİŞ VERSİYON
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, MapPin, CreditCard, Tag, ArrowLeft, Loader } from 'lucide-react';

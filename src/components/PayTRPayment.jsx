@@ -7,16 +7,17 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
   const [loading, setLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [showIframe, setShowIframe] = useState(false);
-  const navigate = useNavigate(); // ✅ Hook eklendi
+  const navigate = useNavigate(); // ✅ Hook tanımlandı
 
-  // Sipariş Verilerini Hazırla
+  // ✅ Sipariş Verilerini Hazırla
   const preparePaymentData = () => {
     const basketItems = orderData.items.map(item => [
       item.name.substring(0, 50), 
       (item.price * 100).toString(), 
-      item.quantity
+      item.quantity 
     ]);
 
+    // Backend'in beklediği format (JSON string)
     const user_basket = JSON.stringify(basketItems);
 
     return {
@@ -31,7 +32,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
     };
   };
 
-  // PayTR Ödeme Başlat
+  // ✅ PayTR Ödeme Başlat
   const initiatePayment = async () => {
     try {
       setLoading(true);
@@ -42,7 +43,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
       // 🔴 1. Token Kontrolü (Client Tarafı)
       if (!token) {
         toast.error('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
-        navigate('/login'); // Giriş sayfasına at
+        navigate('/hesabim'); // Kullanıcıyı giriş sayfasına at
         return;
       }
 
@@ -52,30 +53,31 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Token'ı header'a ekle
+          'Authorization': `Bearer ${token}` // Token Header'da
         },
         body: JSON.stringify(paymentData)
       });
 
-      // 🔴 2. 401 Yetki Hatası Kontrolü (Server Tarafı)
+      // 🔴 2. Oturum Süresi Dolmuşsa (401 Hatası - Server Tarafı)
       if (response.status === 401) {
         localStorage.removeItem('token'); // Geçersiz token'ı temizle
-        toast.error('Oturum süreniz doldu. Lütfen tekrar giriş yapın.');
-        navigate('/login');
+        toast.error('Oturum süreniz doldu. Lütfen tekrar giriş yapıp deneyin.');
+        navigate('/hesabim'); // Login sayfasına yönlendir
         return;
       }
 
       const result = await response.json();
 
-      if (result.success) { // Backend 'success' veya 'status: success' dönebilir, kontrol edin
+      if (result.success || result.status === 'success') {
         setPaymentUrl(result.iframe_url);
         setShowIframe(true);
         toast.success('Ödeme sayfası açılıyor...');
       } else {
-        // Hata mesajını güvenli al
+        // Hata mesajını güvenli al (undefined hatasını önle)
         const errorMsg = result.message || result.error || 'Ödeme başlatılamadı';
         console.error('PayTR Hatası:', errorMsg);
         toast.error(errorMsg);
+        // Sadece gerçek ödeme hatalarında onFail çalıştır (401 hariç)
         if (onFail) onFail(errorMsg);
       }
 
@@ -88,9 +90,10 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
     }
   };
 
-  // Ödeme Sonucu Dinle
+  // ✅ Ödeme Sonucu Dinle
   useEffect(() => {
     const handleMessage = (event) => {
+      // Güvenlik: Sadece PayTR'den gelen mesajları dinle
       if (event.origin !== 'https://www.paytr.com') return;
 
       try {
@@ -106,7 +109,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
           if (onFail) onFail(data.reason || 'Bilinmeyen hata');
         }
       } catch (error) {
-        // console.error('Message Parse Error:', error); // Gereksiz log kirliliğini önlemek için kapalı
+        // JSON parse hatası olursa sessizce geç
       }
     };
 
@@ -121,7 +124,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-xl font-bold text-gray-900 mb-1">Güvenli Ödeme</h3>
-          <p className="text-sm text-gray-600">PayTR altyapısı ile şifreli işlem</p>
+          <p className="text-sm text-gray-600">PayTR ile güvenli işlem</p>
         </div>
         <div className="flex items-center gap-2">
           <Shield className="text-green-600" size={24} />
@@ -169,9 +172,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
             src={paymentUrl}
             className="w-full h-[600px] border-0 rounded-lg shadow-sm"
             title="PayTR Güvenli Ödeme"
-            onLoad={() => {
-                // Iframe yüklendiğinde loading animasyonunu kaldır (CSS/DOM ile gerek yok, z-index halleder)
-            }}
+            allow="payment"
           />
           
           <button
@@ -190,12 +191,10 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
       {/* Footer */}
       <div className="mt-6 pt-4 border-t border-gray-100 text-center">
         <div className="flex justify-center items-center gap-4 opacity-50 grayscale hover:grayscale-0 transition-all duration-300">
-            {/* Temsili Kart Logoları - Metin veya SVG */}
             <span className="font-bold text-xs border px-2 py-1 rounded">VISA</span>
             <span className="font-bold text-xs border px-2 py-1 rounded">MasterCard</span>
             <span className="font-bold text-xs border px-2 py-1 rounded text-red-600">Troy</span>
         </div>
-        <p className="text-[10px] text-gray-400 mt-2">Kart bilgileriniz sistemimizde saklanmaz.</p>
       </div>
     </div>
   );
