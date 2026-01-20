@@ -159,7 +159,6 @@ const CheckoutPage = () => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ Sipariş oluşturuldu:', result.id);
         setCreatedOrderId(result.id);
         setShowPayment(true);
         toast.success('Ödeme ekranına yönlendiriliyorsunuz...');
@@ -175,7 +174,6 @@ const CheckoutPage = () => {
   };
 
   const handlePaymentSuccess = (data) => {
-    console.log("✅ Callback: Ödeme başarılı", data);
     if (clearCart) clearCart();
   };
 
@@ -227,13 +225,6 @@ const CheckoutPage = () => {
       // ✅ IP adresi (backend'de alınacak)
       user_ip: '0.0.0.0'
     };
-
-    console.log('✅ PayTR data hazırlandı:', {
-      merchant_oid: paytrData.merchant_oid,
-      email: paytrData.user_email,
-      amount: paytrData.payment_amount,
-      items: paytrData.items.length
-    });
 
     return paytrData;
   };
