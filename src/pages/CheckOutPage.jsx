@@ -170,16 +170,22 @@ const CheckoutPage = () => {
     }
   };
 
-  const handlePaymentSuccess = () => {
-    console.log("Yönlendiriliyor -> /payment-success");
-    if (clearCart) clearCart(); // Sepeti temizle
-    navigate('/payment-success'); // Yönlendir
+const handlePaymentSuccess = (data) => { // 'data' parametresi eklendi
+    console.log("Başarılı Ödeme Verisi:", data);
+    
+    if (clearCart) clearCart();
+    
+    if (data && data.merchant_oid) {
+        navigate(`/payment-success?merchant_oid=${data.merchant_oid}`);
+    } else {
+        navigate('/payment-success');
+    }
   };
 
   const handlePaymentFail = (reason) => {
-    console.log("Yönlendiriliyor -> /payment-failed", reason);
     toast.error(`Ödeme Başarısız: ${reason}`);
-    navigate('/payment-failed'); // Yönlendir
+    // İsterseniz hata sebebini de URL ile taşıyabilirsiniz
+    navigate(`/payment-failed?reason=${encodeURIComponent(reason)}`);
   };
 
   // ✅ PayTR için güvenli veri hazırlama
