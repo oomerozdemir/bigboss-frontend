@@ -173,15 +173,15 @@ const CheckoutPage = () => {
   };
 
   const handlePaymentSuccess = () => {
-    if (clearCart) clearCart();
-    toast.success('Ödeme başarılı! Siparişiniz alındı.');
-    navigate('/siparislerim');
+    console.log("Yönlendiriliyor -> /payment-success");
+    if (clearCart) clearCart(); // Sepeti temizle
+    navigate('/payment-success'); // Yönlendir
   };
 
-  const handlePaymentFail = (error) => {
-    console.error('Ödeme hatası:', error);
-    toast.error('Ödeme başarısız oldu. Lütfen tekrar deneyin.');
-    setShowPayment(false);
+  const handlePaymentFail = (reason) => {
+    console.log("Yönlendiriliyor -> /payment-failed", reason);
+    toast.error(`Ödeme Başarısız: ${reason}`);
+    navigate('/payment-failed'); // Yönlendir
   };
 
   // ✅ PayTR için güvenli veri hazırlama
