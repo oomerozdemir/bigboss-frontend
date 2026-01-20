@@ -90,10 +90,11 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
   // ✅ KRITIK: PostMessage ile gelen sonuçları dinle ve YÖNLENDİR
   useEffect(() => {
     const handleMessage = (event) => {
-      // Güvenlik: Sadece PayTR veya backend'den gelen mesajları kabul et
+      // ✅ DÜZELTME: Frontend origin'i de ekle
       const allowedOrigins = [
         'https://www.paytr.com',
         'https://bigboss-backend.onrender.com',
+        'https://bigbosstextil.com',  // ✅ Frontend URL
         import.meta.env.VITE_API_URL
       ];
       
