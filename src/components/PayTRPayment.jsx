@@ -1,182 +1,304 @@
-import { PrismaClient } from '@prisma/client';
-import crypto from 'crypto';
-import { sendOrderConfirmationEmail } from '../utils/emailService.js';
+import React, { useState, useEffect } from 'react';
+import { CreditCard, Shield, Lock, AlertCircle, Loader, RotateCcw } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
-const prisma = new PrismaClient();
+const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
+  const [loading, setLoading] = useState(true);
+  const [paymentUrl, setPaymentUrl] = useState(null);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-const PAYTR_CONFIG = {
-  merchant_id: process.env.PAYTR_MERCHANT_ID,
-  merchant_key: process.env.PAYTR_MERCHANT_KEY,
-  merchant_salt: process.env.PAYTR_MERCHANT_SALT,
-  test_mode: process.env.PAYTR_TEST_MODE === 'true' ? '1' : '0',
-  iframe_base_url: 'https://www.paytr.com/odeme/guvenli/', 
-};
+  const startPaymentProcess = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-// 1. TOKEN OLUŞTURMA (Frontend bu endpoint'e istek atar)
-export const createPaymentToken = async (req, res) => {
-  try {
-    const { 
-      user_basket, user_name, user_address, user_phone, user_email,
-      merchant_oid, payment_amount, user_ip 
-    } = req.body;
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const token = localStorage.getItem('token');
 
-    console.log("PayTR Token İsteği Başladı:", merchant_oid);
+      if (!token) {
+        toast.error('Oturum bulunamadı. Lütfen giriş yapın.');
+        navigate('/admin');
+        return;
+      }
 
-    const BACKEND_URL = "https://bigboss-backend.onrender.com";
+      let userBasket = orderData.user_basket;
+      if (!userBasket && orderData.items) {
+        const basketItems = orderData.items.map(item => [
+          item.name.substring(0, 50), 
+          (item.price * 100).toString(), 
+          item.quantity
+        ]);
+        userBasket = JSON.stringify(basketItems);
+      }
 
-    // Zorunlu alanlar
-    const no_installment = 0;
-    const max_installment = 0;
-    const currency = 'TL';
-    
-    // Hash Oluşturma
-    const hashSTR = `${PAYTR_CONFIG.merchant_id}${user_ip}${merchant_oid}${user_email}${payment_amount}${user_basket}${no_installment}${max_installment}${currency}${PAYTR_CONFIG.test_mode}`;
-    const paytr_token = crypto.createHmac('sha256', PAYTR_CONFIG.merchant_key).update(hashSTR + PAYTR_CONFIG.merchant_salt).digest('base64');
+      const payload = {
+        ...orderData,
+        user_basket: userBasket,
+        payment_amount: (orderData.totalAmount * 100).toString()
+      };
 
-    // PayTR API'ye gönderilecek veriler
-    const params = new URLSearchParams();
-    params.append('merchant_id', PAYTR_CONFIG.merchant_id);
-    params.append('user_ip', user_ip);
-    params.append('merchant_oid', merchant_oid);
-    params.append('email', user_email);
-    params.append('payment_amount', payment_amount);
-    params.append('paytr_token', paytr_token);
-    params.append('user_basket', user_basket);
-    params.append('debug_on', '1');
-    params.append('no_installment', no_installment);
-    params.append('max_installment', max_installment);
-    params.append('user_name', user_name);
-    params.append('user_address', user_address);
-    params.append('user_phone', user_phone);
-    
-    // Yönlendirme Ayarları
-    params.append('merchant_ok_url', `${BACKEND_URL}/api/paytr/success`);
-    params.append('merchant_fail_url', `${BACKEND_URL}/api/paytr/fail`);
-    
-    params.append('timeout_limit', '30');
-    params.append('currency', currency);
-    params.append('test_mode', PAYTR_CONFIG.test_mode);
+      console.log('📤 PayTR isteği gönderiliyor:', payload);
 
-    // 🔴 KRİTİK DÜZELTME: Token almak için doğru API adresi burasıdır
-    const response = await fetch('https://www.paytr.com/odeme/api/get-token', {
-      method: 'POST',
-      body: params
-    });
-
-    const result = await response.json();
-
-    if (result.status === 'success') {
-      // Token başarıyla alındı, iframe linkini oluşturup dönüyoruz
-      res.json({ 
-        success: true, 
-        iframe_url: `${PAYTR_CONFIG.iframe_base_url}${result.token}` 
+      const response = await fetch(`${apiUrl}/api/paytr/create-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
       });
-    } else {
-      console.error("PayTR Token Hatası:", result.reason);
-      res.status(400).json({ success: false, message: result.reason });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        toast.error('Oturum süreniz doldu. Tekrar giriş yapın.');
+        navigate('/admin');
+        return;
+      }
+
+      const result = await response.json();
+      console.log('📥 PayTR yanıtı:', result);
+
+      if (result.success || result.status === 'success') {
+        setPaymentUrl(result.iframe_url);
+        console.log('✅ PayTR iframe URL alındı:', result.iframe_url);
+      } else {
+        const errorMsg = result.message || 'Ödeme başlatılamadı';
+        console.error('❌ PayTR Hatası:', errorMsg);
+        setError(errorMsg);
+        toast.error(errorMsg);
+        setLoading(false);
+      }
+
+    } catch (err) {
+      console.error('❌ Bağlantı Hatası:', err);
+      setError('Sunucu ile bağlantı kurulamadı.');
+      toast.error('Bağlantı hatası');
+      setLoading(false);
     }
+  };
 
-  } catch (error) {
-    console.error("PayTR Sunucu Hatası:", error);
-    res.status(500).json({ success: false, message: "Sunucu hatası: " + error.message });
-  }
-};
-
-// 2. CALLBACK (IPN)
-export const paytrCallback = async (req, res) => {
-  try {
-    const { merchant_oid, status, total_amount, hash } = req.body;
-    const hashSTR = merchant_oid + PAYTR_CONFIG.merchant_salt + status + total_amount;
-    const calculated_hash = crypto.createHmac('sha256', PAYTR_CONFIG.merchant_key).update(hashSTR).digest('base64');
-
-    if (hash !== calculated_hash) {
-      return res.status(400).send('PAYTR notification failed: bad hash');
+  useEffect(() => {
+    if (orderData) {
+      startPaymentProcess();
     }
+  }, [orderData]);
 
-    // Sipariş ID'sini çözümle (Örn: "ORDER-123" -> 123)
-    const orderIdRaw = merchant_oid.replace(/\D/g, '');
-    const orderId = orderIdRaw ? parseInt(orderIdRaw) : null;
+  // ✅ KRITIK: PostMessage Listener (DETAYLI LOG İLE)
+  useEffect(() => {
+    console.log('🎧 PostMessage listener kuruldu');
 
-    if (!orderId) {
-       console.error("Geçersiz Sipariş ID:", merchant_oid);
-       return res.status(200).send('OK');
-    }
+    const handleMessage = (event) => {
+      console.log('📨 Mesaj alındı!');
+      console.log('  - Origin:', event.origin);
+      console.log('  - Data:', event.data);
+      console.log('  - Data Type:', typeof event.data);
 
-    if (status === 'success') {
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: { status: 'SIPARIS_ALINDI', paymentStatus: 'SUCCESS', paidAt: new Date() },
-        include: { user: true } 
-      });
+      // ✅ Tüm origin'lere izin ver (test için)
+      // Production'da sadece PayTR ve backend origin'lerine izin ver
+      const allowedOrigins = [
+        'https://www.paytr.com',
+        'https://bigboss-backend.onrender.com',
+        'https://bigbosstextil.com',
+        import.meta.env.VITE_API_URL
+      ];
+      
+      // TEST: Origin kontrolünü geçici olarak kapat
+      // if (!allowedOrigins.includes(event.origin)) {
+      //   console.log('🚫 İzin verilmeyen origin:', event.origin);
+      //   return;
+      // }
 
       try {
-          if (updatedOrder.user?.email) await sendOrderConfirmationEmail(updatedOrder, updatedOrder.user);
-      } catch (e) { console.error("Mail hatası:", e); }
-    } else {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { status: 'ODEME_BASARISIZ', paymentStatus: 'FAILED' }
-      });
-    }
-    res.status(200).send('OK');
-  } catch (error) {
-    console.error('Callback Error:', error);
-    res.status(500).send('Error');
-  }
-};
+        let data;
+        
+        // Data parse et
+        if (typeof event.data === 'string') {
+          console.log('📝 String data parse ediliyor...');
+          data = JSON.parse(event.data);
+        } else {
+          console.log('📦 Object data direkt kullanılıyor...');
+          data = event.data;
+        }
+        
+        console.log('✅ Parse edilmiş data:', data);
+        
+        // ✅ BAŞARILI ÖDEME
+        if (data.status === 'success') {
+          console.log('🎉 ÖDEME BAŞARILI!');
+          console.log('  - Sipariş:', data.merchant_oid);
+          
+          toast.success('Ödeme başarılı! Yönlendiriliyorsunuz...', { 
+            duration: 2000,
+            icon: '🎉'
+          });
+          
+          // Sepeti temizle
+          console.log('🗑️ Sepet temizleniyor...');
+          localStorage.removeItem('cart');
+          localStorage.removeItem('appliedCoupon');
+          
+          // Callback varsa çağır
+          if (onSuccess) {
+            console.log('📞 onSuccess callback çağrılıyor...');
+            onSuccess(data);
+          }
+          
+          // Yönlendirme
+          console.log('🚀 Yönlendirme başlıyor...');
+          const redirectUrl = data.merchant_oid 
+            ? `/payment-success?merchant_oid=${data.merchant_oid}`
+            : '/payment-success';
+          
+          console.log('🎯 Yönlendirilecek URL:', redirectUrl);
+          
+          setTimeout(() => {
+            console.log('⏰ navigate() çağrılıyor...');
+            navigate(redirectUrl);
+          }, 1500);
+        } 
+        // ❌ BAŞARISIZ ÖDEME
+        else if (data.status === 'failed') {
+          console.log('❌ ÖDEME BAŞARISIZ!');
+          console.log('  - Sebep:', data.reason);
+          
+          toast.error('Ödeme başarısız oldu', { 
+            duration: 2000,
+            icon: '❌'
+          });
+          
+          // Callback varsa çağır
+          if (onFail) {
+            console.log('📞 onFail callback çağrılıyor...');
+            onFail(data.reason || 'Bilinmeyen hata');
+          }
+          
+          // Yönlendirme
+          console.log('🚀 Hata sayfasına yönlendirme başlıyor...');
+          const reason = encodeURIComponent(data.reason || 'Ödeme işlemi başarısız oldu');
+          const redirectUrl = `/payment-failed?reason=${reason}`;
+          
+          console.log('🎯 Yönlendirilecek URL:', redirectUrl);
+          
+          setTimeout(() => {
+            console.log('⏰ navigate() çağrılıyor...');
+            navigate(redirectUrl);
+          }, 1500);
+        } else {
+          console.log('⚠️ Bilinmeyen mesaj tipi:', data);
+        }
+      } catch (e) {
+        console.error('❌ PayTR mesaj parse hatası:', e);
+        console.error('  - Raw data:', event.data);
+      }
+    };
 
-// 3. YARDIMCI ENDPOINTLER
-export const checkPaymentStatus = async (req, res) => res.status(200).json({ message: "OK" });
-export const testPayment = async (req, res) => res.status(200).json({ message: "OK" });
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+      console.log('🔌 PostMessage listener kaldırıldı');
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [onSuccess, onFail, navigate, orderData]);
 
-// 4. BAŞARILI ÖDEME YÖNLENDİRMESİ
-export const handlePaymentSuccess = (req, res) => {
-  const body = req.body || {};
-  const query = req.query || {};
-  const merchant_oid = body.merchant_oid || query.merchant_oid || '';
-
-  const htmlContent = `
-    <html>
-      <body>
-        <script>
-          window.parent.postMessage(JSON.stringify({ 
-            status: 'success', 
-            merchant_oid: "${merchant_oid}" 
-          }), '*');
-        </script>
-        <div style="text-align:center; padding:20px; font-family:sans-serif;">
-          <h3>Ödeme Başarılı!</h3>
-          <p>Yönlendiriliyorsunuz...</p>
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+      
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">Güvenli Ödeme</h3>
+          <p className="text-xs sm:text-sm text-gray-600">PayTR altyapısı ile şifreli işlem</p>
         </div>
-      </body>
-    </html>
-  `;
-  res.send(htmlContent);
-};
-
-// 5. BAŞARISIZ ÖDEME YÖNLENDİRMESİ
-export const handlePaymentFail = (req, res) => {
-  const body = req.body || {};
-  const query = req.query || {};
-  const reason = body.failed_reason_msg || query.failed_reason_msg || 'İşlem başarısız';
-  const merchant_oid = body.merchant_oid || query.merchant_oid || '';
-
-  const htmlContent = `
-    <html>
-      <body>
-        <script>
-          window.parent.postMessage(JSON.stringify({ 
-            status: 'failed', 
-            reason: "${reason}",
-            merchant_oid: "${merchant_oid}"
-          }), '*');
-        </script>
-        <div style="text-align:center; padding:20px; font-family:sans-serif; color:red;">
-          <h3>Ödeme Başarısız</h3>
-          <p>${reason}</p>
+        <div className="flex items-center gap-2">
+          <Shield className="text-green-600" size={24} />
+          <Lock className="text-gray-600" size={20} />
         </div>
-      </body>
-    </html>
-  `;
-  res.send(htmlContent);
+      </div>
+
+      {/* Sipariş Özeti */}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 mb-6 border-2 border-green-200">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-700 font-medium text-sm sm:text-base">Ödenecek Tutar</span>
+          <span className="text-xl sm:text-2xl font-black text-green-700">
+            {orderData.totalAmount?.toFixed(2)} TL
+          </span>
+        </div>
+      </div>
+
+      {/* İçerik Alanı */}
+      <div className="relative w-full min-h-[500px] sm:min-h-[600px] bg-gray-50 rounded-lg border-2 border-gray-200 overflow-hidden">
+        
+        {/* HATA DURUMU */}
+        {error ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-white z-30">
+            <AlertCircle className="text-red-500 mb-3" size={48} />
+            <h4 className="text-lg font-bold text-gray-800 mb-2">Bir Sorun Oluştu</h4>
+            <p className="text-gray-600 mb-6 max-w-md">{error}</p>
+            <button 
+              onClick={startPaymentProcess}
+              className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-semibold"
+            >
+              <RotateCcw size={20} />
+              Tekrar Dene
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* LOADING */}
+            {loading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-20">
+                <Loader className="animate-spin text-blue-600 mb-4" size={40} />
+                <span className="text-gray-500 font-medium animate-pulse">
+                  Güvenli ödeme sayfası hazırlanıyor...
+                </span>
+              </div>
+            )}
+
+            {/* IFRAME */}
+            {paymentUrl && (
+              <iframe
+                src={paymentUrl}
+                className="w-full h-full min-h-[500px] sm:min-h-[600px] border-0 relative z-10"
+                title="PayTR Güvenli Ödeme"
+                allow="payment"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-top-navigation"
+                onLoad={() => {
+                  setLoading(false);
+                  console.log('✅ PayTR iframe yüklendi');
+                }}
+              />
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="mt-6 pt-4 border-t border-gray-100">
+        <div className="flex justify-center items-center gap-3 sm:gap-4 flex-wrap">
+          <span className="font-bold text-xs border-2 border-gray-300 px-3 py-1.5 rounded-md hover:border-blue-500 transition-colors">VISA</span>
+          <span className="font-bold text-xs border-2 border-gray-300 px-3 py-1.5 rounded-md hover:border-blue-500 transition-colors">MasterCard</span>
+          <span className="font-bold text-xs border-2 border-red-300 px-3 py-1.5 rounded-md text-red-600 hover:border-red-500 transition-colors">Troy</span>
+          <span className="font-bold text-xs bg-green-600 text-white px-3 py-1.5 rounded-md">3D Secure</span>
+        </div>
+        <p className="text-[10px] sm:text-xs text-gray-400 mt-3 text-center">
+          🔒 Kart bilgileriniz SSL ile şifrelenir ve sistemimizde saklanmaz
+        </p>
+      </div>
+      
+      {/* DEBUG INFO */}
+      <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+        <p className="font-bold mb-1">Debug Info:</p>
+        <p>Order ID: {orderData.merchant_oid || orderData.orderId}</p>
+        <p>Amount: {orderData.totalAmount} TL</p>
+        <p>Iframe URL: {paymentUrl ? '✅ Var' : '❌ Yok'}</p>
+        <p className="mt-2 text-blue-600">
+          💡 Ödeme tamamlandığında console'u kontrol edin!
+        </p>
+      </div>
+    </div>
+  );
 };
+
+export default PayTRPayment;
