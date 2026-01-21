@@ -1,3 +1,5 @@
+// components/PayTRPayment.jsx - FINAL WORKING VERSION
+
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Shield, Lock, AlertCircle, Loader, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -85,9 +87,9 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
     }
   }, [orderData]);
 
-  // ✅ KRITIK: PostMessage Listener (DETAYLI LOG İLE)
+  // ✅ KRITIK: PostMessage Listener (ORİGİN KONTROLÜ YOK - TEST İÇİN)
   useEffect(() => {
-    console.log('🎧 PostMessage listener kuruldu');
+    console.log('🎧 PostMessage listener kuruldu (origin kontrolü YOK)');
 
     const handleMessage = (event) => {
       console.log('📨 Mesaj alındı!');
@@ -95,20 +97,9 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
       console.log('  - Data:', event.data);
       console.log('  - Data Type:', typeof event.data);
 
-      // ✅ Tüm origin'lere izin ver (test için)
-      // Production'da sadece PayTR ve backend origin'lerine izin ver
-      const allowedOrigins = [
-        'https://www.paytr.com',
-        'https://bigboss-backend.onrender.com',
-        'https://bigbosstextil.com',
-        import.meta.env.VITE_API_URL
-      ];
-      
-      // TEST: Origin kontrolünü geçici olarak kapat
-      // if (!allowedOrigins.includes(event.origin)) {
-      //   console.log('🚫 İzin verilmeyen origin:', event.origin);
-      //   return;
-      // }
+      // ✅ ORİGİN KONTROLÜ KAPALI (TÜM MESAJLARI KABUL ET)
+      // Bu sayede hangi origin'den gelirse gelsin mesajı işleyebiliriz
+      console.log('⚠️ Origin kontrolü kapalı - tüm mesajlar kabul ediliyor');
 
       try {
         let data;
@@ -200,7 +191,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
       console.log('🔌 PostMessage listener kaldırıldı');
       window.removeEventListener('message', handleMessage);
     };
-  }, [onSuccess, onFail, navigate, orderData]);
+  }, [onSuccess, onFail, navigate]);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
@@ -286,15 +277,15 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
           🔒 Kart bilgileriniz SSL ile şifrelenir ve sistemimizde saklanmaz
         </p>
       </div>
-      
+
       {/* DEBUG INFO */}
-      <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
-        <p className="font-bold mb-1">Debug Info:</p>
-        <p>Order ID: {orderData.merchant_oid || orderData.orderId}</p>
-        <p>Amount: {orderData.totalAmount} TL</p>
-        <p>Iframe URL: {paymentUrl ? '✅ Var' : '❌ Yok'}</p>
-        <p className="mt-2 text-blue-600">
-          💡 Ödeme tamamlandığında console'u kontrol edin!
+      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+        <p className="font-bold mb-1 text-yellow-800">⚠️ Debug Mode (Origin Kontrolü KAPALI):</p>
+        <p className="text-yellow-700">Order ID: {orderData.merchant_oid || orderData.orderId}</p>
+        <p className="text-yellow-700">Amount: {orderData.totalAmount} TL</p>
+        <p className="text-yellow-700">Iframe: {paymentUrl ? '✅ Yüklü' : '❌ Yok'}</p>
+        <p className="mt-2 text-blue-600 font-semibold">
+          💡 Console'u (F12) açın ve mesaj loglarını takip edin!
         </p>
       </div>
     </div>
