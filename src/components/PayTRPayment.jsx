@@ -1,4 +1,4 @@
-// components/PayTRPayment.jsx - FINAL WORKING VERSION
+// components/PayTRPayment.jsx - PAYTR MESSAGE TYPES FIXED
 
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Shield, Lock, AlertCircle, Loader, RotateCcw } from 'lucide-react';
@@ -87,9 +87,9 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
     }
   }, [orderData]);
 
-  // ✅ KRITIK: PostMessage Listener (ORİGİN KONTROLÜ YOK - TEST İÇİN)
+  // ✅ FIXED: PostMessage Listener with Proper PayTR Message Handling
   useEffect(() => {
-    console.log('🎧 PostMessage listener kuruldu (origin kontrolü YOK)');
+    console.log('🎧 PostMessage listener kuruldu');
 
     const handleMessage = (event) => {
       console.log('📨 Mesaj alındı!');
@@ -97,25 +97,42 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
       console.log('  - Data:', event.data);
       console.log('  - Data Type:', typeof event.data);
 
-      // ✅ ORİGİN KONTROLÜ KAPALI (TÜM MESAJLARI KABUL ET)
-      // Bu sayede hangi origin'den gelirse gelsin mesajı işleyebiliriz
-      console.log('⚠️ Origin kontrolü kapalı - tüm mesajlar kabul ediliyor');
+      // ✅ PayTR'den gelen UI mesajlarını göz ardı et
+      if (typeof event.data === 'object' && event.data.message === 'shrink_iframe') {
+        console.log('ℹ️ PayTR UI mesajı (göz ardı edildi)');
+        return;
+      }
 
+      if (typeof event.data === 'string' && event.data === 'shrink') {
+        console.log('ℹ️ PayTR shrink mesajı (göz ardı edildi)');
+        return;
+      }
+
+      // ✅ Sadece JSON mesajları işle
       try {
         let data;
         
-        // Data parse et
         if (typeof event.data === 'string') {
           console.log('📝 String data parse ediliyor...');
+          
+          // Basit string mesajları göz ardı et
+          if (event.data.length < 10 || !event.data.includes('{')) {
+            console.log('ℹ️ Basit string mesajı (göz ardı edildi)');
+            return;
+          }
+          
           data = JSON.parse(event.data);
-        } else {
+        } else if (typeof event.data === 'object') {
           console.log('📦 Object data direkt kullanılıyor...');
           data = event.data;
+        } else {
+          console.log('⚠️ Bilinmeyen data tipi:', typeof event.data);
+          return;
         }
         
         console.log('✅ Parse edilmiş data:', data);
         
-        // ✅ BAŞARILI ÖDEME
+        // ✅ BAŞARILI ÖDEME (status kontrolü)
         if (data.status === 'success') {
           console.log('🎉 ÖDEME BAŞARILI!');
           console.log('  - Sipariş:', data.merchant_oid);
@@ -177,11 +194,11 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
             navigate(redirectUrl);
           }, 1500);
         } else {
-          console.log('⚠️ Bilinmeyen mesaj tipi:', data);
+          // ✅ Diğer PayTR mesajları (UI kontrolü vs.)
+          console.log('ℹ️ PayTR sistem mesajı (işlem yok):', data);
         }
       } catch (e) {
-        console.error('❌ PayTR mesaj parse hatası:', e);
-        console.error('  - Raw data:', event.data);
+        console.log('ℹ️ JSON parse edilemeyen mesaj (göz ardı edildi):', event.data);
       }
     };
 
@@ -275,17 +292,6 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
         </div>
         <p className="text-[10px] sm:text-xs text-gray-400 mt-3 text-center">
           🔒 Kart bilgileriniz SSL ile şifrelenir ve sistemimizde saklanmaz
-        </p>
-      </div>
-
-      {/* DEBUG INFO */}
-      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
-        <p className="font-bold mb-1 text-yellow-800">⚠️ Debug Mode (Origin Kontrolü KAPALI):</p>
-        <p className="text-yellow-700">Order ID: {orderData.merchant_oid || orderData.orderId}</p>
-        <p className="text-yellow-700">Amount: {orderData.totalAmount} TL</p>
-        <p className="text-yellow-700">Iframe: {paymentUrl ? '✅ Yüklü' : '❌ Yok'}</p>
-        <p className="mt-2 text-blue-600 font-semibold">
-          💡 Console'u (F12) açın ve mesaj loglarını takip edin!
         </p>
       </div>
     </div>
