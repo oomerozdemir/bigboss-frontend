@@ -183,51 +183,62 @@ const CheckoutPage = () => {
 
   // ✅ DÜZELTME: PayTR için tüm gerekli alanları hazırla
   const getPayTRData = () => {
-    if (!createdOrderId || !safeCartItems || safeCartItems.length === 0) {
-      console.error('❌ PayTR data hazırlanamadı:', { 
-        createdOrderId, 
-        cartLength: safeCartItems.length 
-      });
-      return null;
-    }
+  if (!createdOrderId || !safeCartItems || safeCartItems.length === 0) {
+    console.error('❌ PayTR data hazırlanamadı:', { 
+      createdOrderId, 
+      cartLength: safeCartItems.length 
+    });
+    return null;
+  }
 
-    // ✅ Email kontrolü
-    if (!user.email || user.email.trim() === '') {
-      console.error('❌ Email eksik!');
-      toast.error('Email adresiniz gerekli!');
-      return null;
-    }
+  // ✅ Email kontrolü
+  if (!user.email || user.email.trim() === '') {
+    console.error('❌ Email eksik!');
+    toast.error('Email adresiniz gerekli!');
+    return null;
+  }
 
-    const paytrData = {
-      // ✅ Sipariş ID (merchant_oid) - String olarak
-      merchant_oid: createdOrderId.toString(),
-      orderId: createdOrderId,
-      
-      // ✅ Toplam tutar
-      totalAmount: finalTotal || 0,
-      payment_amount: Math.round((finalTotal || 0) * 100).toString(), // Kuruş cinsinden
-      
-      // ✅ Sepet ürünleri
-      items: safeCartItems.map(item => ({
-        name: (item.name || 'Ürün').substring(0, 50),
-        price: parseFloat(item.price) || 0,
-        quantity: parseInt(item.quantity) || 1
-      })),
-      
-      // ✅ Kullanıcı bilgileri (ÖNEMLİ!)
-      user_name: user.name || 'Misafir',
-      user_email: user.email, // ✅ Zorunlu!
-      user_phone: selectedAddress?.phone || '05555555555',
-      user_address: selectedAddress 
-        ? `${selectedAddress.address}, ${selectedAddress.city}` 
-        : 'Adres belirtilmemiş',
-      
-      // ✅ IP adresi (backend'de alınacak)
-      user_ip: '0.0.0.0'
-    };
+  // ✅ DÜZELTME: payment_amount INTEGER olmalı (string değil!)
+  const paymentAmountInKurus = Math.round((finalTotal || 0) * 100); // Kuruş cinsinden INTEGER
 
-    return paytrData;
+  const paytrData = {
+    // ✅ Sipariş ID (merchant_oid) - String olarak
+    merchant_oid: createdOrderId.toString(),
+    orderId: createdOrderId,
+    
+    // ✅ Toplam tutar
+    totalAmount: finalTotal || 0,
+    payment_amount: paymentAmountInKurus, // ✅ INTEGER (string değil!)
+    
+    // ✅ Sepet ürünleri
+    items: safeCartItems.map(item => ({
+      name: (item.name || 'Ürün').substring(0, 50),
+      price: parseFloat(item.price) || 0,
+      quantity: parseInt(item.quantity) || 1
+    })),
+    
+    // ✅ Kullanıcı bilgileri
+    user_name: user.name || 'Misafir',
+    user_email: user.email, // ✅ Zorunlu!
+    user_phone: selectedAddress?.phone || '05555555555',
+    user_address: selectedAddress 
+      ? `${selectedAddress.address}, ${selectedAddress.city}` 
+      : 'Adres belirtilmemiş',
+    
+    // ✅ IP adresi (backend'de alınacak)
+    user_ip: '0.0.0.0'
   };
+
+  console.log('✅ PayTR data hazırlandı:', {
+    merchant_oid: paytrData.merchant_oid,
+    email: paytrData.user_email,
+    payment_amount: paytrData.payment_amount, // ✅ INTEGER
+    payment_amount_type: typeof paytrData.payment_amount, // ✅ 'number' olmalı
+    items: paytrData.items.length
+  });
+
+  return paytrData;
+};
 
   if (!cartContext) {
     return (

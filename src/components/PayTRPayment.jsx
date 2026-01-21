@@ -39,7 +39,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
       const payload = {
           ...orderData,
           user_basket: userBasket,
-          payment_amount: (orderData.totalAmount * 100).toString()
+          payment_amount: orderData.payment_amount || Math.round((orderData.totalAmount || 0) * 100)
       };
 
       // Backend'e istek at
