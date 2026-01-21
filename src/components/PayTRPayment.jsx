@@ -1,5 +1,3 @@
-// components/PayTRPayment.jsx - PAYTR MESSAGE TYPES FIXED
-
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Shield, Lock, AlertCircle, Loader, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,6 +7,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
   const [loading, setLoading] = useState(true);
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [error, setError] = useState(null);
+  const [checkingPayment, setCheckingPayment] = useState(false);
   const navigate = useNavigate();
 
   const startPaymentProcess = async () => {
@@ -41,7 +40,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
         payment_amount: orderData.payment_amount || Math.round((orderData.totalAmount || 0) * 100)
       };
 
-      console.log('📤 PayTR isteği gönderiliyor:', payload);
+      console.log('📤 PayTR isteği gönderiliyor');
 
       const response = await fetch(`${apiUrl}/api/paytr/create-payment`, {
         method: 'POST',
@@ -60,14 +59,18 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
       }
 
       const result = await response.json();
-      console.log('📥 PayTR yanıtı:', result);
 
       if (result.success || result.status === 'success') {
         setPaymentUrl(result.iframe_url);
-        console.log('✅ PayTR iframe URL alındı:', result.iframe_url);
+        console.log('✅ PayTR iframe yüklendi');
+        
+        // ✅ Iframe yüklenince polling başlat
+        setTimeout(() => {
+          startPaymentStatusPolling();
+        }, 3000); // 3 saniye sonra başla
+        
       } else {
         const errorMsg = result.message || 'Ödeme başlatılamadı';
-        console.error('❌ PayTR Hatası:', errorMsg);
         setError(errorMsg);
         toast.error(errorMsg);
         setLoading(false);
@@ -81,134 +84,92 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
     }
   };
 
+  // ✅ Sipariş durumunu periyodik kontrol et
+  const startPaymentStatusPolling = () => {
+    setCheckingPayment(true);
+    let attempts = 0;
+    const maxAttempts = 60; // 60 x 2 saniye = 2 dakika
+
+    const pollInterval = setInterval(async () => {
+      attempts++;
+      
+      console.log(`🔍 Ödeme durumu kontrol ediliyor... (${attempts}/${maxAttempts})`);
+
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        const token = localStorage.getItem('token');
+        const orderId = orderData.orderId || orderData.merchant_oid;
+
+        const response = await fetch(`${apiUrl}/api/orders/payment-status/${orderId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          console.log('📊 Durum:', data.paymentStatus);
+
+          // ✅ BAŞARILI
+          if (data.paymentStatus === 'SUCCESS') {
+            clearInterval(pollInterval);
+            setCheckingPayment(false);
+            
+            console.log('🎉 ÖDEME BAŞARILI!');
+            toast.success('Ödeme başarılı! Yönlendiriliyorsunuz...');
+            
+            // Sepeti temizle
+            localStorage.removeItem('cart');
+            localStorage.removeItem('appliedCoupon');
+            
+            // Callback
+            if (onSuccess) onSuccess(data);
+            
+            // ✅ Frontend sayfasına yönlendir
+            setTimeout(() => {
+              navigate(`/payment-success?order=${orderId}`);
+            }, 1500);
+          }
+          // ❌ BAŞARISIZ
+          else if (data.paymentStatus === 'FAILED') {
+            clearInterval(pollInterval);
+            setCheckingPayment(false);
+            
+            console.log('❌ ÖDEME BAŞARISIZ!');
+            toast.error('Ödeme başarısız oldu');
+            
+            if (onFail) onFail('Ödeme başarısız');
+            
+            setTimeout(() => {
+              navigate(`/payment-failed?reason=Ödeme başarısız`);
+            }, 1500);
+          }
+          // ⏳ PENDING - Devam et
+          else {
+            console.log('⏳ Ödeme bekleniyor...');
+          }
+        }
+
+      } catch (error) {
+        console.error('Durum kontrol hatası:', error);
+      }
+
+      // Maksimum deneme sayısına ulaşıldıysa durdur
+      if (attempts >= maxAttempts) {
+        clearInterval(pollInterval);
+        setCheckingPayment(false);
+        toast.error('Ödeme durumu kontrol edilemedi. Lütfen siparişlerim sayfasından kontrol edin.');
+      }
+
+    }, 2000); // Her 2 saniyede bir kontrol et
+  };
+
   useEffect(() => {
     if (orderData) {
       startPaymentProcess();
     }
   }, [orderData]);
-
-  // ✅ FIXED: PostMessage Listener with Proper PayTR Message Handling
-  useEffect(() => {
-    console.log('🎧 PostMessage listener kuruldu');
-
-    const handleMessage = (event) => {
-      console.log('📨 Mesaj alındı!');
-      console.log('  - Origin:', event.origin);
-      console.log('  - Data:', event.data);
-      console.log('  - Data Type:', typeof event.data);
-
-      // ✅ PayTR'den gelen UI mesajlarını göz ardı et
-      if (typeof event.data === 'object' && event.data.message === 'shrink_iframe') {
-        console.log('ℹ️ PayTR UI mesajı (göz ardı edildi)');
-        return;
-      }
-
-      if (typeof event.data === 'string' && event.data === 'shrink') {
-        console.log('ℹ️ PayTR shrink mesajı (göz ardı edildi)');
-        return;
-      }
-
-      // ✅ Sadece JSON mesajları işle
-      try {
-        let data;
-        
-        if (typeof event.data === 'string') {
-          console.log('📝 String data parse ediliyor...');
-          
-          // Basit string mesajları göz ardı et
-          if (event.data.length < 10 || !event.data.includes('{')) {
-            console.log('ℹ️ Basit string mesajı (göz ardı edildi)');
-            return;
-          }
-          
-          data = JSON.parse(event.data);
-        } else if (typeof event.data === 'object') {
-          console.log('📦 Object data direkt kullanılıyor...');
-          data = event.data;
-        } else {
-          console.log('⚠️ Bilinmeyen data tipi:', typeof event.data);
-          return;
-        }
-        
-        console.log('✅ Parse edilmiş data:', data);
-        
-        // ✅ BAŞARILI ÖDEME (status kontrolü)
-        if (data.status === 'success') {
-          console.log('🎉 ÖDEME BAŞARILI!');
-          console.log('  - Sipariş:', data.merchant_oid);
-          
-          toast.success('Ödeme başarılı! Yönlendiriliyorsunuz...', { 
-            duration: 2000,
-            icon: '🎉'
-          });
-          
-          // Sepeti temizle
-          console.log('🗑️ Sepet temizleniyor...');
-          localStorage.removeItem('cart');
-          localStorage.removeItem('appliedCoupon');
-          
-          // Callback varsa çağır
-          if (onSuccess) {
-            console.log('📞 onSuccess callback çağrılıyor...');
-            onSuccess(data);
-          }
-          
-          // Yönlendirme
-          console.log('🚀 Yönlendirme başlıyor...');
-          const redirectUrl = data.merchant_oid 
-            ? `/payment-success?merchant_oid=${data.merchant_oid}`
-            : '/payment-success';
-          
-          console.log('🎯 Yönlendirilecek URL:', redirectUrl);
-          
-          setTimeout(() => {
-            console.log('⏰ navigate() çağrılıyor...');
-            navigate(redirectUrl);
-          }, 1500);
-        } 
-        // ❌ BAŞARISIZ ÖDEME
-        else if (data.status === 'failed') {
-          console.log('❌ ÖDEME BAŞARISIZ!');
-          console.log('  - Sebep:', data.reason);
-          
-          toast.error('Ödeme başarısız oldu', { 
-            duration: 2000,
-            icon: '❌'
-          });
-          
-          // Callback varsa çağır
-          if (onFail) {
-            console.log('📞 onFail callback çağrılıyor...');
-            onFail(data.reason || 'Bilinmeyen hata');
-          }
-          
-          // Yönlendirme
-          console.log('🚀 Hata sayfasına yönlendirme başlıyor...');
-          const reason = encodeURIComponent(data.reason || 'Ödeme işlemi başarısız oldu');
-          const redirectUrl = `/payment-failed?reason=${reason}`;
-          
-          console.log('🎯 Yönlendirilecek URL:', redirectUrl);
-          
-          setTimeout(() => {
-            console.log('⏰ navigate() çağrılıyor...');
-            navigate(redirectUrl);
-          }, 1500);
-        } else {
-          // ✅ Diğer PayTR mesajları (UI kontrolü vs.)
-          console.log('ℹ️ PayTR sistem mesajı (işlem yok):', data);
-        }
-      } catch (e) {
-        console.log('ℹ️ JSON parse edilemeyen mesaj (göz ardı edildi):', event.data);
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    
-    return () => {
-      console.log('🔌 PostMessage listener kaldırıldı');
-      window.removeEventListener('message', handleMessage);
-    };
-  }, [onSuccess, onFail, navigate]);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
@@ -264,6 +225,17 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
               </div>
             )}
 
+            {/* PAYMENT CHECKING OVERLAY */}
+            {checkingPayment && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 z-25">
+                <div className="bg-white rounded-lg p-6 text-center">
+                  <Loader className="animate-spin text-green-600 mb-4 mx-auto" size={40} />
+                  <p className="text-gray-700 font-semibold">Ödeme durumu kontrol ediliyor...</p>
+                  <p className="text-sm text-gray-500 mt-2">Lütfen bekleyin</p>
+                </div>
+              </div>
+            )}
+
             {/* IFRAME */}
             {paymentUrl && (
               <iframe
@@ -285,9 +257,9 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
       {/* Footer */}
       <div className="mt-6 pt-4 border-t border-gray-100">
         <div className="flex justify-center items-center gap-3 sm:gap-4 flex-wrap">
-          <span className="font-bold text-xs border-2 border-gray-300 px-3 py-1.5 rounded-md hover:border-blue-500 transition-colors">VISA</span>
-          <span className="font-bold text-xs border-2 border-gray-300 px-3 py-1.5 rounded-md hover:border-blue-500 transition-colors">MasterCard</span>
-          <span className="font-bold text-xs border-2 border-red-300 px-3 py-1.5 rounded-md text-red-600 hover:border-red-500 transition-colors">Troy</span>
+          <span className="font-bold text-xs border-2 border-gray-300 px-3 py-1.5 rounded-md">VISA</span>
+          <span className="font-bold text-xs border-2 border-gray-300 px-3 py-1.5 rounded-md">MasterCard</span>
+          <span className="font-bold text-xs border-2 border-red-300 px-3 py-1.5 rounded-md text-red-600">Troy</span>
           <span className="font-bold text-xs bg-green-600 text-white px-3 py-1.5 rounded-md">3D Secure</span>
         </div>
         <p className="text-[10px] sm:text-xs text-gray-400 mt-3 text-center">
