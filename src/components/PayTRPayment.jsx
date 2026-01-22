@@ -42,7 +42,6 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
         payment_amount: orderData.payment_amount || Math.round((orderData.totalAmount || 0) * 100)
       };
 
-      console.log('📤 PayTR isteği gönderiliyor');
 
       const response = await fetch(`${apiUrl}/api/paytr/create-payment`, {
         method: 'POST',
@@ -64,7 +63,6 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
 
       if (result.success || result.status === 'success') {
         setPaymentUrl(result.iframe_url);
-        console.log('✅ PayTR iframe yüklendi');
         
         // ✅ DÜZELTME: 30 saniye sonra polling başlat (kullanıcı rahatça ödeme yapsın)
         setTimeout(() => {
@@ -96,7 +94,6 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
     const pollInterval = setInterval(async () => {
       attempts++;
       
-      console.log(`🔍 Ödeme durumu kontrol ediliyor... (${attempts}/${maxAttempts})`);
 
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
@@ -112,7 +109,6 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
         if (response.ok) {
           const data = await response.json();
           
-          console.log('📊 Durum:', data.paymentStatus);
 
           if (data.paymentStatus === 'SUCCESS') {
             clearInterval(pollInterval);
@@ -144,7 +140,6 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
             }, 1500);
           }
           else {
-            console.log('⏳ Ödeme bekleniyor...');
           }
         }
 
@@ -241,7 +236,6 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
                 sandbox="allow-same-origin allow-scripts allow-forms allow-modals allow-popups allow-top-navigation"
                 onLoad={() => {
                   setLoading(false);
-                  console.log('✅ PayTR iframe yüklendi');
                 }}
               />
             )}
@@ -261,17 +255,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
           🔒 Kart bilgileriniz SSL ile şifrelenir ve sistemimizde saklanmaz
         </p>
         
-        {/* ✅ Test Kartı Bilgisi */}
-        {paymentUrl && !checkingPayment && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
-            <p className="text-xs text-blue-700 font-semibold mb-1">
-              💳 Test Kartı: 5526 0800 0000 0006
-            </p>
-            <p className="text-xs text-blue-600">
-              CVV: 000 | 3D Şifre: 000000
-            </p>
-          </div>
-        )}
+      
       </div>
     </div>
   );

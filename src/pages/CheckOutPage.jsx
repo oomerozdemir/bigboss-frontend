@@ -166,7 +166,6 @@ const CheckoutPage = () => {
         toast.error(result.error || 'Sipariş oluşturulamadı');
       }
     } catch (error) {
-      console.error('Sipariş hatası:', error);
       toast.error('Bir hata oluştu');
     } finally {
       setLoading(false);
@@ -184,16 +183,12 @@ const CheckoutPage = () => {
   // ✅ DÜZELTME: PayTR için tüm gerekli alanları hazırla
   const getPayTRData = () => {
   if (!createdOrderId || !safeCartItems || safeCartItems.length === 0) {
-    console.error('❌ PayTR data hazırlanamadı:', { 
-      createdOrderId, 
-      cartLength: safeCartItems.length 
-    });
+   
     return null;
   }
 
   // ✅ Email kontrolü
   if (!user.email || user.email.trim() === '') {
-    console.error('❌ Email eksik!');
     toast.error('Email adresiniz gerekli!');
     return null;
   }
@@ -229,13 +224,7 @@ const CheckoutPage = () => {
     user_ip: '0.0.0.0'
   };
 
-  console.log('✅ PayTR data hazırlandı:', {
-    merchant_oid: paytrData.merchant_oid,
-    email: paytrData.user_email,
-    payment_amount: paytrData.payment_amount, // ✅ INTEGER
-    payment_amount_type: typeof paytrData.payment_amount, // ✅ 'number' olmalı
-    items: paytrData.items.length
-  });
+
 
   return paytrData;
 };

@@ -15,7 +15,6 @@ const PaymentSuccess = () => {
         const orderId = searchParams.get('merchant_oid');
         
         if (!orderId) {
-          console.log("Sipariş ID (merchant_oid) URL'de yok, ancak ödeme başarılı sayfasındayız.");
           setLoading(false);
           return;
         }
@@ -134,7 +133,7 @@ const PaymentSuccess = () => {
             {/* Butonlar */}
             <div className="flex flex-col sm:flex-row gap-4">
               <button
-                onClick={() => navigate('/siparislerim')}
+                onClick={() => navigate('/hesabim')}
                 className="flex-1 bg-black text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
               >
                 Siparişlerimi Görüntüle
