@@ -1,3 +1,5 @@
+// components/PayTRPayment.jsx - POLLING 30 SANİYE SONRA + KÜÇÜK OVERLAY
+
 import React, { useState, useEffect } from 'react';
 import { CreditCard, Shield, Lock, AlertCircle, Loader, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -64,10 +66,11 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
         setPaymentUrl(result.iframe_url);
         console.log('✅ PayTR iframe yüklendi');
         
-        // ✅ Iframe yüklenince polling başlat
+        // ✅ DÜZELTME: 30 saniye sonra polling başlat (kullanıcı rahatça ödeme yapsın)
         setTimeout(() => {
+          console.log('🔍 Polling başlatılıyor (30 saniye beklendi)...');
           startPaymentStatusPolling();
-        }, 3000); // 3 saniye sonra başla
+        }, 30000); // ✅ 30 saniye = 30000ms
         
       } else {
         const errorMsg = result.message || 'Ödeme başlatılamadı';
@@ -84,7 +87,7 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
     }
   };
 
-  // ✅ Sipariş durumunu periyodik kontrol et
+  // Polling başlat
   const startPaymentStatusPolling = () => {
     setCheckingPayment(true);
     let attempts = 0;
@@ -111,7 +114,6 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
           
           console.log('📊 Durum:', data.paymentStatus);
 
-          // ✅ BAŞARILI
           if (data.paymentStatus === 'SUCCESS') {
             clearInterval(pollInterval);
             setCheckingPayment(false);
@@ -119,19 +121,15 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
             console.log('🎉 ÖDEME BAŞARILI!');
             toast.success('Ödeme başarılı! Yönlendiriliyorsunuz...');
             
-            // Sepeti temizle
             localStorage.removeItem('cart');
             localStorage.removeItem('appliedCoupon');
             
-            // Callback
             if (onSuccess) onSuccess(data);
             
-            // ✅ Frontend sayfasına yönlendir
             setTimeout(() => {
               navigate(`/payment-success?order=${orderId}`);
             }, 1500);
           }
-          // ❌ BAŞARISIZ
           else if (data.paymentStatus === 'FAILED') {
             clearInterval(pollInterval);
             setCheckingPayment(false);
@@ -145,7 +143,6 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
               navigate(`/payment-failed?reason=Ödeme başarısız`);
             }, 1500);
           }
-          // ⏳ PENDING - Devam et
           else {
             console.log('⏳ Ödeme bekleniyor...');
           }
@@ -155,14 +152,13 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
         console.error('Durum kontrol hatası:', error);
       }
 
-      // Maksimum deneme sayısına ulaşıldıysa durdur
       if (attempts >= maxAttempts) {
         clearInterval(pollInterval);
         setCheckingPayment(false);
         toast.error('Ödeme durumu kontrol edilemedi. Lütfen siparişlerim sayfasından kontrol edin.');
       }
 
-    }, 2000); // Her 2 saniyede bir kontrol et
+    }, 2000);
   };
 
   useEffect(() => {
@@ -225,13 +221,12 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
               </div>
             )}
 
-            {/* PAYMENT CHECKING OVERLAY */}
+            {/* ✅ KÜÇÜK OVERLAY - iframe'i kapatmıyor */}
             {checkingPayment && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 z-25">
-                <div className="bg-white rounded-lg p-6 text-center">
-                  <Loader className="animate-spin text-green-600 mb-4 mx-auto" size={40} />
-                  <p className="text-gray-700 font-semibold">Ödeme durumu kontrol ediliyor...</p>
-                  <p className="text-sm text-gray-500 mt-2">Lütfen bekleyin</p>
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-25">
+                <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-pulse">
+                  <Loader className="animate-spin" size={16} />
+                  <p className="text-sm font-semibold">Ödeme kontrol ediliyor...</p>
                 </div>
               </div>
             )}
@@ -265,6 +260,18 @@ const PayTRPayment = ({ orderData, onSuccess, onFail }) => {
         <p className="text-[10px] sm:text-xs text-gray-400 mt-3 text-center">
           🔒 Kart bilgileriniz SSL ile şifrelenir ve sistemimizde saklanmaz
         </p>
+        
+        {/* ✅ Test Kartı Bilgisi */}
+        {paymentUrl && !checkingPayment && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+            <p className="text-xs text-blue-700 font-semibold mb-1">
+              💳 Test Kartı: 5526 0800 0000 0006
+            </p>
+            <p className="text-xs text-blue-600">
+              CVV: 000 | 3D Şifre: 000000
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
