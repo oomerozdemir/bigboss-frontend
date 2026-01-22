@@ -21,15 +21,14 @@ const BulkProductEditor = () => {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
+ const fetchProducts = async () => {
     try {
-      // ✅ Düzeltme: isAdmin=true parametresi eklendi, böylece gizli ürünler de gelir
-      const res = await fetch(`${apiUrl}/api/products?isAdmin=true&limit=1000`, {
+      const res = await fetch(`${apiUrl}/api/products/bulk-list`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
       const data = await res.json();
       
-      // Backend yapınıza göre products dizisini alıyoruz
       let productList = [];
       if (data.success && Array.isArray(data.products)) {
         productList = data.products;
@@ -39,6 +38,7 @@ const BulkProductEditor = () => {
 
       setProducts(productList);
       setFilteredProducts(productList);
+      
     } catch (error) {
       console.error(error);
       toast.error("Ürünler yüklenirken hata oluştu");
