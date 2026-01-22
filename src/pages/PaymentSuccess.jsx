@@ -15,7 +15,8 @@ const PaymentSuccess = () => {
         const orderId = searchParams.get('merchant_oid');
         
         if (!orderId) {
-          navigate('/');
+          console.log("Sipariş ID (merchant_oid) URL'de yok, ancak ödeme başarılı sayfasındayız.");
+          setLoading(false);
           return;
         }
 
