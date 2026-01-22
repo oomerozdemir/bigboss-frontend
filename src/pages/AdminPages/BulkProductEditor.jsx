@@ -1,5 +1,7 @@
+// src/pages/AdminPages/BulkProductEditor.jsx
+
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast'; // ✅ DÜZELTİLDİ: react-toastify yerine react-hot-toast
 import { Save, Search, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -70,7 +72,7 @@ const BulkProductEditor = () => {
     const updates = Object.values(modifiedRows);
 
     if (updates.length === 0) {
-      toast.info("Değişiklik yapılmadı.");
+      toast("Değişiklik yapılmadı.", { icon: 'ℹ️' }); // Info yerine düz toast
       return;
     }
 
@@ -189,7 +191,7 @@ const BulkProductEditor = () => {
                   </td>
                   <td className="px-4 py-3">
                     <select 
-                      value={product.isActive ? 'true' : 'false'} // isActive veya status alan adınızı kontrol edin
+                      value={product.isActive ? 'true' : 'false'} 
                       onChange={(e) => handleCellChange(product.id, 'isActive', e.target.value === 'true')}
                       className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                     >
