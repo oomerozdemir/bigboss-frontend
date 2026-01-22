@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// DÜZELTME: ChevronLeft ve ChevronRight eklendi
 import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, Layers, ShoppingBag, RefreshCcw, Ticket, CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
@@ -9,11 +8,13 @@ import EditProductModal from '../../utils/EditProductModal';
 import OrderManager from './OrderManager'; 
 import ReturnManager from './ReturnManager';
 import CouponManager from './CouponManager';
+import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("products");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Sayfalama State'leri
   const [currentPage, setCurrentPage] = useState(1);
@@ -256,6 +257,14 @@ const AdminPanel = () => {
             </h1>
             <p className="text-gray-500 text-sm">Yönetim panelinize hoşgeldiniz.</p>
           </div>
+
+          <button 
+      onClick={() => navigate('/admin/bulk-edit')}
+      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-lg transition"
+    >
+      <Edit size={18} />
+      Toplu Düzenle
+    </button>
           
           {activeTab === 'products' && (
             <button 

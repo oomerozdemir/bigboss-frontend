@@ -35,6 +35,7 @@ import { FavoritesProvider } from './context/FavoritesContext';
 import AdminLogin from './pages/AdminPages/AdminLogin';
 import AdminPanel from './pages/AdminPages/AdminPanel';
 import ProtectedRoute from './utils/ProtectedRoute';
+import BulkProductEditor from './pages/AdminPages/BulkProductEditor';
 
 
 const HomePage = () => {
@@ -89,7 +90,7 @@ function App() {
           {/* Admin Giriş Rotası */}
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin-panel" element={<ProtectedRoute isAdmin={true}><AdminPanel /> </ProtectedRoute> } />
-          
+          <Route path="/admin/bulk-edit" element={<ProtectedRoute isAdmin={true}><BulkProductEditor /></ProtectedRoute>} />
         </Routes>
         </CartProvider>
       </div>
