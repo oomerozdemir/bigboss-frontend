@@ -111,7 +111,6 @@ odeme basarili ise paytr den gelen payment-succes page e gitsin degilse payment-
 
 mobil responsiveligi kontrol et her sayfa icin
 
-loglari temizle kritik!!!!!
 
 
 ahfres kaydet
