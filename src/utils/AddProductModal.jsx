@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Upload, Check, Loader2, Trash2, Plus, Image as ImageIcon, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sortVariantsByOrder } from './sortHelpers';
+// ✅ 1. Sıkıştırma kütüphanesini import et
+import imageCompression from 'browser-image-compression';
 
 const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
   const [categories, setCategories] = useState([]);
@@ -11,21 +13,39 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
 
-  // Varyant Listesi (Backend'e gidecek olan nihai liste)
+  // Varyant Listesi
   const [variants, setVariants] = useState([]);
 
-  // --- TOPLU EKLEME STATE'LERİ (YENİ) ---
-  const [groupColor, setGroupColor] = useState(""); // Ortak Renk
-  const [groupImage, setGroupImage] = useState(null); // Ortak Resim
-  const [groupSizes, setGroupSizes] = useState([]); // [{size: "S", stock: 10}, {size: "M", stock: 20}]
+  // --- TOPLU EKLEME STATE'LERİ ---
+  const [groupColor, setGroupColor] = useState(""); 
+  const [groupImage, setGroupImage] = useState(null); 
+  const [groupSizes, setGroupSizes] = useState([]); 
   
-  // Geçici Beden/Stok Inputları
   const [tempSize, setTempSize] = useState("");
   const [tempStock, setTempStock] = useState("");
 
   const [formData, setFormData] = useState({
     name: "", description: "", price: "", isFeatured: false, categoryIds: []
   });
+
+  // ✅ 2. Sıkıştırma Fonksiyonu
+  const compressImage = async (file) => {
+    const options = {
+      maxSizeMB: 0.8,          // Hedeflenen maksimum boyut (MB)
+      maxWidthOrHeight: 1200,  // Maksimum genişlik/yükseklik (piksel)
+      useWebWorker: true,      // Performans için web worker kullan
+      fileType: "image/webp"   // Çıktı formatı (WebP daha hafiftir)
+    };
+
+    try {
+      // Toast ile kullanıcıya bilgi verelim (büyük dosyalarda bekleme olabilir)
+      const compressedFile = await imageCompression(file, options);
+      return compressedFile;
+    } catch (error) {
+      console.error("Sıkıştırma hatası:", error);
+      return file; // Hata olursa orijinal dosyayı döndür
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -34,8 +54,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
       setVariants([]); 
       setSelectedFile(null);
       setPreviewUrl("");
-      
-      // Grup state'lerini sıfırla
       resetGroupInputs();
     }
   }, [isOpen]);
@@ -50,7 +68,7 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`,)
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
       const data = await res.json();
       setCategories(data);
     } catch (error) { console.error(error); }
@@ -67,11 +85,22 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     });
   };
 
-  const handleFileSelect = (e) => {
+  // ✅ 3. Ana Resim Seçimi (Sıkıştırmalı)
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file)); 
+      const compressed = await compressImage(file);
+      setSelectedFile(compressed);
+      setPreviewUrl(URL.createObjectURL(compressed)); 
+    }
+  };
+
+  // ✅ 4. Grup Resmi Seçimi (Sıkıştırmalı)
+  const handleGroupImageSelect = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const compressed = await compressImage(file);
+      setGroupImage(compressed);
     }
   };
 
@@ -80,9 +109,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     setPreviewUrl("");
   };
 
-  // --- GRUP İŞLEMLERİ ---
-
-  // 1. Gruba Beden Ekle (Örn: S - 10)
   const addSizeToGroup = () => {
     if (!tempSize || !tempStock) {
         toast.error("Beden ve Stok giriniz");
@@ -93,12 +119,10 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     setTempStock("");
   };
 
-  // 2. Gruptan Beden Çıkar
   const removeSizeFromGroup = (idx) => {
     setGroupSizes(groupSizes.filter((_, i) => i !== idx));
   };
 
-  // 3. GRUBU ANA LİSTEYE AKTAR (Hepsine aynı renk ve resmi ata)
   const addGroupToVariants = () => {
     if (!groupColor) {
         toast.error("Lütfen bir renk girin (Örn: Mavi)");
@@ -109,23 +133,19 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
         return;
     }
 
-    // Her bir beden için varyant oluşturuyoruz
     const newVariants = groupSizes.map(item => ({
         color: groupColor,
         size: item.size,
         stock: item.stock,
-        file: groupImage, // Hepsi aynı dosya objesini kullanacak (Sorun yok)
+        file: groupImage, // Sıkıştırılmış dosya kullanılır
         preview: groupImage ? URL.createObjectURL(groupImage) : null
     }));
 
     setVariants(prev => sortVariantsByOrder([...prev, ...newVariants]));
-    
-    // Temizlik
     resetGroupInputs();
     toast.success(`${newVariants.length} varyant eklendi!`);
   };
 
-  // Ana Listeden Varyant Sil
   const removeVariant = (index) => {
     setVariants(variants.filter((_, i) => i !== index));
   };
@@ -148,7 +168,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
 
     if (selectedFile) data.append("image", selectedFile);
 
-    // --- VARYANTLARI HAZIRLA ---
     const variantsData = variants.map(v => ({
         size: v.size,
         color: v.color,
@@ -156,7 +175,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     }));
     data.append("variants", JSON.stringify(variantsData));
 
-    // Resimleri ekle
     variants.forEach((v, index) => {
         if (v.file) {
             data.append(`variantImage_${index}`, v.file);
@@ -198,7 +216,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           
-          {/* İsim ve Fiyat */}
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium mb-1">Ürün Adı</label>
@@ -210,14 +227,12 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          {/* 👇 YENİLENMİŞ VARYANT YÖNETİMİ (RENK GRUBU) */}
           <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
             <div className="flex items-center gap-2 mb-4">
                 <Layers className="text-blue-600" size={20} />
                 <h3 className="font-bold text-blue-900">Varyant Oluşturucu</h3>
             </div>
             
-            {/* ADIM 1: Renk ve Resim */}
             <div className="flex gap-4 mb-4">
                 <div className="flex-1">
                     <label className="text-xs font-bold text-blue-800 mb-1 block">1. Renk Seç</label>
@@ -230,12 +245,12 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
                     <label className={`cursor-pointer border border-dashed border-blue-300 bg-white rounded-lg h-[42px] flex items-center justify-center gap-2 text-sm text-blue-600 hover:bg-blue-50 ${groupImage ? "border-solid border-green-500 bg-green-50 text-green-700" : ""}`}>
                         <ImageIcon size={18} />
                         {groupImage ? "Görsel Seçildi" : "Görsel Yükle"}
-                        <input type="file" className="hidden" accept="image/*" onChange={(e) => setGroupImage(e.target.files[0])} />
+                        {/* ✅ 5. Yeni Sıkıştırmalı Handler */}
+                        <input type="file" className="hidden" accept="image/*" onChange={handleGroupImageSelect} />
                     </label>
                 </div>
             </div>
 
-            {/* ADIM 2: Bedenler */}
             <div className="mb-4">
                 <label className="text-xs font-bold text-blue-800 mb-1 block">3. Beden ve Stokları Ekle</label>
                 <div className="flex gap-2">
@@ -248,7 +263,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
                     </button>
                 </div>
                 
-                {/* Eklenen Bedenler Listesi */}
                 {groupSizes.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
                         {groupSizes.map((item, idx) => (
@@ -261,13 +275,11 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
                 )}
             </div>
 
-            {/* ADIM 3: Grubu Onayla */}
             <button type="button" onClick={addGroupToVariants} className="w-full bg-blue-900 text-white py-3 rounded-lg font-bold hover:bg-blue-800 shadow-sm flex justify-center items-center gap-2">
                 <Check size={18} /> Bu Rengi ve Bedenleri Listeye Ekle
             </button>
           </div>
 
-          {/* EKLENMİŞ TÜM VARYANTLARIN LİSTESİ */}
           {variants.length > 0 && (
             <div className="border rounded-xl overflow-hidden">
                 <div className="bg-gray-100 px-4 py-2 border-b text-xs font-bold text-gray-500 uppercase">Eklenecek Varyantlar ({variants.length})</div>
@@ -291,13 +303,13 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           )}
 
-          {/* Ana Resim */}
           <div>
             <label className="block text-sm font-medium mb-1">Ürün Ana Görseli</label>
             {!previewUrl ? (
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
                     <p className="text-xs text-gray-500">Ana Resim Seç</p>
+                    {/* ✅ 6. Sıkıştırmalı Handler */}
                     <input type="file" className="hidden" accept="image/*" onChange={handleFileSelect} />
                 </label>
             ) : (
@@ -313,7 +325,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
              <textarea rows="3" className="w-full border rounded-lg px-3 py-2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea>
           </div>
 
-          {/* Kategori Seçimi */}
           <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
             <label className="block text-sm font-bold mb-2">Kategoriler</label>
             <div className="grid grid-cols-2 gap-4 max-h-40 overflow-y-auto">

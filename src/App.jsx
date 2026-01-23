@@ -104,24 +104,21 @@ export default App;
 urunlerin aciklamasi mutlaka olmali
 urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
 
-
-urunler cok fazla hepsini duzenlerken tek tek ugrasmamak toplu duzenleme yapmak icin cozum bulalim
-
-odeme basarili ise paytr den gelen payment-succes page e gitsin degilse payment-failed
-
 mobil responsiveligi kontrol et her sayfa icin
-
-
-
 ahfres kaydet
 
 siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali acilsin
+
 siparis tamamlandiktan sonra sepet silinsin
+
+kampanyalı urunlerden silik fiyat olucak ürün eklerken veya düzenlerken bunun eklemesını yapabilelim
 
 maildeki iletisim bilgilerini duzenle
 siparislerim butonunu duzenle maildeki
 
 sepetinde urun biraknalara mail gonderelim zamanla dongu halinde 
+
+dil secenegi eklenicek
 
 ### Sonra Yap (İleride)
 🔄 **Level 2-3 için plan yap**
