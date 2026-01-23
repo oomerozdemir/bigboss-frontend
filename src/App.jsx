@@ -112,6 +112,9 @@ siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali a
 siparis tamamlandiktan sonra sepet silinsin
 
 kampanyalı urunlerden silik fiyat olucak ürün eklerken veya düzenlerken bunun eklemesını yapabilelim
+her urune ozel acıklama/detay ozellıklerı/degerlendırme bolumlerı olucak
+acıklama ve teknık ozellıklerı eklemeyı admın panelınden yapıcaz
+
 
 maildeki iletisim bilgilerini duzenle
 siparislerim butonunu duzenle maildeki
@@ -119,6 +122,16 @@ siparislerim butonunu duzenle maildeki
 sepetinde urun biraknalara mail gonderelim zamanla dongu halinde 
 
 dil secenegi eklenicek
+
+
+
+ Gelecek Geliştirmeler
+ Zamanlı indirimler (başlangıç/bitiş tarihi)
+ Flash sale özelliği
+ Kupon sistemine entegrasyon
+ Rich text editor ile detay düzenleme
+ Detay şablonları (hazır içerikler)
+
 
 ### Sonra Yap (İleride)
 🔄 **Level 2-3 için plan yap**

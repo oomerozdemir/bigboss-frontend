@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, ShoppingCart, Truck, RefreshCcw, ShieldCheck, Star, Minus, Plus, Check } from 'lucide-react';
+import { Heart, ShoppingCart, Truck, RefreshCcw, ShieldCheck, Star, Minus, Plus, Check, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -21,6 +21,9 @@ const ProductDetailPage = () => {
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
+
+  // ✅ YENİ: Detay sekmeleri için state
+  const [activeTab, setActiveTab] = useState('DESCRIPTION');
 
   useEffect(() => {
     fetchProductDetail();
@@ -48,7 +51,6 @@ const ProductDetailPage = () => {
          const firstColorVariant = data.variants.find(v => v.color !== "Standart" && v.stock > 0);
          if (firstColorVariant) {
             setSelectedColor(firstColorVariant.color);
-            // Eğer ana resim yoksa ve bu rengin resmi varsa onu seç
             if (!data.imageUrl && firstColorVariant.vImageUrl) {
                 setActiveImage(firstColorVariant.vImageUrl);
             }
@@ -61,7 +63,6 @@ const ProductDetailPage = () => {
       setLoading(false);
     }
   };
-
 
   const uniqueColors = product?.variants?.reduce((acc, v) => {
     if (v.color && v.color !== "Standart" && !acc.find(c => c.name === v.color)) {
@@ -87,29 +88,23 @@ const ProductDetailPage = () => {
     if (colorImage) setActiveImage(colorImage); 
   };
 
-const handleAddToCart = () => {
-    // 1. Ürünün varyantları var mı?
+  const handleAddToCart = () => {
     if (product.variants && product.variants.length > 0) {
-        
-        // A) Renk Seçimi Kontrolü
         if (uniqueColors.length > 0 && !selectedColor) {
             toast.error("Lütfen bir renk seçiniz.");
             return;
         }
         
-        // B) Beden Seçimi Kontrolü
         if (availableSizes.length > 0 && !selectedSize) {
             toast.error("Lütfen bir beden seçiniz.");
             return;
         }
 
-        // C) Varyant Eşleşme Kontrolü
         if (!currentVariant) {
             toast.error("Seçilen kombinasyon stokta bulunamadı.");
             return;
         }
         
-        // D) Stok Kontrolü
         if (currentVariant.stock < quantity) {
             toast.error(`Yetersiz stok! En fazla ${currentVariant.stock} adet alabilirsiniz.`);
             return;
@@ -117,7 +112,6 @@ const handleAddToCart = () => {
     }
 
     addToCart(product, currentVariant, quantity);
-
     navigate('/sepet');
   };
 
@@ -130,6 +124,32 @@ const handleAddToCart = () => {
     await toggleFavorite(product.id);
     toast.success(isFavorite(product.id) ? "Favorilerden çıkarıldı" : "Favorilere eklendi");
   };
+
+  // ✅ YENİ: Detay bölümlerini gruplama
+  const groupedDetails = product?.productDetails?.reduce((acc, detail) => {
+    if (!acc[detail.sectionType]) {
+      acc[detail.sectionType] = [];
+    }
+    acc[detail.sectionType].push(detail);
+    return acc;
+  }, {}) || {};
+
+  const sectionLabels = {
+    'DESCRIPTION': 'Açıklama',
+    'FEATURES': 'Özellikler',
+    'SPECIFICATIONS': 'Teknik Özellikler',
+    'CARE': 'Bakım Talimatları'
+  };
+
+  // ✅ Fiyat hesaplama (indirim varsa)
+  const displayPrice = product?.isOnSale && product?.discountPrice 
+    ? parseFloat(product.discountPrice) 
+    : parseFloat(product?.price || 0);
+
+  const hasDiscount = product?.isOnSale && product?.discountPrice;
+  const discountPercent = hasDiscount 
+    ? Math.round((1 - parseFloat(product.discountPrice) / parseFloat(product.price)) * 100)
+    : 0;
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>;
   if (!product) return <div className="min-h-screen flex items-center justify-center">Ürün bulunamadı.</div>;
@@ -149,6 +169,13 @@ const handleAddToCart = () => {
                     alt={product.name} 
                     className="w-full h-full object-cover object-top"
                   />
+                  {/* ✅ YENİ: İndirim rozeti */}
+                  {hasDiscount && (
+                    <div className="absolute top-4 left-4 bg-red-500 text-white font-bold text-sm px-3 py-1.5 rounded-full shadow-lg">
+                      %{discountPercent} İNDİRİM
+                    </div>
+                  )}
+                  
                   {product.stock === 0 && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                         <span className="text-white font-bold text-2xl border-2 border-white px-6 py-3 -rotate-12">TÜKENDİ</span>
@@ -161,8 +188,18 @@ const handleAddToCart = () => {
             <div>
                <div className="mb-6">
                  <h1 className="text-3xl font-black text-gray-900 mb-2">{product.name}</h1>
+                 
+                 {/* ✅ YENİ: Fiyat gösterimi (çizili eski fiyat + yeni fiyat) */}
                  <div className="flex items-center gap-4">
-                    <span className="text-2xl font-medium text-gray-900">{product.price} TL</span>
+                    <div className="flex items-baseline gap-2">
+                      {hasDiscount && (
+                        <span className="text-lg font-medium text-gray-400 line-through">{product.price} TL</span>
+                      )}
+                      <span className={`text-2xl font-bold ${hasDiscount ? 'text-red-600' : 'text-gray-900'}`}>
+                        {displayPrice.toFixed(2)} TL
+                      </span>
+                    </div>
+                    
                     {product.stock > 0 ? (
                         <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded">Stokta Var</span>
                     ) : (
@@ -271,18 +308,57 @@ const handleAddToCart = () => {
                   </div>
                </div>
 
-               <div className="mt-8 border-t pt-6">
-                  <h3 className="font-bold text-lg mb-4">Ürün Açıklaması</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    {product.description || "Bu ürün için açıklama girilmemiş."}
-                  </p>
-               </div>
-
             </div>
           </div>
 
-          <Reviews />
+          {/* ✅ YENİ: DETAYLI BİLGİLER BÖLÜMÜ */}
+          <div className="mt-16 border-t pt-12">
+            {/* Kısa açıklama (description field) */}
+            {product.description && (
+              <div className="mb-8">
+                <h3 className="font-bold text-2xl mb-4">Ürün Hakkında</h3>
+                <p className="text-gray-600 leading-relaxed">{product.description}</p>
+              </div>
+            )}
 
+            {/* Detaylı bölümler (productDetails) */}
+            {Object.keys(groupedDetails).length > 0 && (
+              <div className="space-y-6">
+                {/* Tab Navigation */}
+                <div className="flex gap-2 border-b overflow-x-auto">
+                  {Object.keys(groupedDetails).map(type => (
+                    <button
+                      key={type}
+                      onClick={() => setActiveTab(type)}
+                      className={`px-6 py-3 font-bold text-sm whitespace-nowrap border-b-2 transition ${
+                        activeTab === type 
+                          ? 'border-black text-black' 
+                          : 'border-transparent text-gray-500 hover:text-black'
+                      }`}
+                    >
+                      {sectionLabels[type] || type}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab Content */}
+                <div className="py-6">
+                  {groupedDetails[activeTab]?.sort((a, b) => a.order - b.order).map((detail, idx) => (
+                    <div key={idx} className="mb-6 last:mb-0">
+                      {detail.title && (
+                        <h4 className="font-bold text-lg mb-2 text-gray-900">{detail.title}</h4>
+                      )}
+                      <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        {detail.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Reviews />
           <SimilarProducts currentProduct={product} />
 
         </div>

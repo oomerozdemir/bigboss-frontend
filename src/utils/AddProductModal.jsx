@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Upload, Check, Loader2, Trash2, Plus, Image as ImageIcon, Layers } from 'lucide-react';
+import { X, Save, Upload, Check, Loader2, Trash2, Plus, Image as ImageIcon, Layers, Tag, FileText, ListChecks } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sortVariantsByOrder } from './sortHelpers';
-// ✅ 1. Sıkıştırma kütüphanesini import et
 import imageCompression from 'browser-image-compression';
 
 const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
@@ -24,36 +23,45 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
   const [tempSize, setTempSize] = useState("");
   const [tempStock, setTempStock] = useState("");
 
+  // ✅ YENİ: İNDİRİM VE DETAY STATE'LERİ
+  const [productDetails, setProductDetails] = useState([]);
+  const [tempDetail, setTempDetail] = useState({ sectionType: 'DESCRIPTION', title: '', content: '', order: 0 });
+
   const [formData, setFormData] = useState({
-    name: "", description: "", price: "", isFeatured: false, categoryIds: []
+    name: "", 
+    description: "", 
+    price: "", 
+    discountPrice: "", // ✅ YENİ
+    isOnSale: false,   // ✅ YENİ
+    isFeatured: false, 
+    categoryIds: []
   });
 
-  // ✅ 2. Sıkıştırma Fonksiyonu
   const compressImage = async (file) => {
     const options = {
-      maxSizeMB: 0.8,          // Hedeflenen maksimum boyut (MB)
-      maxWidthOrHeight: 1200,  // Maksimum genişlik/yükseklik (piksel)
-      useWebWorker: true,      // Performans için web worker kullan
-      fileType: "image/webp"   // Çıktı formatı (WebP daha hafiftir)
+      maxSizeMB: 0.8,
+      maxWidthOrHeight: 1200,
+      useWebWorker: true,
+      fileType: "image/webp"
     };
 
     try {
-      // Toast ile kullanıcıya bilgi verelim (büyük dosyalarda bekleme olabilir)
       const compressedFile = await imageCompression(file, options);
       return compressedFile;
     } catch (error) {
       console.error("Sıkıştırma hatası:", error);
-      return file; // Hata olursa orijinal dosyayı döndür
+      return file;
     }
   };
 
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
-      setFormData({ name: "", description: "", price: "", isFeatured: false, categoryIds: [] });
+      setFormData({ name: "", description: "", price: "", discountPrice: "", isOnSale: false, isFeatured: false, categoryIds: [] });
       setVariants([]); 
       setSelectedFile(null);
       setPreviewUrl("");
+      setProductDetails([]); // ✅ YENİ
       resetGroupInputs();
     }
   }, [isOpen]);
@@ -85,7 +93,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     });
   };
 
-  // ✅ 3. Ana Resim Seçimi (Sıkıştırmalı)
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -95,7 +102,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // ✅ 4. Grup Resmi Seçimi (Sıkıştırmalı)
   const handleGroupImageSelect = async (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -137,7 +143,7 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
         color: groupColor,
         size: item.size,
         stock: item.stock,
-        file: groupImage, // Sıkıştırılmış dosya kullanılır
+        file: groupImage,
         preview: groupImage ? URL.createObjectURL(groupImage) : null
     }));
 
@@ -150,10 +156,32 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
+  // ✅ YENİ: DETAY EKLEME FONKSİYONLARI
+  const addProductDetail = () => {
+    if (!tempDetail.content.trim()) {
+        toast.error("İçerik boş olamaz");
+        return;
+    }
+    
+    setProductDetails([...productDetails, { ...tempDetail, order: productDetails.length }]);
+    setTempDetail({ sectionType: 'DESCRIPTION', title: '', content: '', order: 0 });
+    toast.success("Detay eklendi!");
+  };
+
+  const removeProductDetail = (index) => {
+    setProductDetails(productDetails.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (variants.length === 0) {
         toast.error("Lütfen en az bir varyant ekleyin.");
+        return;
+    }
+
+    // ✅ İndirim kontrolü
+    if (formData.isOnSale && (!formData.discountPrice || parseFloat(formData.discountPrice) >= parseFloat(formData.price))) {
+        toast.error("İndirimli fiyat normal fiyattan düşük olmalı!");
         return;
     }
 
@@ -163,8 +191,11 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     data.append("name", formData.name);
     data.append("description", formData.description);
     data.append("price", formData.price);
+    data.append("discountPrice", formData.discountPrice || ""); // ✅ YENİ
+    data.append("isOnSale", formData.isOnSale); // ✅ YENİ
     data.append("isFeatured", formData.isFeatured);
     data.append("categoryIds", JSON.stringify(formData.categoryIds));
+    data.append("productDetails", JSON.stringify(productDetails)); // ✅ YENİ
 
     if (selectedFile) data.append("image", selectedFile);
 
@@ -208,7 +239,7 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex justify-between items-center p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
           <h2 className="text-xl font-bold text-gray-800">Yeni Ürün Ekle</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X size={24} /></button>
@@ -223,8 +254,45 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Fiyat (TL)</label>
-              <input required type="number" className="w-full border rounded-lg px-3 py-2" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+              <input required type="number" step="0.01" className="w-full border rounded-lg px-3 py-2" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
             </div>
+          </div>
+
+          {/* ✅ YENİ: İNDİRİM ALANI */}
+          <div className="bg-orange-50 p-5 rounded-xl border border-orange-200">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag className="text-orange-600" size={20} />
+              <h3 className="font-bold text-orange-900">İndirim Ayarları</h3>
+            </div>
+            
+            <label className="flex items-center gap-3 mb-4 cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="w-5 h-5 accent-orange-600" 
+                checked={formData.isOnSale} 
+                onChange={e => setFormData({...formData, isOnSale: e.target.checked})} 
+              />
+              <span className="font-medium text-gray-700">Bu ürün indirimde</span>
+            </label>
+
+            {formData.isOnSale && (
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">İndirimli Fiyat (TL)</label>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  className="w-full border border-orange-200 rounded-lg px-3 py-2" 
+                  value={formData.discountPrice} 
+                  onChange={e => setFormData({...formData, discountPrice: e.target.value})} 
+                  placeholder="Örn: 199.90"
+                />
+                {formData.price && formData.discountPrice && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    İndirim: %{Math.round((1 - parseFloat(formData.discountPrice) / parseFloat(formData.price)) * 100)}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
@@ -245,7 +313,6 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
                     <label className={`cursor-pointer border border-dashed border-blue-300 bg-white rounded-lg h-[42px] flex items-center justify-center gap-2 text-sm text-blue-600 hover:bg-blue-50 ${groupImage ? "border-solid border-green-500 bg-green-50 text-green-700" : ""}`}>
                         <ImageIcon size={18} />
                         {groupImage ? "Görsel Seçildi" : "Görsel Yükle"}
-                        {/* ✅ 5. Yeni Sıkıştırmalı Handler */}
                         <input type="file" className="hidden" accept="image/*" onChange={handleGroupImageSelect} />
                     </label>
                 </div>
@@ -303,13 +370,90 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           )}
 
+          {/* ✅ YENİ: ÜRÜN DETAYLARI BÖLÜMÜ */}
+          <div className="bg-purple-50 p-5 rounded-xl border border-purple-200">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="text-purple-600" size={20} />
+              <h3 className="font-bold text-purple-900">Ürün Detayları</h3>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-purple-800 mb-1 block">Bölüm Tipi</label>
+                <select 
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm"
+                  value={tempDetail.sectionType}
+                  onChange={e => setTempDetail({...tempDetail, sectionType: e.target.value})}
+                >
+                  <option value="DESCRIPTION">Açıklama</option>
+                  <option value="FEATURES">Özellikler</option>
+                  <option value="SPECIFICATIONS">Teknik Özellikler</option>
+                  <option value="CARE">Bakım Talimatları</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-purple-800 mb-1 block">Başlık (Opsiyonel)</label>
+                <input 
+                  type="text" 
+                  placeholder="Örn: Kumaş Özellikleri"
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm"
+                  value={tempDetail.title}
+                  onChange={e => setTempDetail({...tempDetail, title: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-purple-800 mb-1 block">İçerik</label>
+                <textarea 
+                  rows="3"
+                  placeholder="Detaylı açıklama yazın..."
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm"
+                  value={tempDetail.content}
+                  onChange={e => setTempDetail({...tempDetail, content: e.target.value})}
+                ></textarea>
+              </div>
+
+              <button 
+                type="button" 
+                onClick={addProductDetail}
+                className="w-full bg-purple-600 text-white py-2 rounded-lg font-bold hover:bg-purple-700 text-sm flex items-center justify-center gap-2"
+              >
+                <Plus size={16} /> Detay Ekle
+              </button>
+            </div>
+
+            {productDetails.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-xs font-bold text-purple-800 mb-2">Eklenen Detaylar ({productDetails.length})</p>
+                {productDetails.map((detail, idx) => (
+                  <div key={idx} className="bg-white border border-purple-200 p-3 rounded-lg text-sm">
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-bold">{detail.sectionType}</span>
+                        {detail.title && <p className="font-bold text-gray-800 mt-1">{detail.title}</p>}
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => removeProductDetail(idx)}
+                        className="text-red-500 hover:bg-red-50 p-1 rounded"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <p className="text-gray-600 text-xs line-clamp-2">{detail.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">Ürün Ana Görseli</label>
             {!previewUrl ? (
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
                     <p className="text-xs text-gray-500">Ana Resim Seç</p>
-                    {/* ✅ 6. Sıkıştırmalı Handler */}
                     <input type="file" className="hidden" accept="image/*" onChange={handleFileSelect} />
                 </label>
             ) : (
@@ -321,8 +465,8 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
 
           <div>
-             <label className="block text-sm font-medium mb-1">Açıklama</label>
-             <textarea rows="3" className="w-full border rounded-lg px-3 py-2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea>
+             <label className="block text-sm font-medium mb-1">Kısa Açıklama</label>
+             <textarea rows="2" className="w-full border rounded-lg px-3 py-2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Ürün kartında görünecek kısa açıklama"></textarea>
           </div>
 
           <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Upload, Check, Loader2, Trash2, Plus, Edit2, Image as ImageIcon, Layers } from 'lucide-react';
+import { X, Save, Upload, Check, Loader2, Trash2, Plus, Edit2, Image as ImageIcon, Layers, Tag, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sortVariantsByOrder } from './sortHelpers';
 
@@ -7,32 +7,35 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const [categories, setCategories] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Ana Resim State'leri
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
-
-  // Varyant State'leri (Ana Liste)
   const [variants, setVariants] = useState([]); 
 
-  // --- TOPLU EKLEME STATE'LERİ (YENİ - AddProductModal'dan alındı) ---
+  // ✅ YENİ: DETAYLAR
+  const [productDetails, setProductDetails] = useState([]);
+  const [tempDetail, setTempDetail] = useState({ sectionType: 'DESCRIPTION', title: '', content: '', order: 0 });
+
   const [groupColor, setGroupColor] = useState(""); 
   const [groupImage, setGroupImage] = useState(null); 
   const [groupSizes, setGroupSizes] = useState([]); 
   const [tempSize, setTempSize] = useState("");
   const [tempStock, setTempStock] = useState("");
 
-  // --- SATIR İÇİ DÜZENLEME STATE'LERİ (MEVCUT) ---
   const [editingVariantIndex, setEditingVariantIndex] = useState(null);
   const [tempVariantData, setTempVariantData] = useState({ 
     size: "", color: "", stock: "", file: null, preview: "", vImageUrl: "" 
   });
 
   const [formData, setFormData] = useState({
-    name: "", description: "", price: "", isFeatured: false, categoryIds: []
+    name: "", 
+    description: "", 
+    price: "", 
+    discountPrice: "", // ✅ YENİ
+    isOnSale: false,   // ✅ YENİ
+    isFeatured: false, 
+    categoryIds: []
   });
 
-
-  // --- MODAL AÇILINCA VERİLERİ DOLDUR ---
   useEffect(() => {
     if (isOpen && product) {
       fetchCategories();
@@ -41,25 +44,28 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         name: product.name,
         description: product.description || "",
         price: product.price,
+        discountPrice: product.discountPrice || "", // ✅ YENİ
+        isOnSale: product.isOnSale || false,       // ✅ YENİ
         isFeatured: product.isFeatured,
         categoryIds: product.categories ? product.categories.map(c => c.id) : []
       });
 
-      // Mevcut varyantları state formatına dönüştür
       const formattedVariants = (product.variants || []).map(v => ({
         size: v.size,
         color: v.color || "Standart",
         stock: v.stock,
-        vImageUrl: v.vImageUrl, // Backend'deki mevcut resim linki
-        file: null, // Yeni dosya yok
-        preview: v.vImageUrl // Önizleme olarak mevcut linki kullan
+        vImageUrl: v.vImageUrl,
+        file: null,
+        preview: v.vImageUrl
       }));
 
       setVariants(sortVariantsByOrder(formattedVariants));
       setPreviewUrl(product.imageUrl || "");
       setSelectedFile(null); 
       
-      // Resetler
+      // ✅ YENİ: Detayları doldur
+      setProductDetails(product.productDetails || []);
+      
       setEditingVariantIndex(null);
       resetGroupInputs();
     }
@@ -75,13 +81,12 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`,)
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`)
       const data = await res.json();
       setCategories(data);
     } catch (error) { console.error(error); }
   };
 
-  // --- ANA RESİM İŞLEMLERİ ---
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -95,9 +100,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     setPreviewUrl("");
   };
 
-  // --- GRUP İŞLEMLERİ (YENİ EKLEME ALANI) ---
-
-  // 1. Gruba Beden Ekle
   const addSizeToGroup = () => {
     if (!tempSize || !tempStock) {
         toast.error("Beden ve Stok giriniz");
@@ -108,12 +110,10 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     setTempStock("");
   };
 
-  // 2. Gruptan Beden Çıkar
   const removeSizeFromGroup = (idx) => {
     setGroupSizes(groupSizes.filter((_, i) => i !== idx));
   };
 
-  // 3. GRUBU ANA LİSTEYE AKTAR
   const addGroupToVariants = () => {
     if (!groupColor) {
         toast.error("Lütfen bir renk girin");
@@ -130,7 +130,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         stock: parseInt(item.stock),
         file: groupImage, 
         preview: groupImage ? URL.createObjectURL(groupImage) : null,
-        vImageUrl: null // Yeni eklenenlerin henüz URL'i yok
+        vImageUrl: null
     }));
 
     setVariants([...variants, ...newVariants]);
@@ -138,15 +138,11 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     toast.success(`${newVariants.length} varyant eklendi!`);
   };
 
-  // Ana Listeden Varyant Sil
   const removeVariant = (index) => {
     if (editingVariantIndex === index) setEditingVariantIndex(null);
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  // --- VARYANT SATIR İÇİ DÜZENLEME (INLINE EDIT) ---
-  
-  // 1. Düzenlemeyi Başlat
   const startEditingVariant = (index, variant) => {
     setEditingVariantIndex(index);
     setTempVariantData({ 
@@ -159,7 +155,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     });
   };
 
-  // 2. Düzenleme Sırasında Resim Değişirse
   const handleEditFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -171,7 +166,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     }
   };
 
-  // 3. Düzenlemeyi Kaydet
   const saveEditingVariant = (index) => {
     if (!tempVariantData.size || !tempVariantData.stock) {
         toast.error("Beden ve stok boş olamaz");
@@ -193,7 +187,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     setEditingVariantIndex(null);
   };
 
-  // 4. İptal
   const cancelEditingVariant = () => {
     setEditingVariantIndex(null);
   };
@@ -209,7 +202,22 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     });
   };
 
-  // --- SUBMIT (PUT) ---
+  // ✅ YENİ: DETAY YÖNETİMİ
+  const addProductDetail = () => {
+    if (!tempDetail.content.trim()) {
+        toast.error("İçerik boş olamaz");
+        return;
+    }
+    
+    setProductDetails([...productDetails, { ...tempDetail, order: productDetails.length }]);
+    setTempDetail({ sectionType: 'DESCRIPTION', title: '', content: '', order: 0 });
+    toast.success("Detay eklendi!");
+  };
+
+  const removeProductDetail = (index) => {
+    setProductDetails(productDetails.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -223,32 +231,38 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         return;
     }
 
+    // ✅ İndirim kontrolü
+    if (formData.isOnSale && (!formData.discountPrice || parseFloat(formData.discountPrice) >= parseFloat(formData.price))) {
+        toast.error("İndirimli fiyat normal fiyattan düşük olmalı!");
+        return;
+    }
+
     setIsSubmitting(true);
 
     const data = new FormData();
     data.append("name", formData.name);
     data.append("description", formData.description);
     data.append("price", formData.price);
+    data.append("discountPrice", formData.discountPrice || ""); // ✅ YENİ
+    data.append("isOnSale", formData.isOnSale); // ✅ YENİ
     data.append("isFeatured", formData.isFeatured);
     data.append("categoryIds", JSON.stringify(formData.categoryIds));
+    data.append("productDetails", JSON.stringify(productDetails)); // ✅ YENİ
 
-    // 1. Varyant Verilerini JSON Olarak Gönder
     const variantsData = variants.map(v => ({
         size: v.size,
         color: v.color,
         stock: v.stock,
-        vImageUrl: v.vImageUrl // Eski resim linki (varsa)
+        vImageUrl: v.vImageUrl
     }));
     data.append("variants", JSON.stringify(variantsData));
 
-    // 2. Varyant Resimlerini (Varsa) Dosya Olarak Ekle
     variants.forEach((v, index) => {
         if (v.file) {
             data.append(`variantImage_${index}`, v.file);
         }
     });
 
-    // Ana Resim (Değiştiyse)
     if (selectedFile) {
       data.append("image", selectedFile);
     } else if (previewUrl && !previewUrl.startsWith("blob:")) {
@@ -283,7 +297,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex justify-between items-center p-6 border-b bg-gray-50 sticky top-0 z-10">
           <h2 className="text-xl font-bold text-gray-800">Ürün Düzenle: {product?.name}</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full"><X size={24}/></button>
@@ -298,22 +312,56 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
              </div>
              <div className="space-y-1">
                <label className="text-sm font-medium">Fiyat (TL)</label>
-               <input required type="number" className="w-full border rounded-lg px-3 py-2" value={formData.price} onChange={e=>setFormData({...formData, price:e.target.value})}/>
+               <input required type="number" step="0.01" className="w-full border rounded-lg px-3 py-2" value={formData.price} onChange={e=>setFormData({...formData, price:e.target.value})}/>
              </div>
           </div>
 
-           {/* --- VARYANT YÖNETİMİ (HİBRİT YAPI) --- */}
+          {/* ✅ YENİ: İNDİRİM ALANI */}
+          <div className="bg-orange-50 p-5 rounded-xl border border-orange-200">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag className="text-orange-600" size={20} />
+              <h3 className="font-bold text-orange-900">İndirim Ayarları</h3>
+            </div>
+            
+            <label className="flex items-center gap-3 mb-4 cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="w-5 h-5 accent-orange-600" 
+                checked={formData.isOnSale} 
+                onChange={e => setFormData({...formData, isOnSale: e.target.checked})} 
+              />
+              <span className="font-medium text-gray-700">Bu ürün indirimde</span>
+            </label>
+
+            {formData.isOnSale && (
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700">İndirimli Fiyat (TL)</label>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  className="w-full border border-orange-200 rounded-lg px-3 py-2" 
+                  value={formData.discountPrice} 
+                  onChange={e => setFormData({...formData, discountPrice: e.target.value})} 
+                  placeholder="Örn: 199.90"
+                />
+                {formData.price && formData.discountPrice && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    İndirim: %{Math.round((1 - parseFloat(formData.discountPrice) / parseFloat(formData.price)) * 100)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
            <div className="space-y-6">
             <label className="block text-sm font-bold text-gray-800">Varyant Yönetimi</label>
 
-            {/* 1. YENİ TOPLU EKLEME ALANI (Mavi Kutu) */}
             <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
                 <div className="flex items-center gap-2 mb-4">
                     <Layers className="text-blue-600" size={20} />
                     <h3 className="font-bold text-blue-900">Yeni Varyant Grubu Ekle</h3>
                 </div>
                 
-                {/* Renk ve Resim */}
                 <div className="flex gap-4 mb-4">
                     <div className="flex-1">
                         <label className="text-xs font-bold text-blue-800 mb-1 block">1. Renk Seç</label>
@@ -330,7 +378,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
                     </div>
                 </div>
 
-                {/* Bedenler */}
                 <div className="mb-4">
                     <label className="text-xs font-bold text-blue-800 mb-1 block">3. Beden ve Stokları Ekle</label>
                     <div className="flex gap-2">
@@ -356,8 +403,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
                 </button>
             </div>
 
-            
-            {/* 2. MEVCUT VARYANT LİSTESİ VE DÜZENLEME */}
             <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                 <h4 className="text-sm font-bold text-gray-700 mb-3">Mevcut Varyantlar</h4>
                 {variants.length > 0 ? (
@@ -366,9 +411,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
                     <div key={index} className={`flex justify-between items-center border p-2 rounded text-sm shadow-sm transition-colors ${editingVariantIndex === index ? "bg-blue-50 border-blue-200" : "bg-white border-gray-200"}`}>
                         
                         {editingVariantIndex === index ? (
-                            // --- DÜZENLEME MODU (INPUTLAR) ---
                             <div className="flex items-center gap-2 w-full flex-wrap">
-                                {/* Resim Düzenleme */}
                                 <label className="cursor-pointer relative w-8 h-8 rounded border border-blue-300 overflow-hidden group">
                                     <img src={tempVariantData.preview || "https://via.placeholder.com/32"} alt="preview" className="w-full h-full object-cover" />
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white"><Edit2 size={12}/></div>
@@ -385,10 +428,8 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
                                 </div>
                             </div>
                         ) : (
-                            // --- NORMAL MOD (GÖRÜNTÜLEME) ---
                             <>
                                 <div className="flex items-center gap-3">
-                                    {/* Varyant Resmi */}
                                     {v.preview ? (
                                         <img src={v.preview} alt="v" className="w-8 h-8 rounded object-cover border border-gray-200" />
                                     ) : (
@@ -423,7 +464,84 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
             </div>
           </div>
 
-          {/* Ana Resim */}
+          {/* ✅ YENİ: DETAYLAR BÖLÜMÜ */}
+          <div className="bg-purple-50 p-5 rounded-xl border border-purple-200">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="text-purple-600" size={20} />
+              <h3 className="font-bold text-purple-900">Ürün Detayları</h3>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-purple-800 mb-1 block">Bölüm Tipi</label>
+                <select 
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm"
+                  value={tempDetail.sectionType}
+                  onChange={e => setTempDetail({...tempDetail, sectionType: e.target.value})}
+                >
+                  <option value="DESCRIPTION">Açıklama</option>
+                  <option value="FEATURES">Özellikler</option>
+                  <option value="SPECIFICATIONS">Teknik Özellikler</option>
+                  <option value="CARE">Bakım Talimatları</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-purple-800 mb-1 block">Başlık (Opsiyonel)</label>
+                <input 
+                  type="text" 
+                  placeholder="Örn: Kumaş Özellikleri"
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm"
+                  value={tempDetail.title}
+                  onChange={e => setTempDetail({...tempDetail, title: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-purple-800 mb-1 block">İçerik</label>
+                <textarea 
+                  rows="3"
+                  placeholder="Detaylı açıklama yazın..."
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm"
+                  value={tempDetail.content}
+                  onChange={e => setTempDetail({...tempDetail, content: e.target.value})}
+                ></textarea>
+              </div>
+
+              <button 
+                type="button" 
+                onClick={addProductDetail}
+                className="w-full bg-purple-600 text-white py-2 rounded-lg font-bold hover:bg-purple-700 text-sm flex items-center justify-center gap-2"
+              >
+                <Plus size={16} /> Detay Ekle
+              </button>
+            </div>
+
+            {productDetails.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-xs font-bold text-purple-800 mb-2">Eklenen Detaylar ({productDetails.length})</p>
+                {productDetails.map((detail, idx) => (
+                  <div key={idx} className="bg-white border border-purple-200 p-3 rounded-lg text-sm">
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-bold">{detail.sectionType}</span>
+                        {detail.title && <p className="font-bold text-gray-800 mt-1">{detail.title}</p>}
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => removeProductDetail(idx)}
+                        className="text-red-500 hover:bg-red-50 p-1 rounded"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <p className="text-gray-600 text-xs line-clamp-2">{detail.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ürün Ana Görseli</label>
             {!previewUrl ? (
@@ -443,8 +561,8 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Açıklama</label>
-            <textarea rows="3" className="w-full border rounded-lg px-3 py-2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}></textarea>
+            <label className="block text-sm font-medium">Kısa Açıklama</label>
+            <textarea rows="2" className="w-full border rounded-lg px-3 py-2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Ürün kartında görünecek kısa açıklama"></textarea>
           </div>
 
           <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
