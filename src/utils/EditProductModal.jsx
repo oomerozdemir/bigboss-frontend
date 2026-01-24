@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Upload, Check, Loader2, Trash2, Plus, Edit2, Image as ImageIcon, Layers, Tag, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sortVariantsByOrder } from './sortHelpers';
-import { apiRequest } from './ApiHelper'; 
+import { apiRequest } from './ApiHelper';
 
 const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const [categories, setCategories] = useState([]);
@@ -268,7 +268,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     try {
       // ✅ YENİ: apiRequest helper kullan
       const res = await apiRequest(
-        `${import.meta.env.VITE_API_URL}/api/${product.id}`,
+        `${import.meta.env.VITE_API_URL}/api/products/${product.id}`,
         {
           method: "PUT",
           body: data
