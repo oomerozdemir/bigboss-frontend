@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, Layers, ShoppingBag, RefreshCcw, Ticket, CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, 
+  Layers, ShoppingBag, RefreshCcw, Ticket, 
+  CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight, Upload
+} from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
 import AddProductModal from '../../utils/AddProductModal';
@@ -8,6 +11,7 @@ import EditProductModal from '../../utils/EditProductModal';
 import OrderManager from './OrderManager'; 
 import ReturnManager from './ReturnManager';
 import CouponManager from './CouponManager';
+import BulkUploadPage from './BulkUploadPage';
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
@@ -242,6 +246,7 @@ const AdminPanel = () => {
           <SidebarItem id="coupons" icon={Ticket} label="Kuponlar" />
           <SidebarItem id="categories" icon={Layers} label="Kategoriler" />
           <SidebarItem id="products" icon={Package} label="Ürün Yönetimi" />
+          <SidebarItem id="bulk-upload" icon={Upload} label="Toplu Yükleme" />
           <SidebarItem id="users" icon={Users} label="Müşteriler" />
           <SidebarItem id="settings" icon={Settings} label="Ayarlar" />
         </nav>
@@ -461,6 +466,7 @@ const AdminPanel = () => {
         {activeTab === 'returns' && <ReturnManager />}
         {activeTab === 'categories' && <CategoryManager />}
         {activeTab === 'coupons' && <CouponManager />}
+        {activeTab === 'bulk-upload' && <BulkUploadPage />}
 
         <AddProductModal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} onSuccess={() => fetchProducts(currentPage, searchTerm)} />
         <EditProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={editingProduct} onSuccess={() => fetchProducts(currentPage, searchTerm)} />
