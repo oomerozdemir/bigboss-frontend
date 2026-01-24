@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Upload, Check, Loader2, Trash2, Plus, Edit2, Image as ImageIcon, Layers, Tag, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sortVariantsByOrder } from './sortHelpers';
+import { apiRequest } from '/apiHelper'; 
 
 const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const [categories, setCategories] = useState([]);
@@ -11,7 +12,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const [previewUrl, setPreviewUrl] = useState("");
   const [variants, setVariants] = useState([]); 
 
-  // ✅ YENİ: DETAYLAR
   const [productDetails, setProductDetails] = useState([]);
   const [tempDetail, setTempDetail] = useState({ sectionType: 'DESCRIPTION', title: '', content: '', order: 0 });
 
@@ -30,8 +30,8 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     name: "", 
     description: "", 
     price: "", 
-    discountPrice: "", // ✅ YENİ
-    isOnSale: false,   // ✅ YENİ
+    discountPrice: "",
+    isOnSale: false,
     isFeatured: false, 
     categoryIds: []
   });
@@ -44,8 +44,8 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         name: product.name,
         description: product.description || "",
         price: product.price,
-        discountPrice: product.discountPrice || "", // ✅ YENİ
-        isOnSale: product.isOnSale || false,       // ✅ YENİ
+        discountPrice: product.discountPrice || "",
+        isOnSale: product.isOnSale || false,
         isFeatured: product.isFeatured,
         categoryIds: product.categories ? product.categories.map(c => c.id) : []
       });
@@ -62,8 +62,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
       setVariants(sortVariantsByOrder(formattedVariants));
       setPreviewUrl(product.imageUrl || "");
       setSelectedFile(null); 
-      
-      // ✅ YENİ: Detayları doldur
       setProductDetails(product.productDetails || []);
       
       setEditingVariantIndex(null);
@@ -202,7 +200,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     });
   };
 
-  // ✅ YENİ: DETAY YÖNETİMİ
   const addProductDetail = () => {
     if (!tempDetail.content.trim()) {
         toast.error("İçerik boş olamaz");
@@ -231,7 +228,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         return;
     }
 
-    // ✅ İndirim kontrolü
     if (formData.isOnSale && (!formData.discountPrice || parseFloat(formData.discountPrice) >= parseFloat(formData.price))) {
         toast.error("İndirimli fiyat normal fiyattan düşük olmalı!");
         return;
@@ -243,11 +239,11 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     data.append("name", formData.name);
     data.append("description", formData.description);
     data.append("price", formData.price);
-    data.append("discountPrice", formData.discountPrice || ""); // ✅ YENİ
-    data.append("isOnSale", formData.isOnSale); // ✅ YENİ
+    data.append("discountPrice", formData.discountPrice || "");
+    data.append("isOnSale", formData.isOnSale);
     data.append("isFeatured", formData.isFeatured);
     data.append("categoryIds", JSON.stringify(formData.categoryIds));
-    data.append("productDetails", JSON.stringify(productDetails)); // ✅ YENİ
+    data.append("productDetails", JSON.stringify(productDetails));
 
     const variantsData = variants.map(v => ({
         size: v.size,
@@ -270,12 +266,14 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/${product.id}`,{
-        method: "PUT", 
-        headers: { "Authorization": `Bearer ${token}` },
-        body: data
-      });
+      // ✅ YENİ: apiRequest helper kullan
+      const res = await apiRequest(
+        `${import.meta.env.VITE_API_URL}/api/${product.id}`,
+        {
+          method: "PUT",
+          body: data
+        }
+      );
 
       if (res.ok) {
         toast.success("✅ Ürün başarıyla güncellendi!");
@@ -287,7 +285,11 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Sunucu hatası oluştu.");
+      
+      // Token hatası zaten apiRequest'te handle edildi
+      if (err.message !== 'TOKEN_EXPIRED') {
+        toast.error("Sunucu hatası oluştu.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -316,7 +318,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
              </div>
           </div>
 
-          {/* ✅ YENİ: İNDİRİM ALANI */}
           <div className="bg-orange-50 p-5 rounded-xl border border-orange-200">
             <div className="flex items-center gap-2 mb-3">
               <Tag className="text-orange-600" size={20} />
@@ -464,7 +465,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
             </div>
           </div>
 
-          {/* ✅ YENİ: DETAYLAR BÖLÜMÜ */}
           <div className="bg-purple-50 p-5 rounded-xl border border-purple-200">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="text-purple-600" size={20} />
