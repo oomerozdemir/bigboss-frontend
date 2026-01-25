@@ -17,9 +17,8 @@ const Footer = () => {
               36-50 beden aralığındaki geniş koleksiyonumuzla her kadının yanındayız.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-black transition"><Instagram size={18}/></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-black transition"><Facebook size={18}/></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-black transition"><Twitter size={18}/></a>
+              <a href="https://www.instagram.com/bigbosstextil" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-black transition"><Instagram size={18}/></a>
+              <a href="https://www.facebook.com/bigbosstextil" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white hover:text-black transition"><Facebook size={18}/></a>
             </div>
           </div>
 
@@ -27,7 +26,7 @@ const Footer = () => {
           <div>
             <h3 className="text-sm font-bold tracking-widest uppercase mb-6 text-gray-200">Kurumsal</h3>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li><Link to="/about" className="hover:text-white transition">Hakkımızda</Link></li>
+              <li><Link to="/hakkimizda" className="hover:text-white transition">Hakkımızda</Link></li>
               <li><Link to="/products" className="hover:text-white transition">Koleksiyonlar</Link></li>
               <li><Link to="/contact" className="hover:text-white transition">İletişim</Link></li>
               <li><Link to="/sss" className="hover:text-white transition">Sıkça Sorulan Sorular</Link></li>
@@ -52,19 +51,20 @@ const Footer = () => {
             <ul className="space-y-4 text-sm text-gray-400">
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="shrink-0 mt-0.5 text-gray-500" />
-                <span>Merkez: Halaskargazi Cad. Osmanbey, Şişli / İstanbul</span>
+                <span>Halaskargazi Cad. No:92-D Osmanbey Mağazası T:530 642 53 43</span>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="shrink-0 mt-0.5 text-gray-500" />
-                <span>Şube: Valikonağı Cad. Nişantaşı / İstanbul</span>
+                <span>Halaskargazi Cad. No:150-B Şişli Mağazası T:530 774 99 86</span>
               </li>
-              <li className="flex items-center gap-3">
-                <Phone size={18} className="shrink-0 text-gray-500" />
-                <span>0212 000 00 00</span>
+              <li className="flex items-start gap-3">
+                <MapPin size={18} className="shrink-0 mt-0.5 text-gray-500" />
+                <span>Rumeli Cad. No:72-74 Nişantaşı-Ömür Inn Mağazası T:530 072 16 99</span>
               </li>
+              
               <li className="flex items-center gap-3">
                 <Mail size={18} className="shrink-0 text-gray-500" />
-                <span>info@bigboss.com</span>
+                <span>bigbosstekstil1972@gmail.com</span>
               </li>
             </ul>
           </div>
@@ -73,7 +73,7 @@ const Footer = () => {
 
         {/* ALT TELİF ALANI */}
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
-          <p>© 2026 Big Boss Tekstil. Tüm hakları saklıdır.</p>
+          <p>© 2026 Big Boss Textil. Tüm hakları saklıdır.</p>
           <div className="flex gap-4">
              {/* Kredi Kartı İkonları Temsili */}
              <div className="h-6 w-10 bg-gray-800 rounded"></div>

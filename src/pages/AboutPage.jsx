@@ -72,21 +72,21 @@ const AboutPage = () => {
                     <div className="bg-gray-50 p-6 rounded-xl text-center group hover:bg-black hover:text-white transition duration-300 cursor-default">
                         <h3 className="text-xl font-bold mb-2 font-serif">OSMANBEY</h3>
                         <p className="text-sm text-gray-500 group-hover:text-gray-300">Merkez Mağaza & Showroom</p>
-                        <p className="text-xs mt-4 opacity-70">Halaskargazi Cad. No:123<br/>Şişli / İstanbul</p>
+                        <p className="text-xs mt-4 opacity-70">Halaskargazi Cad. No:92-D<br/>Şişli / İstanbul</p>
                     </div>
 
                     {/* MAĞAZA KARTI 2 */}
                     <div className="bg-gray-50 p-6 rounded-xl text-center group hover:bg-black hover:text-white transition duration-300 cursor-default">
                         <h3 className="text-xl font-bold mb-2 font-serif">NİŞANTAŞI</h3>
-                        <p className="text-sm text-gray-500 group-hover:text-gray-300">Butik Mağaza</p>
-                        <p className="text-xs mt-4 opacity-70">Teşvikiye Mah. Valikonağı Cad.<br/>Nişantaşı / İstanbul</p>
+                        <p className="text-sm text-gray-500 group-hover:text-gray-300">Ömür Inn Mağazası</p>
+                        <p className="text-xs mt-4 opacity-70">Rumeli Cad. No:72-74<br/>Nişantaşı / İstanbul</p>
                     </div>
 
                     {/* MAĞAZA KARTI 3 */}
                     <div className="bg-gray-50 p-6 rounded-xl text-center group hover:bg-black hover:text-white transition duration-300 cursor-default">
                         <h3 className="text-xl font-bold mb-2 font-serif">ŞİŞLİ</h3>
                         <p className="text-sm text-gray-500 group-hover:text-gray-300">Perakende Satış</p>
-                        <p className="text-xs mt-4 opacity-70">19 Mayıs Mah. Büyükdere Cad.<br/>Şişli / İstanbul</p>
+                        <p className="text-xs mt-4 opacity-70">Halaskargazi Cad. No:150-B<br/>Şişli / İstanbul</p>
                     </div>
 
                 </div>
