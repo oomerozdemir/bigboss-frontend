@@ -22,6 +22,7 @@ import CheckoutPage from './pages/CheckOutPage';
 import UserAccountPage from './pages/UserAccountPage';
 import PaymentFailed from './pages/PaymentFailed';
 import PaymentSuccess from './pages/PaymentSuccess';
+import ContactPage from "./pages/ContactPage";
 
 import TermsOfService from './pages/LegalPages/TermsOfService';
 import PrivacyPolicy from './pages/LegalPages/PrivacyPolicy';
@@ -74,6 +75,8 @@ function App() {
           <Route path="/hesabim" element={<UserAccountPage />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
+          <Route path="/iletisim" element={<ContactPage />} />
+
 
 
           {/* Legal Rotalar */}
