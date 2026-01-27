@@ -114,6 +114,15 @@ siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali a
 
 siparis tamamlandiktan sonra sepet silinsin
 
+productCard da silik şekilde orjinal fiyat normal şekilde indirimli fiyat yazsın indirim uygulanmışsa üründe
+
+ınsta bıo duzenle 3 mağaza adresını de ekle
+
+sayfa tekrar yüklendıgınde veya yenı sayfaya geçıldıgınde bır buton ile footer kısmından veya altlardan başlatıyodu en üstten başlatsın hep
+
+ürün yönetimi ksımında duzenleme yapılmıyor
+
+
 maildeki iletisim bilgilerini duzenle
 siparislerim butonunu duzenle maildeki
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast'; 
-import { Save, Search, ArrowLeft, Star, StarOff, Eye, EyeOff, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Save, Search, ArrowLeft, Star, StarOff, Eye, EyeOff, CheckSquare, Square, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const BulkProductEditor = () => {
@@ -20,19 +20,19 @@ const BulkProductEditor = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem('token');
 
-  // Arama değişince 1. sayfaya dön ve bekleme (debounce) yap
+  // Arama değişince 1. sayfaya dön
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-        fetchProducts(1); // Aramada her zaman 1. sayfadan başla
+        fetchProducts(1); 
         setCurrentPage(1);
-    }, 500); // Yarım saniye bekle (sürekli istek atmasın)
+    }, 500);
 
     return () => clearTimeout(delayDebounceFn);
   }, [search]);
 
-  // Sayfa değişince veri çek (Arama hariç, o yukarıda handle ediliyor)
+  // Sayfa değişince veri çek
   useEffect(() => {
-    if (currentPage > 1) { // search effect'i zaten 1. sayfayı çekiyor
+    if (currentPage > 1) { 
         fetchProducts(currentPage);
     }
   }, [currentPage]);
@@ -40,7 +40,6 @@ const BulkProductEditor = () => {
   const fetchProducts = async (page = 1) => {
     setLoading(true);
     try {
-      // ✅ Pagination ve Search parametreleri eklendi
       const res = await fetch(`${apiUrl}/api/products/bulk-list?page=${page}&limit=500&search=${search}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -49,7 +48,6 @@ const BulkProductEditor = () => {
       
       if (data.success) {
         setProducts(data.products || []);
-        // Meta verilerini güncelle
         if (data.meta) {
             setTotalPages(data.meta.totalPages);
             setTotalCount(data.meta.totalCount);
@@ -63,7 +61,7 @@ const BulkProductEditor = () => {
     }
   };
 
-  // Hücre Değişikliği (Tekli)
+  // Tekil Değişiklik
   const handleCellChange = (id, field, value) => {
     setProducts(prev => prev.map(p => 
       p.id === id ? { ...p, [field]: value } : p
@@ -78,18 +76,21 @@ const BulkProductEditor = () => {
     }));
   };
 
-  // Toplu Aç/Kapat (Mevcut Sayfa İçin)
+  // ✅ YENİ: Toplu Aç/Kapat (Select All Logic)
   const handleBulkToggle = (field) => {
     if (products.length === 0) return;
 
-    const allAreActive = products.every(p => p[field] === true);
-    const targetValue = !allAreActive;
+    // Hepsi zaten seçili mi kontrol et
+    const allAreTrue = products.every(p => p[field] === true);
+    const targetValue = !allAreTrue; // Hepsi seçiliyse kapat, değilse aç
 
+    // 1. Görüntüyü Güncelle
     setProducts(prev => prev.map(p => ({
       ...p,
       [field]: targetValue
     })));
 
+    // 2. Kaydedilecekler Listesini Güncelle
     setModifiedRows(prev => {
       const nextState = { ...prev };
       products.forEach(p => {
@@ -103,11 +104,10 @@ const BulkProductEditor = () => {
 
     const label = field === 'isFeatured' ? 'Vitrin' : 'Durum';
     toast.success(targetValue 
-      ? `Bu sayfadaki tüm ürünler için ${label} açıldı!` 
-      : `Bu sayfadaki tüm ürünler için ${label} kapatıldı!`);
+      ? `Bu sayfadaki tüm ürünler ${label} için AKTİF edildi` 
+      : `Bu sayfadaki tüm ürünler ${label} için PASİF edildi`, { icon: '🔄' });
   };
 
-  // Kaydetme İşlemi
   const handleSave = async () => {
     const updates = Object.values(modifiedRows);
 
@@ -140,10 +140,14 @@ const BulkProductEditor = () => {
     }
   };
 
+  // Header Checkbox Durumları
+  const isAllFeatured = products.length > 0 && products.every(p => p.isFeatured);
+  const isAllActive = products.length > 0 && products.every(p => p.isActive);
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       
-      {/* HEADER (Sabit) */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 shadow-sm border-b border-gray-100 z-20">
         <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition">
@@ -152,7 +156,7 @@ const BulkProductEditor = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Toplu Ürün Düzenle</h1>
               <p className="text-xs text-gray-400 font-medium">
-                  {totalCount} ürün bulundu • Sayfa {currentPage}/{totalPages}
+                  {totalCount} ürün • Sayfa {currentPage}/{totalPages}
               </p>
             </div>
         </div>
@@ -182,7 +186,7 @@ const BulkProductEditor = () => {
         </div>
       </div>
 
-      {/* TABLE CONTENT (Scrollable) */}
+      {/* TABLE CONTENT */}
       <div className="flex-1 overflow-auto p-6">
         {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -199,20 +203,28 @@ const BulkProductEditor = () => {
                         <th className="px-4 py-3 w-32 bg-gray-50">Fiyat (TL)</th>
                         <th className="px-4 py-3 w-24 bg-gray-50">Stok</th>
                         
-                        {/* VİTRİN HEADER */}
+                        {/* ✅ VİTRİN HEADER (Select All) */}
                         <th className="px-4 py-3 w-32 text-center bg-gray-50">
-                        <div onClick={() => handleBulkToggle('isFeatured')} className="flex flex-col items-center cursor-pointer group hover:bg-gray-200 p-1 rounded transition select-none">
-                            <div className="flex items-center gap-1">
-                            Vitrin <CheckCircle2 size={14} className="text-gray-300 group-hover:text-blue-500"/>
-                            </div>
-                        </div>
+                          <button 
+                            onClick={() => handleBulkToggle('isFeatured')}
+                            className="flex items-center justify-center gap-1 w-full hover:bg-gray-200 py-1 rounded transition group"
+                            title="Tümünü Vitrine Ekle/Çıkar"
+                          >
+                            <span>Vitrin</span>
+                            {isAllFeatured ? <CheckSquare size={16} className="text-blue-600"/> : <Square size={16} className="text-gray-400 group-hover:text-blue-600"/>}
+                          </button>
                         </th>
 
-                        {/* DURUM HEADER */}
+                        {/* ✅ DURUM HEADER (Select All) */}
                         <th className="px-4 py-3 w-32 bg-gray-50">
-                        <div onClick={() => handleBulkToggle('isActive')} className="flex items-center gap-1 cursor-pointer group hover:bg-gray-200 p-1 rounded transition select-none w-fit">
-                            Durum <CheckCircle2 size={14} className="text-gray-300 group-hover:text-blue-500"/>
-                        </div>
+                          <button 
+                            onClick={() => handleBulkToggle('isActive')}
+                            className="flex items-center gap-1 w-full hover:bg-gray-200 py-1 rounded transition group"
+                            title="Tümünü Yayınla/Gizle"
+                          >
+                            <span>Durum</span>
+                            {isAllActive ? <CheckSquare size={16} className="text-blue-600"/> : <Square size={16} className="text-gray-400 group-hover:text-blue-600"/>}
+                          </button>
                         </th>
                     </tr>
                     </thead>
@@ -225,7 +237,7 @@ const BulkProductEditor = () => {
                             <td className="px-4 py-3">
                             <div className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-white">
                                 <img 
-                                src={product.imageUrl || product.images?.[0] || 'https://via.placeholder.com/40'} 
+                                src={product.imageUrl || 'https://via.placeholder.com/40'} 
                                 alt="" 
                                 className="w-full h-full object-cover"
                                 />
@@ -236,7 +248,7 @@ const BulkProductEditor = () => {
                                 type="text" 
                                 value={product.name}
                                 onChange={(e) => handleCellChange(product.id, 'name', e.target.value)}
-                                className="w-full bg-transparent border-b border-transparent focus:border-blue-500 outline-none py-1 text-gray-900 font-medium placeholder-gray-300 transition-colors"
+                                className="w-full bg-transparent border-b border-transparent focus:border-blue-500 outline-none py-1 text-gray-900 font-medium transition-colors"
                             />
                             </td>
                             <td className="px-4 py-3">
@@ -244,7 +256,7 @@ const BulkProductEditor = () => {
                                 type="number" 
                                 value={product.price}
                                 onChange={(e) => handleCellChange(product.id, 'price', e.target.value)}
-                                className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                             />
                             </td>
                             <td className="px-4 py-3">
@@ -266,7 +278,6 @@ const BulkProductEditor = () => {
                                     ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' 
                                     : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                                 }`}
-                                title={product.isFeatured ? "Vitrinden Kaldır" : "Vitrine Ekle"}
                             >
                                 {product.isFeatured ? <Star size={18} fill="currentColor" /> : <StarOff size={18} />}
                             </button>
@@ -306,7 +317,7 @@ const BulkProductEditor = () => {
         )}
       </div>
 
-      {/* FOOTER (Pagination Bar) */}
+      {/* FOOTER */}
       <div className="bg-white border-t border-gray-200 p-3 flex justify-between items-center z-20">
         <button 
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}

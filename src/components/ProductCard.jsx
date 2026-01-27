@@ -230,16 +230,26 @@ const ProductCard = ({ product }) => {
             </div>
           )}
           
-          <div className="mt-1 flex items-center gap-2">
-            <span className="text-sm font-bold text-gray-900">
-              {product.price ? `${parseFloat(product.price).toFixed(2)} TL` : 'Fiyat Belirtilmemiş'}
-            </span>
-            {product.discount > 0 && product.price && (
-                <span className="text-xs text-gray-400 line-through">
-                  {(parseFloat(product.price) / (1 - product.discount / 100)).toFixed(2)} TL
-                </span>
-            )}
-          </div>
+          {/* Fiyat Alanı */}
+<div className="mt-2">
+  {product.discountPrice && product.discountPrice > 0 && product.discountPrice < product.price ? (
+    <div className="flex items-center gap-2">
+      {/* Orjinal Fiyat (Silik ve Üstü Çizili) */}
+      <span className="text-sm text-gray-400 line-through font-medium">
+        {product.price} TL
+      </span>
+      {/* İndirimli Fiyat (Kırmızı ve Kalın) */}
+      <span className="text-lg font-bold text-red-600">
+        {product.discountPrice} TL
+      </span>
+    </div>
+  ) : (
+    // İndirim Yoksa Sadece Normal Fiyat
+    <span className="text-lg font-bold text-gray-900">
+      {product.price} TL
+    </span>
+  )}
+</div>
         </div>
       </div>
     </Link>
