@@ -10,30 +10,22 @@ const ProductCard = ({ product }) => {
   const { addToCart } = useCart(); 
   const navigate = useNavigate();  
   
-  // ✅ Ürün kontrolü
   if (!product || !product.id) {
     return null;
   }
 
-  // ✅ DÜZELTME: Gerçek bir fallback image (base64 encoded 1x1 pixel gray image)
   const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500'%3E%3Crect width='400' height='500' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='16' fill='%239ca3af' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-  // ✅ Ana resim kontrolü - Console hatası vermeyecek
   const getInitialImage = () => {
-    // Önce ürünün kendi imageUrl'ini kontrol et
     if (product.imageUrl && product.imageUrl.trim() !== '') {
       return product.imageUrl;
     }
-    
-    // Sonra varyantların imageUrl'lerini kontrol et
     if (Array.isArray(product.variants) && product.variants.length > 0) {
       const variantWithImage = product.variants.find(v => v?.vImageUrl && v.vImageUrl.trim() !== '');
       if (variantWithImage) {
         return variantWithImage.vImageUrl;
       }
     }
-    
-    // Hiçbiri yoksa fallback
     return FALLBACK_IMAGE;
   };
 
@@ -42,48 +34,35 @@ const ProductCard = ({ product }) => {
 
   const liked = isFavorite(product.id);
 
-  // ✅ Bedenleri Ayıkla ve Sırala
+  // ✅ YENİ: İndirim Hesaplama Mantığı (Detail sayfası ile aynı)
+  const hasDiscount = product.isOnSale && product.discountPrice && product.discountPrice < product.price;
+  
+  // İndirim yüzdesini hesapla
+  const discountPercent = hasDiscount 
+    ? Math.round((1 - parseFloat(product.discountPrice) / parseFloat(product.price)) * 100)
+    : 0;
+
   const uniqueSizes = React.useMemo(() => {
     if (!Array.isArray(product.variants)) return [];
-    
     const sizes = product.variants
       .filter(v => v && v.stock > 0 && v.size && v.size !== 'Standart' && v.size !== 'STD')
       .map(v => v.size);
-    
     const unique = [...new Set(sizes)];
-    
-    const sizeOrder = { 
-      'XXS': 1, 'XS': 2, 'S': 3, 'M': 4, 'L': 5, 
-      'XL': 6, 'XXL': 7, '2XL': 8, '3XL': 9 
-    };
-    
-    return unique.sort((a, b) => {
-      const orderA = sizeOrder[a] || 99;
-      const orderB = sizeOrder[b] || 99;
-      return orderA - orderB;
-    });
+    const sizeOrder = { 'XXS': 1, 'XS': 2, 'S': 3, 'M': 4, 'L': 5, 'XL': 6, 'XXL': 7, '2XL': 8, '3XL': 9 };
+    return unique.sort((a, b) => (sizeOrder[a] || 99) - (sizeOrder[b] || 99));
   }, [product.variants]);
 
-  // ✅ Renkleri Ayıkla
   const uniqueColors = React.useMemo(() => {
     if (!Array.isArray(product.variants)) return [];
-    
     const colorMap = new Map();
-    
     product.variants.forEach(variant => {
       if (!variant || !variant.color || variant.color === "Standart") return;
-      
-      // Sadece geçerli image URL'si olanları ekle
       if (variant.vImageUrl && variant.vImageUrl.trim() !== '') {
         if (!colorMap.has(variant.color)) {
-          colorMap.set(variant.color, {
-            color: variant.color,
-            image: variant.vImageUrl
-          });
+          colorMap.set(variant.color, { color: variant.color, image: variant.vImageUrl });
         }
       }
     });
-    
     return Array.from(colorMap.values());
   }, [product.variants]);
 
@@ -104,14 +83,13 @@ const ProductCard = ({ product }) => {
     e.stopPropagation();
     if (variantImage && variantImage.trim() !== '') {
       setActiveImage(variantImage);
-      setImageError(false); // Reset error state
+      setImageError(false);
     }
   };
 
   const handleAddToCart = (e) => {
     e.preventDefault(); 
     e.stopPropagation(); 
-
     const variantToAdd = Array.isArray(product.variants) 
       ? product.variants.find(v => v && v.stock > 0)
       : null;
@@ -124,7 +102,6 @@ const ProductCard = ({ product }) => {
     }
   };
 
-  // ✅ Image error handler - Console hatası vermez
   const handleImageError = (e) => {
     if (!imageError) {
       setImageError(true);
@@ -139,7 +116,6 @@ const ProductCard = ({ product }) => {
         {/* --- GÖRSEL ALANI --- */}
         <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden mb-4 rounded-lg">
           {imageError ? (
-            // Fallback UI - Daha güzel görünüm
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
               <ImageOff size={48} className="text-gray-300 mb-2" />
               <span className="text-xs text-gray-400 font-medium">Görsel Yok</span>
@@ -165,9 +141,10 @@ const ProductCard = ({ product }) => {
             />
           </button>
           
-          {product.discount > 0 && (
-             <span className="absolute top-3 left-3 bg-black text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider shadow-sm rounded">
-               %{product.discount}
+          {/* ✅ DÜZELTME: İndirim yüzdesi doğru hesaplanarak gösteriliyor */}
+          {hasDiscount && (
+             <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider shadow-sm rounded">
+               %{discountPercent} İNDİRİM
              </span>
           )}
 
@@ -199,9 +176,7 @@ const ProductCard = ({ product }) => {
                            src={item.image} 
                            className="w-full h-full object-cover" 
                            alt={item.color}
-                           onError={(e) => {
-                             e.target.style.display = 'none';
-                           }}
+                           onError={(e) => { e.target.style.display = 'none'; }}
                            loading="lazy"
                          />
                       </button>
@@ -230,26 +205,24 @@ const ProductCard = ({ product }) => {
             </div>
           )}
           
-          {/* Fiyat Alanı */}
-<div className="mt-2">
-  {product.discountPrice && product.discountPrice > 0 && product.discountPrice < product.price ? (
-    <div className="flex items-center gap-2">
-      {/* Orjinal Fiyat (Silik ve Üstü Çizili) */}
-      <span className="text-sm text-gray-400 line-through font-medium">
-        {product.price} TL
-      </span>
-      {/* İndirimli Fiyat (Kırmızı ve Kalın) */}
-      <span className="text-lg font-bold text-red-600">
-        {product.discountPrice} TL
-      </span>
-    </div>
-  ) : (
-    // İndirim Yoksa Sadece Normal Fiyat
-    <span className="text-lg font-bold text-gray-900">
-      {product.price} TL
-    </span>
-  )}
-</div>
+          {/* ✅ DÜZELTME: Fiyat Alanı - İndirim varsa eski/yeni fiyat gösterimi */}
+          <div className="mt-1 flex items-center gap-2">
+            {hasDiscount ? (
+                <>
+                    <span className="text-xs text-gray-400 line-through font-medium">
+                        {parseFloat(product.price).toFixed(2)} TL
+                    </span>
+                    <span className="text-sm font-bold text-red-600">
+                        {parseFloat(product.discountPrice).toFixed(2)} TL
+                    </span>
+                </>
+            ) : (
+                <span className="text-sm font-bold text-gray-900">
+                    {product.price ? `${parseFloat(product.price).toFixed(2)} TL` : 'Fiyat Belirtilmemiş'}
+                </span>
+            )}
+          </div>
+
         </div>
       </div>
     </Link>
