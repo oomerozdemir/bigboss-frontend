@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import MainLayout from './components/MainLayout';
 
 import ToastContainer from "./config/toastConfig";
@@ -31,13 +32,21 @@ import CookiePolicy from './pages/LegalPages/CookiePolicy';
 
 import { FavoritesProvider } from './context/FavoritesContext';
 
-
 {/* Admin Routes */}
 import AdminLogin from './pages/AdminPages/AdminLogin';
 import AdminPanel from './pages/AdminPages/AdminPanel';
 import ProtectedRoute from './utils/ProtectedRoute';
 import BulkProductEditor from './pages/AdminPages/BulkProductEditor';
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
 
 const HomePage = () => {
   return (
@@ -49,7 +58,6 @@ const HomePage = () => {
       <HomeFAQ />
       <BrandStory />
       <Newsletter />
-
     </>
   );
 };
@@ -58,6 +66,8 @@ function App() {
   return (
     <FavoritesProvider>
     <Router>
+      <ScrollToTop />
+      
       <div className="font-sans">
         <ToastContainer />
         <CartProvider>
@@ -77,16 +87,11 @@ function App() {
           <Route path="/payment-failed" element={<PaymentFailed />} />
           <Route path="/iletisim" element={<ContactPage />} />
 
-
-
           {/* Legal Rotalar */}
           <Route path="/mesafeli-satis-sozlesmesi" element={<TermsOfService />} />
           <Route path="/gizlilik-politikasi" element={<PrivacyPolicy />} />
           <Route path="/iade-politikasi" element={<ReturnPolicy />} />
           <Route path="/cerez-politikasi" element={<CookiePolicy />} />
-
-
-
 
           </Route>
 
@@ -102,46 +107,3 @@ function App() {
   );
 }
 export default App;
-
-/* 
-urunlerin aciklamasi mutlaka olmali
-urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
-
-mobil responsiveligi kontrol et her sayfa icin
-ahfres kaydet
-
-siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali acilsin
-
-siparis tamamlandiktan sonra sepet silinsin
-
-productCard da silik şekilde orjinal fiyat normal şekilde indirimli fiyat yazsın indirim uygulanmışsa üründe
-
-ınsta bıo duzenle 3 mağaza adresını de ekle
-
-sayfa tekrar yüklendıgınde veya yenı sayfaya geçıldıgınde bır buton ile footer kısmından veya altlardan başlatıyodu en üstten başlatsın hep
-
-ürün yönetimi ksımında duzenleme yapılmıyor
-
-
-maildeki iletisim bilgilerini duzenle
-siparislerim butonunu duzenle maildeki
-
-sepetinde urun biraknalara mail gonderelim zamanla dongu halinde 
-
-dil secenegi eklenicek
-
-Gelecek Geliştirmeler
- Zamanlı indirimler (başlangıç/bitiş tarihi)
- Flash sale özelliği
- Kupon sistemine entegrasyon
- Rich text editor ile detay düzenleme
- Detay şablonları (hazır içerikler)
-
-
-### Sonra Yap (İleride)
-🔄 **Level 2-3 için plan yap**
-- Admin panel hero editor
-- Slider/carousel
-- Dynamic content
-- A/B testing
-*/
