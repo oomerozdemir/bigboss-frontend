@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse';
 import toast from 'react-hot-toast';
-import { Upload, Download, FileText, Image as ImageIcon, Loader2, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { Upload, Download, FileText, Image as ImageIcon, Loader2, CheckCircle, AlertCircle, XCircle, Info } from 'lucide-react';
 
 const BulkUploadPage = () => {
   const [csvFile, setCsvFile] = useState(null);
@@ -31,7 +31,7 @@ const BulkUploadPage = () => {
     }
   };
 
-  // 2. CSV YÜKLEME VE PARSE ETME
+  // 2. CSV YÜKLEME
   const handleCsvSelect = (e) => {
     const file = e.target.files[0];
     setCsvFile(file);
@@ -41,7 +41,7 @@ const BulkUploadPage = () => {
       skipEmptyLines: true,
       complete: (results) => {
         setParsedData(results.data);
-        toast.success(`${results.data.length} varyant okundu.`);
+        toast.success(`${results.data.length} satır okundu.`);
       },
       error: (err) => {
         toast.error("CSV okuma hatası: " + err.message);
@@ -66,10 +66,9 @@ const BulkUploadPage = () => {
       
       formData.append('data', JSON.stringify(batch));
 
-      // Bu partideki resimleri ekle
       batch.forEach(item => {
-        if (item.variantImage || item.mainImageName) {
-          const imgName = item.variantImage || item.mainImageName;
+        const imgName = item.variantImage || item.mainImageName;
+        if (imgName) {
           for (let j = 0; j < imageFiles.length; j++) {
             if (imageFiles[j].name === imgName.trim()) {
               formData.append('images', imageFiles[j]);
@@ -91,20 +90,18 @@ const BulkUploadPage = () => {
           allResults = [...allResults, ...result.details];
         }
 
-        setLogs(prev => [...prev, `Batch ${Math.floor(i/BATCH_SIZE) + 1}: ${result.processed || 0} varyant işlendi.`]);
+        setLogs(prev => [...prev, `Batch ${Math.floor(i/BATCH_SIZE) + 1}: ${result.processed || 0} satır işlendi.`]);
       } catch (error) {
         setLogs(prev => [...prev, `Batch ${Math.floor(i/BATCH_SIZE) + 1} HATALI!`]);
         console.error(error);
       }
     }
 
-    // Özet
     const updated = allResults.filter(r => r.status?.includes("GÜNCELLENDİ")).length;
     const notFound = allResults.filter(r => r.status?.includes("BULUNAMADI")).length;
-    const errors = allResults.filter(r => r.status?.includes("HATA")).length;
-    const noChange = allResults.filter(r => r.status?.includes("DEĞİŞİKLİK YOK")).length;
+    const errors = allResults.filter(r => r.status?.includes("HATA") || r.status?.includes("YÜKLENEMEDİ")).length;
 
-    setSummary({ updated, notFound, errors, noChange, total: allResults.length });
+    setSummary({ updated, notFound, errors, total: allResults.length });
 
     setUploading(false);
     
@@ -112,7 +109,7 @@ const BulkUploadPage = () => {
       toast.success(`✅ ${updated} varyant güncellendi!`);
     }
     if (notFound > 0) {
-      toast.error(`❌ ${notFound} varyant bulunamadı`);
+      toast.error(`❌ ${notFound} bulunamadı`);
     }
   };
 
@@ -123,15 +120,30 @@ const BulkUploadPage = () => {
           <Upload size={28} /> Toplu Varyant Resmi Güncelleme
         </h1>
         <p className="text-sm text-gray-500 mt-2">
-          🎨 Her ürünün her varyantı (beden/renk) için ayrı resim yükleyebilirsiniz
+          🎯 Ürün adı + Beden bilgisi ile varyant resimlerini güncelleyin
         </p>
+      </div>
+
+      {/* BİLGİLENDİRME KUTUSU */}
+      <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+        <div className="flex items-start gap-3">
+          <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={20}/>
+          <div className="text-sm text-blue-800">
+            <p className="font-bold mb-2">📌 Nasıl Çalışır?</p>
+            <ul className="space-y-1 list-disc list-inside">
+              <li><strong>Beden Belirtilirse:</strong> Sadece o beden güncellenir (örn: "36")</li>
+              <li><strong>Beden Boşsa:</strong> O ürünün TÜM bedenleri güncellenir</li>
+              <li><strong>productCode:</strong> Tam ürün adı (renk dahil) - örn: "3360 POZDA POZ Beyaz"</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* ADIM 1: CSV */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-            <FileText className="text-green-600"/> 1. Varyant Listesi (CSV)
+            <FileText className="text-green-600"/> 1. CSV Dosyası
           </h2>
           
           <button 
@@ -150,25 +162,21 @@ const BulkUploadPage = () => {
             {csvFile && <p className="mt-2 text-sm font-bold text-green-700">{csvFile.name}</p>}
           </div>
 
-          <div className="mt-4 bg-blue-50 p-3 rounded-lg text-xs text-blue-800">
-            <strong>CSV Formatı:</strong>
-            <ul className="mt-2 space-y-1 list-disc list-inside">
-              <li><code>productCode</code> - Ürün adı/kodu</li>
-              <li><code>variantSize</code> - Beden (S, M, L...)</li>
-              <li><code>variantColor</code> - Renk</li>
-              <li><code>variantImage</code> - Resim dosyası</li>
-            </ul>
+          <div className="mt-4 bg-gray-50 p-3 rounded-lg text-xs">
+            <strong className="block mb-2">📋 CSV Formatı:</strong>
+            <code className="block bg-white p-2 rounded border text-xs">
+              productCode,variantSize,variantImage<br/>
+              "3360 POZDA POZ Beyaz","36","foto1.jpg"<br/>
+              "3360 POZDA POZ Fuşya","","foto2.jpg"
+            </code>
           </div>
         </div>
 
         {/* ADIM 2: RESİMLER */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-            <ImageIcon className="text-blue-600"/> 2. Varyant Görselleri
+            <ImageIcon className="text-blue-600"/> 2. Resimler
           </h2>
-          <p className="text-xs text-gray-500 mb-3">
-            CSV'deki "variantImage" ile eşleşen tüm resimleri seçin
-          </p>
           
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition">
             <input 
@@ -180,18 +188,21 @@ const BulkUploadPage = () => {
               id="imgInput"
             />
             <label htmlFor="imgInput" className="cursor-pointer block">
-              <span className="text-gray-500 text-sm block mb-1">Resimleri toplu seçin</span>
+              <span className="text-gray-500 text-sm block mb-1">Tüm resimleri seçin</span>
               <span className="bg-blue-600 text-white px-3 py-1 rounded text-xs">
                 Resimleri Seç ({imageFiles.length})
               </span>
             </label>
           </div>
 
-          <div className="mt-4 bg-yellow-50 p-3 rounded-lg text-xs text-yellow-800">
-            <strong>⚠️ Önemli:</strong>
-            <p className="mt-1">
-              Resim dosya adı ile CSV'deki "variantImage" tam olarak eşleşmeli
-            </p>
+          <div className="mt-4 space-y-2">
+            <div className="bg-green-50 p-3 rounded-lg text-xs text-green-800">
+              <strong>✅ Doğru Örnekler:</strong>
+              <ul className="mt-1 space-y-0.5 list-disc list-inside">
+                <li>3360 POZDA POZ Beyaz.jpg</li>
+                <li>T-SHIRT Kırmızı.jpg</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -200,7 +211,7 @@ const BulkUploadPage = () => {
       {parsedData.length > 0 && (
         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-gray-800">Önizleme ({parsedData.length} Varyant)</h3>
+            <h3 className="font-bold text-gray-800">Önizleme ({parsedData.length} Satır)</h3>
             <button 
               onClick={handleUpload} 
               disabled={uploading}
@@ -213,7 +224,7 @@ const BulkUploadPage = () => {
 
           {/* ÖZET */}
           {summary && (
-            <div className="mb-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="mb-4 grid grid-cols-4 gap-3">
               <div className="bg-gray-50 p-3 rounded-lg text-center">
                 <div className="text-2xl font-bold text-gray-700">{summary.total}</div>
                 <div className="text-xs text-gray-500">Toplam</div>
@@ -225,10 +236,6 @@ const BulkUploadPage = () => {
               <div className="bg-red-50 p-3 rounded-lg text-center">
                 <div className="text-2xl font-bold text-red-600">{summary.notFound}</div>
                 <div className="text-xs text-red-700">Bulunamadı</div>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded-lg text-center">
-                <div className="text-2xl font-bold text-yellow-600">{summary.noChange}</div>
-                <div className="text-xs text-yellow-700">Değişiklik Yok</div>
               </div>
               <div className="bg-orange-50 p-3 rounded-lg text-center">
                 <div className="text-2xl font-bold text-orange-600">{summary.errors}</div>
@@ -242,10 +249,9 @@ const BulkUploadPage = () => {
             <table className="w-full text-left">
               <thead className="text-xs text-gray-500 uppercase border-b sticky top-0 bg-gray-50">
                 <tr>
-                  <th className="p-2">Ürün Kodu</th>
+                  <th className="p-2">Ürün Kodu (Renk Dahil)</th>
                   <th className="p-2">Beden</th>
-                  <th className="p-2">Renk</th>
-                  <th className="p-2">Resim</th>
+                  <th className="p-2">Resim Dosyası</th>
                   <th className="p-2">Durum</th>
                 </tr>
               </thead>
@@ -253,19 +259,21 @@ const BulkUploadPage = () => {
                 {parsedData.map((row, i) => {
                   const imgName = row.variantImage || row.mainImageName;
                   const hasImage = imgName ? Array.from(imageFiles).some(f => f.name === imgName.trim()) : false;
+                  const beden = row.variantSize?.trim();
                   
                   return (
                     <tr key={i} className="border-b last:border-0 hover:bg-gray-100">
-                      <td className="p-2 font-mono text-xs">{row.productCode || row.name}</td>
+                      <td className="p-2 font-medium text-xs">{row.productCode || row.name}</td>
                       <td className="p-2">
-                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">
-                          {row.variantSize || 'STD'}
-                        </span>
-                      </td>
-                      <td className="p-2">
-                        <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">
-                          {row.variantColor || 'Standart'}
-                        </span>
+                        {beden ? (
+                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">
+                            {beden}
+                          </span>
+                        ) : (
+                          <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold">
+                            TÜM BEDENLER
+                          </span>
+                        )}
                       </td>
                       <td className="p-2 text-xs">
                         {imgName} 
@@ -291,19 +299,6 @@ const BulkUploadPage = () => {
           )}
         </div>
       )}
-
-      {/* BİLGİLENDİRME */}
-      <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
-        <h4 className="font-bold text-purple-900 mb-2 flex items-center gap-2">
-          <AlertCircle size={18}/> Varyant Bazlı Güncelleme
-        </h4>
-        <ul className="text-sm text-purple-800 space-y-1 list-disc list-inside">
-          <li>Her satır bir ürünün bir varyantını temsil eder</li>
-          <li>Aynı ürünün farklı beden/renkleri için farklı resimler yüklenebilir</li>
-          <li>Varyant bulunamazsa o satır atlanır (yeni varyant oluşturulmaz)</li>
-          <li>Sadece varyant resmi güncellenir, diğer bilgiler korunur</li>
-        </ul>
-      </div>
     </div>
   );
 };
