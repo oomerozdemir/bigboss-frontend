@@ -107,3 +107,43 @@ function App() {
   );
 }
 export default App;
+
+
+
+/* 
+urunlerin aciklamasi mutlaka olmali
+urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
+
+mobil responsiveligi kontrol et her sayfa icin
+ahfres kaydet
+
+siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali acilsin
+
+siparis tamamlandiktan sonra sepet silinsin
+
+
+ınsta bıo duzenle 3 mağaza adresını de ekle
+
+
+maildeki iletisim bilgilerini duzenle
+siparislerim butonunu duzenle maildeki
+
+sepetinde urun biraknalara mail gonderelim zamanla dongu halinde 
+
+dil secenegi eklenicek
+
+Gelecek Geliştirmeler
+ Zamanlı indirimler (başlangıç/bitiş tarihi)
+ Flash sale özelliği
+ Kupon sistemine entegrasyon
+ Rich text editor ile detay düzenleme
+ Detay şablonları (hazır içerikler)
+
+
+### Sonra Yap (İleride)
+🔄 **Level 2-3 için plan yap**
+- Admin panel hero editor
+- Slider/carousel
+- Dynamic content
+- A/B testing
+*/
