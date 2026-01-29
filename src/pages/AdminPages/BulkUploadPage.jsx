@@ -5,11 +5,17 @@ import { Upload, Download, FileText, Image as ImageIcon, Loader2, CheckCircle, A
 
 const BulkUploadPage = () => {
   const [csvFile, setCsvFile] = useState(null);
-  const [imageFiles, setImageFiles] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]); // FileList yerine Array kullanmak daha güvenli
   const [parsedData, setParsedData] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [logs, setLogs] = useState([]);
   const [summary, setSummary] = useState(null);
+
+  // Dosya İsimlerini Güvenli Karşılaştırma Fonksiyonu
+  const areFileNamesEqual = (name1, name2) => {
+    if (!name1 || !name2) return false;
+    return name1.normalize('NFC').trim().toLowerCase() === name2.normalize('NFC').trim().toLowerCase();
+  };
 
   const handleDownloadCsv = async () => {
     try {
@@ -47,6 +53,13 @@ const BulkUploadPage = () => {
     });
   };
 
+  const handleImageSelect = (e) => {
+    // FileList'i Array'e çeviriyoruz ki üzerinde rahatça dönebilelim
+    if (e.target.files) {
+      setImageFiles(Array.from(e.target.files));
+    }
+  };
+
   const handleUpload = async () => {
     if (parsedData.length === 0) return toast.error("Önce CSV yükleyin");
     setUploading(true);
@@ -61,19 +74,27 @@ const BulkUploadPage = () => {
       const batch = parsedData.slice(i, i + BATCH_SIZE);
       const formData = new FormData();
       
+      // JSON verisini ekle
       formData.append('data', JSON.stringify(batch));
 
+      // --- DÜZELTİLEN KISIM BAŞLANGIÇ ---
+      // CSV'deki her satır için uygun resmi bul ve FormData'ya ekle
       batch.forEach(item => {
-        const imgName = item.variantImage || item.mainImageName;
-        if (imgName) {
-          for (let j = 0; j < imageFiles.length; j++) {
-            if (imageFiles[j].name === imgName.trim()) {
-              formData.append('images', imageFiles[j]);
-              break;
-            }
+        const csvImgName = item.variantImage || item.mainImageName;
+        
+        if (csvImgName) {
+          // Yüklenen dosyalar arasında ismi eşleşeni bul (Esnek arama)
+          const matchedFile = imageFiles.find(file => areFileNamesEqual(file.name, csvImgName));
+          
+          if (matchedFile) {
+            // Dosyayı sunucuya gönderirken orijinal adıyla ekliyoruz
+            formData.append('images', matchedFile);
+          } else {
+            console.warn(`⚠️ Dosya seçilmedi veya bulunamadı: ${csvImgName}`);
           }
         }
       });
+      // --- DÜZELTİLEN KISIM BİTİŞ ---
 
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/bulk/import`, {
@@ -89,25 +110,22 @@ const BulkUploadPage = () => {
 
         setLogs(prev => [...prev, `Batch ${Math.floor(i/BATCH_SIZE) + 1}: ${result.processed || 0} varyant işlendi.`]);
       } catch (error) {
-        setLogs(prev => [...prev, `Batch ${Math.floor(i/BATCH_SIZE) + 1} HATALI!`]);
+        setLogs(prev => [...prev, `Batch ${Math.floor(i/BATCH_SIZE) + 1} HATALI: ${error.message}`]);
         console.error(error);
       }
     }
 
     const updated = allResults.filter(r => r.status?.includes("GÜNCELLENDİ")).length;
-    const notFound = allResults.filter(r => r.status?.includes("BULUNAMADI")).length;
-    const errors = allResults.filter(r => r.status?.includes("HATA") || r.status?.includes("YÜKLENEMEDİ")).length;
+    const notFound = allResults.filter(r => r.status?.includes("BULUNAMADI") || r.status?.includes("YOK")).length;
+    const errors = allResults.filter(r => r.status?.includes("HATA") || r.status?.includes("EKSİK")).length;
 
     setSummary({ updated, notFound, errors, total: allResults.length });
 
     setUploading(false);
     
-    if (updated > 0) {
-      toast.success(`✅ ${updated} varyant güncellendi!`);
-    }
-    if (notFound > 0) {
-      toast.error(`❌ ${notFound} bulunamadı`);
-    }
+    if (updated > 0) toast.success(`✅ ${updated} varyant güncellendi!`);
+    if (notFound > 0) toast.error(`❌ ${notFound} bulunamadı`);
+    if (errors > 0) toast.error(`⚠️ ${errors} hata oluştu`);
   };
 
   return (
@@ -163,16 +181,6 @@ const BulkUploadPage = () => {
             </label>
             {csvFile && <p className="mt-2 text-sm font-bold text-green-700">{csvFile.name}</p>}
           </div>
-
-          <div className="mt-4 bg-gray-50 p-3 rounded-lg text-xs">
-            <strong className="block mb-2">📋 CSV Sütunları:</strong>
-            <ul className="space-y-1 list-disc list-inside text-gray-700">
-              <li><code>productBase</code> - Ürün adı (renk hariç)</li>
-              <li><code>variantSize</code> - Beden (36, 38...)</li>
-              <li><code>variantColor</code> - Renk (Beyaz, Fuşya...)</li>
-              <li><code>variantImage</code> - Resim dosyası</li>
-            </ul>
-          </div>
         </div>
 
         {/* RESİMLER */}
@@ -186,7 +194,7 @@ const BulkUploadPage = () => {
               type="file" 
               multiple 
               accept="image/*" 
-              onChange={(e) => setImageFiles(e.target.files)} 
+              onChange={handleImageSelect} // Güncellendi
               className="hidden" 
               id="imgInput"
             />
@@ -200,18 +208,10 @@ const BulkUploadPage = () => {
 
           <div className="mt-4 space-y-2">
             <div className="bg-green-50 p-3 rounded-lg text-xs text-green-800">
-              <strong>✅ İsimlendirme Örnekleri:</strong>
-              <ul className="mt-1 space-y-0.5 list-disc list-inside">
-                <li>3360-36-Beyaz.jpg</li>
-                <li>3360-38-Beyaz.jpg</li>
-                <li>3360-36-Fusya.jpg</li>
-                <li>T-SHIRT-S-Kirmizi.jpg</li>
-              </ul>
-            </div>
-            
-            <div className="bg-yellow-50 p-3 rounded-lg text-xs text-yellow-800">
-              <strong>⚠️ Önemli:</strong>
-              <p className="mt-1">Dosya adı CSV'deki "variantImage" ile tam eşleşmeli!</p>
+              <strong>✅ Seçilen Resimler:</strong>
+              <div className="mt-1 max-h-20 overflow-y-auto">
+                {imageFiles.length > 0 ? imageFiles.map(f => f.name).join(", ") : "Henüz seçilmedi"}
+              </div>
             </div>
           </div>
         </div>
@@ -232,23 +232,23 @@ const BulkUploadPage = () => {
             </button>
           </div>
 
-          {/* ÖZET */}
+          {/* ÖZET KUTULARI (Aynı kaldı) */}
           {summary && (
             <div className="mb-4 grid grid-cols-4 gap-3">
-              <div className="bg-gray-50 p-3 rounded-lg text-center">
-                <div className="text-2xl font-bold text-gray-700">{summary.total}</div>
+              <div className="bg-gray-50 p-3 rounded-lg text-center border">
+                <div className="text-xl font-bold text-gray-700">{summary.total}</div>
                 <div className="text-xs text-gray-500">Toplam</div>
               </div>
-              <div className="bg-green-50 p-3 rounded-lg text-center">
-                <div className="text-2xl font-bold text-green-600">{summary.updated}</div>
-                <div className="text-xs text-green-700">Güncellendi</div>
+              <div className="bg-green-50 p-3 rounded-lg text-center border border-green-100">
+                <div className="text-xl font-bold text-green-600">{summary.updated}</div>
+                <div className="text-xs text-green-700">Başarılı</div>
               </div>
-              <div className="bg-red-50 p-3 rounded-lg text-center">
-                <div className="text-2xl font-bold text-red-600">{summary.notFound}</div>
+              <div className="bg-red-50 p-3 rounded-lg text-center border border-red-100">
+                <div className="text-xl font-bold text-red-600">{summary.notFound}</div>
                 <div className="text-xs text-red-700">Bulunamadı</div>
               </div>
-              <div className="bg-orange-50 p-3 rounded-lg text-center">
-                <div className="text-2xl font-bold text-orange-600">{summary.errors}</div>
+              <div className="bg-orange-50 p-3 rounded-lg text-center border border-orange-100">
+                <div className="text-xl font-bold text-orange-600">{summary.errors}</div>
                 <div className="text-xs text-orange-700">Hata</div>
               </div>
             </div>
@@ -269,7 +269,8 @@ const BulkUploadPage = () => {
               <tbody>
                 {parsedData.map((row, i) => {
                   const imgName = row.variantImage || row.mainImageName;
-                  const hasImage = imgName ? Array.from(imageFiles).some(f => f.name === imgName.trim()) : false;
+                  // Burada da esnek kontrol yapıyoruz ki tabloda doğru gözüksün
+                  const hasImage = imgName ? imageFiles.some(f => areFileNamesEqual(f.name, imgName)) : false;
                   const beden = row.variantSize?.trim();
                   
                   return (
@@ -277,19 +278,13 @@ const BulkUploadPage = () => {
                       <td className="p-2 font-medium text-xs">{row.productBase}</td>
                       <td className="p-2">
                         {beden ? (
-                          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">
-                            {beden}
-                          </span>
+                          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">{beden}</span>
                         ) : (
-                          <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
-                            TÜM
-                          </span>
+                          <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">TÜM</span>
                         )}
                       </td>
                       <td className="p-2">
-                        <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded text-xs font-bold">
-                          {row.variantColor}
-                        </span>
+                        <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded text-xs font-bold">{row.variantColor}</span>
                       </td>
                       <td className="p-2 text-xs">
                         {imgName} 
