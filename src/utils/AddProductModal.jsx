@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Upload, Check, Loader2, Trash2, Plus, Image as ImageIcon, Layers, Tag, FileText, ListChecks } from 'lucide-react';
+import { X, Save, Upload, Check, Loader2, Trash2, Plus, Image as ImageIcon, Layers, Tag, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sortVariantsByOrder } from './sortHelpers';
 import imageCompression from 'browser-image-compression';
@@ -17,13 +17,13 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
 
   // --- TOPLU EKLEME STATE'LERİ ---
   const [groupColor, setGroupColor] = useState(""); 
-  const [groupImage, setGroupImage] = useState(null); 
+  const [groupImages, setGroupImages] = useState([]); // ✅ Çoğul (Array)
   const [groupSizes, setGroupSizes] = useState([]); 
   
   const [tempSize, setTempSize] = useState("");
   const [tempStock, setTempStock] = useState("");
 
-  // ✅ YENİ: İNDİRİM VE DETAY STATE'LERİ
+  // ✅ İNDİRİM VE DETAY STATE'LERİ
   const [productDetails, setProductDetails] = useState([]);
   const [tempDetail, setTempDetail] = useState({ sectionType: 'DESCRIPTION', title: '', content: '', order: 0 });
 
@@ -31,8 +31,8 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     name: "", 
     description: "", 
     price: "", 
-    discountPrice: "", // ✅ YENİ
-    isOnSale: false,   // ✅ YENİ
+    discountPrice: "", 
+    isOnSale: false,   
     isFeatured: false, 
     categoryIds: []
   });
@@ -61,14 +61,14 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
       setVariants([]); 
       setSelectedFile(null);
       setPreviewUrl("");
-      setProductDetails([]); // ✅ YENİ
+      setProductDetails([]); 
       resetGroupInputs();
     }
   }, [isOpen]);
 
   const resetGroupInputs = () => {
     setGroupColor("");
-    setGroupImage(null);
+    setGroupImages([]); // Reset
     setGroupSizes([]);
     setTempSize("");
     setTempStock("");
@@ -103,11 +103,17 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const handleGroupImageSelect = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const compressed = await compressImage(file);
-      setGroupImage(compressed);
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      const compressedFiles = await Promise.all(files.map(file => compressImage(file)));
+      // Mevcutların üzerine ekle
+      setGroupImages(prev => [...prev, ...compressedFiles]);
     }
+  };
+
+  // ✅ Seçilen varyant görsellerinden birini listeden çıkarma
+  const removeGroupImage = (index) => {
+    setGroupImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeImage = () => {
@@ -143,8 +149,8 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
         color: groupColor,
         size: item.size,
         stock: item.stock,
-        file: groupImage,
-        preview: groupImage ? URL.createObjectURL(groupImage) : null
+        files: groupImages, // ✅ Çoğul dosya dizisi
+        previews: groupImages.map(file => URL.createObjectURL(file)) // ✅ Önizleme dizisi
     }));
 
     setVariants(prev => sortVariantsByOrder([...prev, ...newVariants]));
@@ -156,7 +162,7 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  // ✅ YENİ: DETAY EKLEME FONKSİYONLARI
+  // ✅ DETAY EKLEME FONKSİYONLARI
   const addProductDetail = () => {
     if (!tempDetail.content.trim()) {
         toast.error("İçerik boş olamaz");
@@ -191,11 +197,11 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     data.append("name", formData.name);
     data.append("description", formData.description);
     data.append("price", formData.price);
-    data.append("discountPrice", formData.discountPrice || ""); // ✅ YENİ
-    data.append("isOnSale", formData.isOnSale); // ✅ YENİ
+    data.append("discountPrice", formData.discountPrice || ""); 
+    data.append("isOnSale", formData.isOnSale); 
     data.append("isFeatured", formData.isFeatured);
     data.append("categoryIds", JSON.stringify(formData.categoryIds));
-    data.append("productDetails", JSON.stringify(productDetails)); // ✅ YENİ
+    data.append("productDetails", JSON.stringify(productDetails)); 
 
     if (selectedFile) data.append("image", selectedFile);
 
@@ -206,9 +212,12 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
     }));
     data.append("variants", JSON.stringify(variantsData));
 
+    // ✅ Çoklu resimleri ekle
     variants.forEach((v, index) => {
-        if (v.file) {
-            data.append(`variantImage_${index}`, v.file);
+        if (v.files && v.files.length > 0) {
+            v.files.forEach(file => {
+                data.append(`variantImage_${index}`, file);
+            });
         }
     });
 
@@ -258,7 +267,7 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          {/* ✅ YENİ: İNDİRİM ALANI */}
+          {/* ✅ İNDİRİM ALANI */}
           <div className="bg-orange-50 p-5 rounded-xl border border-orange-200">
             <div className="flex items-center gap-2 mb-3">
               <Tag className="text-orange-600" size={20} />
@@ -309,12 +318,27 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
                 </div>
                 
                 <div className="flex-1">
-                    <label className="text-xs font-bold text-blue-800 mb-1 block">2. Renk Görseli (Opsiyonel)</label>
-                    <label className={`cursor-pointer border border-dashed border-blue-300 bg-white rounded-lg h-[42px] flex items-center justify-center gap-2 text-sm text-blue-600 hover:bg-blue-50 ${groupImage ? "border-solid border-green-500 bg-green-50 text-green-700" : ""}`}>
+                    <label className="text-xs font-bold text-blue-800 mb-1 block">2. Renk Görselleri (Çoklu)</label>
+                    <label className={`cursor-pointer border border-dashed border-blue-300 bg-white rounded-lg min-h-[42px] p-2 flex flex-wrap items-center gap-2 text-sm text-blue-600 hover:bg-blue-50`}>
                         <ImageIcon size={18} />
-                        {groupImage ? "Görsel Seçildi" : "Görsel Yükle"}
-                        <input type="file" className="hidden" accept="image/*" onChange={handleGroupImageSelect} />
+                        <span className="text-xs">{groupImages.length > 0 ? `${groupImages.length} Görsel Seçildi` : "Görselleri Yükle"}</span>
+                        {/* ✅ multiple özelliği eklendi */}
+                        <input type="file" className="hidden" multiple accept="image/*" onChange={handleGroupImageSelect} />
                     </label>
+                    
+                    {/* ✅ Seçilen görsellerin önizlemesi */}
+                    {groupImages.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2 max-h-32 overflow-y-auto p-1">
+                            {groupImages.map((img, i) => (
+                                <div key={i} className="relative w-12 h-12 border rounded overflow-hidden group">
+                                    <img src={URL.createObjectURL(img)} className="w-full h-full object-cover" />
+                                    <button type="button" onClick={() => removeGroupImage(i)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                        <X size={14}/>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -354,7 +378,22 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
                     {variants.map((v, index) => (
                         <div key={index} className="flex justify-between items-center bg-white border p-2 rounded-lg text-sm shadow-sm">
                             <div className="flex items-center gap-3">
-                                {v.preview ? <img src={v.preview} className="w-8 h-8 rounded object-cover border"/> : <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center"><ImageIcon size={14}/></div>}
+                                {/* ✅ Önizleme Kısmı (İlk resmi gösterir) */}
+                                {v.previews && v.previews.length > 0 ? (
+                                    <div className="flex -space-x-2">
+                                        {v.previews.slice(0, 3).map((src, i) => (
+                                            <img key={i} src={src} className="w-8 h-8 rounded-full object-cover border border-white ring-1 ring-gray-200"/>
+                                        ))}
+                                        {v.previews.length > 3 && (
+                                            <div className="w-8 h-8 rounded-full bg-gray-200 border border-white flex items-center justify-center text-[10px] font-bold text-gray-500">
+                                                +{v.previews.length - 3}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center"><ImageIcon size={14}/></div>
+                                )}
+                                
                                 <div>
                                     <span className="font-bold text-gray-800">{v.color}</span>
                                     <span className="mx-2 text-gray-300">|</span>
@@ -370,7 +409,7 @@ const AddProductModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           )}
 
-          {/* ✅ YENİ: ÜRÜN DETAYLARI BÖLÜMÜ */}
+          {/* ✅ ÜRÜN DETAYLARI BÖLÜMÜ */}
           <div className="bg-purple-50 p-5 rounded-xl border border-purple-200">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="text-purple-600" size={20} />

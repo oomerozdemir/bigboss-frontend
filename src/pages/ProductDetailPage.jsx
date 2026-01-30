@@ -18,11 +18,13 @@ const ProductDetailPage = () => {
   const [loading, setLoading] = useState(true);
   
   const [activeImage, setActiveImage] = useState("");
+  const [currentImages, setCurrentImages] = useState([]); // ✅ YENİ: Galeri resimleri
+  
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
 
-  // ✅ YENİ: Detay sekmeleri için state
+  // ✅ Detay sekmeleri için state
   const [activeTab, setActiveTab] = useState('DESCRIPTION');
 
   useEffect(() => {
@@ -38,23 +40,41 @@ const ProductDetailPage = () => {
       const data = await res.json();
       setProduct(data);
       
-      let initialImage = data.imageUrl;
-      if (!initialImage && data.variants && data.variants.length > 0) {
-          const variantWithImage = data.variants.find(v => v.vImageUrl);
-          if (variantWithImage) {
-              initialImage = variantWithImage.vImageUrl;
-          }
-      }
-      setActiveImage(initialImage || "https://via.placeholder.com/500x600?text=No+Image");
+      // Varsayılan resim belirleme
+      let initialImages = [];
+      if (data.imageUrl) initialImages.push(data.imageUrl);
 
+      // Varsayılan varyant seçimi (Stokta olan ilk renkli varyant)
       if (data.variants && data.variants.length > 0) {
          const firstColorVariant = data.variants.find(v => v.color !== "Standart" && v.stock > 0);
+         
          if (firstColorVariant) {
             setSelectedColor(firstColorVariant.color);
-            if (!data.imageUrl && firstColorVariant.vImageUrl) {
-                setActiveImage(firstColorVariant.vImageUrl);
+            
+            // Eğer varyantın çoklu resmi varsa onu al, yoksa tekil resmi al
+            if (firstColorVariant.vImageUrls && firstColorVariant.vImageUrls.length > 0) {
+                initialImages = firstColorVariant.vImageUrls;
+            } else if (firstColorVariant.vImageUrl) {
+                initialImages = [firstColorVariant.vImageUrl];
             }
+         } else {
+             // Renksiz veya stoksuz durumda varyantlardan birinin resmini bulmaya çalış
+             const variantWithImage = data.variants.find(v => v.vImageUrl || (v.vImageUrls && v.vImageUrls.length > 0));
+             if (variantWithImage) {
+                 if (variantWithImage.vImageUrls && variantWithImage.vImageUrls.length > 0) {
+                     initialImages = variantWithImage.vImageUrls;
+                 } else if (variantWithImage.vImageUrl) {
+                     initialImages = [variantWithImage.vImageUrl];
+                 }
+             }
          }
+      }
+
+      setCurrentImages(initialImages);
+      if (initialImages.length > 0) {
+          setActiveImage(initialImages[0]);
+      } else {
+          setActiveImage("https://via.placeholder.com/500x600?text=No+Image");
       }
 
       setLoading(false);
@@ -64,9 +84,15 @@ const ProductDetailPage = () => {
     }
   };
 
+  // ✅ Renkleri ve o renge ait RESİM LİSTESİNİ grupla
   const uniqueColors = product?.variants?.reduce((acc, v) => {
     if (v.color && v.color !== "Standart" && !acc.find(c => c.name === v.color)) {
-      acc.push({ name: v.color, image: v.vImageUrl });
+      // Öncelik vImageUrls (Liste), yoksa vImageUrl (Tekil)
+      const images = (v.vImageUrls && v.vImageUrls.length > 0) 
+        ? v.vImageUrls 
+        : (v.vImageUrl ? [v.vImageUrl] : []);
+        
+      acc.push({ name: v.color, images: images });
     }
     return acc;
   }, []) || [];
@@ -82,10 +108,20 @@ const ProductDetailPage = () => {
     (selectedSize ? v.size === selectedSize : true)
   );
 
-  const handleColorSelect = (colorName, colorImage) => {
+  const handleColorSelect = (colorName, images) => {
     setSelectedColor(colorName);
     setSelectedSize(""); 
-    if (colorImage) setActiveImage(colorImage); 
+    
+    // Gelen images değişkenini array formatına zorla
+    let newImages = [];
+    if (Array.isArray(images) && images.length > 0) {
+        newImages = images;
+    } else if (typeof images === 'string' && images) {
+        newImages = [images];
+    }
+    
+    setCurrentImages(newImages);
+    if (newImages.length > 0) setActiveImage(newImages[0]);
   };
 
   const handleAddToCart = () => {
@@ -125,7 +161,7 @@ const ProductDetailPage = () => {
     toast.success(isFavorite(product.id) ? "Favorilerden çıkarıldı" : "Favorilere eklendi");
   };
 
-  // ✅ YENİ: Detay bölümlerini gruplama
+  // ✅ Detay bölümlerini gruplama
   const groupedDetails = product?.productDetails?.reduce((acc, detail) => {
     if (!acc[detail.sectionType]) {
       acc[detail.sectionType] = [];
@@ -161,15 +197,16 @@ const ProductDetailPage = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             
-            {/* SOL TARAF: GÖRSEL */}
+            {/* SOL TARAF: GÖRSEL VE GALERİ */}
             <div className="space-y-4">
+               {/* ANA RESİM */}
                <div className="aspect-[4/5] w-full bg-gray-100 rounded-2xl overflow-hidden relative group">
                   <img 
                     src={activeImage} 
                     alt={product.name} 
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-cover object-top transition-all duration-300"
                   />
-                  {/* ✅ YENİ: İndirim rozeti */}
+                  {/* İndirim rozeti */}
                   {hasDiscount && (
                     <div className="absolute top-4 left-4 bg-red-500 text-white font-bold text-sm px-3 py-1.5 rounded-full shadow-lg">
                       %{discountPercent} İNDİRİM
@@ -182,6 +219,21 @@ const ProductDetailPage = () => {
                     </div>
                   )}
                </div>
+
+               {/* ✅ YENİ: KÜÇÜK RESİM GALERİSİ */}
+               {currentImages.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300">
+                      {currentImages.map((img, idx) => (
+                          <button 
+                              key={idx} 
+                              onClick={() => setActiveImage(img)}
+                              className={`w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden border-2 transition ${activeImage === img ? 'border-black' : 'border-transparent hover:border-gray-200'}`}
+                          >
+                              <img src={img} className="w-full h-full object-cover" alt={`view-${idx}`} />
+                          </button>
+                      ))}
+                  </div>
+               )}
             </div>
 
             {/* SAĞ TARAF: DETAYLAR */}
@@ -189,7 +241,7 @@ const ProductDetailPage = () => {
                <div className="mb-6">
                  <h1 className="text-3xl font-black text-gray-900 mb-2">{product.name}</h1>
                  
-                 {/* ✅ YENİ: Fiyat gösterimi (çizili eski fiyat + yeni fiyat) */}
+                 {/* Fiyat gösterimi */}
                  <div className="flex items-center gap-4">
                     <div className="flex items-baseline gap-2">
                       {hasDiscount && (
@@ -219,11 +271,11 @@ const ProductDetailPage = () => {
                             {uniqueColors.map((c, i) => (
                                 <button 
                                     key={i}
-                                    onClick={() => handleColorSelect(c.name, c.image)}
+                                    onClick={() => handleColorSelect(c.name, c.images)}
                                     className={`w-12 h-12 rounded-full border-2 p-0.5 transition-all ${selectedColor === c.name ? "border-black scale-110" : "border-transparent hover:border-gray-300"}`}
                                 >
-                                    {c.image ? (
-                                        <img src={c.image} className="w-full h-full rounded-full object-cover" />
+                                    {c.images && c.images.length > 0 ? (
+                                        <img src={c.images[0]} className="w-full h-full rounded-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">{c.name[0]}</div>
                                     )}
@@ -311,9 +363,8 @@ const ProductDetailPage = () => {
             </div>
           </div>
 
-          {/* ✅ YENİ: DETAYLI BİLGİLER BÖLÜMÜ */}
+          {/* DETAYLI BİLGİLER BÖLÜMÜ */}
           <div className="mt-16 border-t pt-12">
-            {/* Kısa açıklama (description field) */}
             {product.description && (
               <div className="mb-8">
                 <h3 className="font-bold text-2xl mb-4">Ürün Hakkında</h3>
@@ -321,10 +372,8 @@ const ProductDetailPage = () => {
               </div>
             )}
 
-            {/* Detaylı bölümler (productDetails) */}
             {Object.keys(groupedDetails).length > 0 && (
               <div className="space-y-6">
-                {/* Tab Navigation */}
                 <div className="flex gap-2 border-b overflow-x-auto">
                   {Object.keys(groupedDetails).map(type => (
                     <button
@@ -341,7 +390,6 @@ const ProductDetailPage = () => {
                   ))}
                 </div>
 
-                {/* Tab Content */}
                 <div className="py-6">
                   {groupedDetails[activeTab]?.sort((a, b) => a.order - b.order).map((detail, idx) => (
                     <div key={idx} className="mb-6 last:mb-0">

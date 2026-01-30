@@ -3,6 +3,7 @@ import { X, Save, Upload, Check, Loader2, Trash2, Plus, Edit2, Image as ImageIco
 import toast from 'react-hot-toast';
 import { sortVariantsByOrder } from './sortHelpers';
 import { apiRequest } from './ApiHelper';
+import imageCompression from 'browser-image-compression';
 
 const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const [categories, setCategories] = useState([]);
@@ -15,15 +16,20 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   const [productDetails, setProductDetails] = useState([]);
   const [tempDetail, setTempDetail] = useState({ sectionType: 'DESCRIPTION', title: '', content: '', order: 0 });
 
+  // --- TOPLU EKLEME STATE'LERİ ---
   const [groupColor, setGroupColor] = useState(""); 
-  const [groupImage, setGroupImage] = useState(null); 
+  const [groupImages, setGroupImages] = useState([]); // ✅ Çoğul
   const [groupSizes, setGroupSizes] = useState([]); 
   const [tempSize, setTempSize] = useState("");
   const [tempStock, setTempStock] = useState("");
 
+  // --- VARYANT DÜZENLEME STATE'LERİ ---
   const [editingVariantIndex, setEditingVariantIndex] = useState(null);
   const [tempVariantData, setTempVariantData] = useState({ 
-    size: "", color: "", stock: "", file: null, preview: "", vImageUrl: "" 
+    size: "", color: "", stock: "", 
+    files: [],       // Yeni yüklenecek dosyalar
+    previews: [],    // Yeni dosyaların önizlemeleri
+    vImageUrls: []   // Mevcut (sunucudaki) resim linkleri
   });
 
   const [formData, setFormData] = useState({
@@ -35,6 +41,22 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     isFeatured: false, 
     categoryIds: []
   });
+
+  // Resim Sıkıştırma
+  const compressImage = async (file) => {
+    const options = {
+      maxSizeMB: 0.8,
+      maxWidthOrHeight: 1200,
+      useWebWorker: true,
+      fileType: "image/webp"
+    };
+    try {
+      return await imageCompression(file, options);
+    } catch (error) {
+      console.error("Sıkıştırma hatası:", error);
+      return file;
+    }
+  };
 
   useEffect(() => {
     if (isOpen && product) {
@@ -50,14 +72,22 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         categoryIds: product.categories ? product.categories.map(c => c.id) : []
       });
 
-      const formattedVariants = (product.variants || []).map(v => ({
-        size: v.size,
-        color: v.color || "Standart",
-        stock: v.stock,
-        vImageUrl: v.vImageUrl,
-        file: null,
-        preview: v.vImageUrl
-      }));
+      // Varyantları formatla ve resim listelerini düzelt
+      const formattedVariants = (product.variants || []).map(v => {
+        // vImageUrls varsa onu al, yoksa vImageUrl'u listeye çevir
+        let urls = [];
+        if (v.vImageUrls && v.vImageUrls.length > 0) urls = v.vImageUrls;
+        else if (v.vImageUrl) urls = [v.vImageUrl];
+
+        return {
+          size: v.size,
+          color: v.color || "Standart",
+          stock: v.stock,
+          vImageUrls: urls, // Mevcut linkler
+          files: [],        // Yeni yüklenecekler (boş başlar)
+          previews: []      // Yeni önizlemeler
+        };
+      });
 
       setVariants(sortVariantsByOrder(formattedVariants));
       setPreviewUrl(product.imageUrl || "");
@@ -71,7 +101,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
 
   const resetGroupInputs = () => {
     setGroupColor("");
-    setGroupImage(null);
+    setGroupImages([]);
     setGroupSizes([]);
     setTempSize("");
     setTempStock("");
@@ -85,17 +115,32 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     } catch (error) { console.error(error); }
   };
 
-  const handleFileSelect = (e) => {
+  // Ana Resim Seçimi
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      const compressed = await compressImage(file);
+      setSelectedFile(compressed);
+      setPreviewUrl(URL.createObjectURL(compressed));
     }
   };
 
   const removeImage = () => {
     setSelectedFile(null);
     setPreviewUrl("");
+  };
+
+  // --- GRUP / TOPLU EKLEME FONKSİYONLARI ---
+  const handleGroupImageSelect = async (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      const compressedFiles = await Promise.all(files.map(file => compressImage(file)));
+      setGroupImages(prev => [...prev, ...compressedFiles]);
+    }
+  };
+
+  const removeGroupImage = (index) => {
+    setGroupImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const addSizeToGroup = () => {
@@ -126,9 +171,9 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         color: groupColor,
         size: item.size,
         stock: parseInt(item.stock),
-        file: groupImage, 
-        preview: groupImage ? URL.createObjectURL(groupImage) : null,
-        vImageUrl: null
+        files: groupImages, 
+        previews: groupImages.map(f => URL.createObjectURL(f)),
+        vImageUrls: [] // Yeni varyantın henüz sunucuda resmi yok
     }));
 
     setVariants([...variants, ...newVariants]);
@@ -141,27 +186,48 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
+  // --- VARYANT DÜZENLEME (INLINE EDIT) ---
   const startEditingVariant = (index, variant) => {
     setEditingVariantIndex(index);
     setTempVariantData({ 
       size: variant.size, 
       color: variant.color, 
       stock: variant.stock,
-      file: null, 
-      preview: variant.preview || variant.vImageUrl, 
-      vImageUrl: variant.vImageUrl 
+      files: variant.files || [], 
+      previews: variant.previews || [], 
+      vImageUrls: variant.vImageUrls || [] 
     });
   };
 
-  const handleEditFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+  // Düzenleme modunda yeni dosya ekleme
+  const handleEditFileChange = async (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      const compressedFiles = await Promise.all(newFiles.map(f => compressImage(f)));
+      
       setTempVariantData(prev => ({
         ...prev,
-        file: file,
-        preview: URL.createObjectURL(file)
+        files: [...prev.files, ...compressedFiles],
+        previews: [...prev.previews, ...compressedFiles.map(f => URL.createObjectURL(f))]
       }));
     }
+  };
+
+  // Düzenleme modunda mevcut (URL) resmi silme
+  const removeExistingImageFromTemp = (urlIndex) => {
+    setTempVariantData(prev => ({
+        ...prev,
+        vImageUrls: prev.vImageUrls.filter((_, i) => i !== urlIndex)
+    }));
+  };
+
+  // Düzenleme modunda yeni eklenen (File) resmi silme
+  const removeNewImageFromTemp = (fileIndex) => {
+    setTempVariantData(prev => ({
+        ...prev,
+        files: prev.files.filter((_, i) => i !== fileIndex),
+        previews: prev.previews.filter((_, i) => i !== fileIndex)
+    }));
   };
 
   const saveEditingVariant = (index) => {
@@ -176,9 +242,9 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         size: tempVariantData.size.toUpperCase(), 
         color: tempVariantData.color || "Standart",
         stock: parseInt(tempVariantData.stock),
-        file: tempVariantData.file, 
-        preview: tempVariantData.preview,
-        vImageUrl: tempVariantData.vImageUrl 
+        files: tempVariantData.files, 
+        previews: tempVariantData.previews,
+        vImageUrls: tempVariantData.vImageUrls // Güncellenmiş URL listesi
     };
     
     setVariants(sortVariantsByOrder(updatedVariants));
@@ -189,6 +255,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     setEditingVariantIndex(null);
   };
 
+  // --- DİĞER FONKSİYONLAR ---
   const handleCategoryToggle = (subCategoryId) => {
     setFormData(prev => {
       const currentIds = prev.categoryIds;
@@ -205,7 +272,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
         toast.error("İçerik boş olamaz");
         return;
     }
-    
     setProductDetails([...productDetails, { ...tempDetail, order: productDetails.length }]);
     setTempDetail({ sectionType: 'DESCRIPTION', title: '', content: '', order: 0 });
     toast.success("Detay eklendi!");
@@ -245,17 +311,21 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     data.append("categoryIds", JSON.stringify(formData.categoryIds));
     data.append("productDetails", JSON.stringify(productDetails));
 
+    // Varyant verilerini hazırla
     const variantsData = variants.map(v => ({
         size: v.size,
         color: v.color,
         stock: v.stock,
-        vImageUrl: v.vImageUrl
+        vImageUrls: v.vImageUrls // Mevcut resimlerin listesini gönder (backend bunu koruyacak)
     }));
     data.append("variants", JSON.stringify(variantsData));
 
+    // Yeni dosyaları ekle
     variants.forEach((v, index) => {
-        if (v.file) {
-            data.append(`variantImage_${index}`, v.file);
+        if (v.files && v.files.length > 0) {
+            v.files.forEach(file => {
+                data.append(`variantImage_${index}`, file);
+            });
         }
     });
 
@@ -266,7 +336,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     }
 
     try {
-      // ✅ YENİ: apiRequest helper kullan
       const res = await apiRequest(
         `${import.meta.env.VITE_API_URL}/api/products/${product.id}`,
         {
@@ -285,8 +354,6 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
       }
     } catch (err) {
       console.error(err);
-      
-      // Token hatası zaten apiRequest'te handle edildi
       if (err.message !== 'TOKEN_EXPIRED') {
         toast.error("Sunucu hatası oluştu.");
       }
@@ -307,6 +374,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           
+          {/* TEMEL BİLGİLER */}
           <div className="grid grid-cols-2 gap-6">
              <div className="space-y-1">
                <label className="text-sm font-medium">Ürün Adı</label>
@@ -318,6 +386,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
              </div>
           </div>
 
+          {/* İNDİRİM AYARLARI */}
           <div className="bg-orange-50 p-5 rounded-xl border border-orange-200">
             <div className="flex items-center gap-2 mb-3">
               <Tag className="text-orange-600" size={20} />
@@ -354,9 +423,11 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
             )}
           </div>
 
+          {/* VARYANT YÖNETİMİ */}
            <div className="space-y-6">
             <label className="block text-sm font-bold text-gray-800">Varyant Yönetimi</label>
 
+            {/* YENİ GRUP EKLEME */}
             <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
                 <div className="flex items-center gap-2 mb-4">
                     <Layers className="text-blue-600" size={20} />
@@ -370,12 +441,25 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
                             value={groupColor} onChange={e => setGroupColor(e.target.value)} />
                     </div>
                     <div className="flex-1">
-                        <label className="text-xs font-bold text-blue-800 mb-1 block">2. Renk Görseli (Opsiyonel)</label>
-                        <label className={`cursor-pointer border border-dashed border-blue-300 bg-white rounded-lg h-[42px] flex items-center justify-center gap-2 text-sm text-blue-600 hover:bg-blue-50 ${groupImage ? "border-solid border-green-500 bg-green-50 text-green-700" : ""}`}>
+                        <label className="text-xs font-bold text-blue-800 mb-1 block">2. Renk Görselleri (Çoklu)</label>
+                        <label className={`cursor-pointer border border-dashed border-blue-300 bg-white rounded-lg min-h-[42px] p-2 flex flex-wrap items-center gap-2 text-sm text-blue-600 hover:bg-blue-50`}>
                             <ImageIcon size={18} />
-                            {groupImage ? "Görsel Seçildi" : "Görsel Yükle"}
-                            <input type="file" className="hidden" accept="image/*" onChange={(e) => setGroupImage(e.target.files[0])} />
+                            <span className="text-xs">{groupImages.length > 0 ? `${groupImages.length} Görsel` : "Görselleri Seç"}</span>
+                            <input type="file" className="hidden" multiple accept="image/*" onChange={handleGroupImageSelect} />
                         </label>
+                        {/* Seçilen Görsellerin Önizlemesi */}
+                        {groupImages.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2 max-h-20 overflow-y-auto">
+                                {groupImages.map((img, i) => (
+                                    <div key={i} className="relative w-10 h-10 border rounded overflow-hidden group">
+                                        <img src={URL.createObjectURL(img)} className="w-full h-full object-cover" />
+                                        <button type="button" onClick={() => removeGroupImage(i)} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                            <X size={12}/>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -404,38 +488,90 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
                 </button>
             </div>
 
+            {/* MEVCUT VARYANTLAR LİSTESİ */}
             <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                 <h4 className="text-sm font-bold text-gray-700 mb-3">Mevcut Varyantlar</h4>
                 {variants.length > 0 ? (
                 <div className="grid grid-cols-1 gap-2">
                     {variants.map((v, index) => (
-                    <div key={index} className={`flex justify-between items-center border p-2 rounded text-sm shadow-sm transition-colors ${editingVariantIndex === index ? "bg-blue-50 border-blue-200" : "bg-white border-gray-200"}`}>
+                    <div key={index} className={`flex flex-col border p-3 rounded text-sm shadow-sm transition-colors ${editingVariantIndex === index ? "bg-blue-50 border-blue-200" : "bg-white border-gray-200"}`}>
                         
+                        {/* DÜZENLEME MODU */}
                         {editingVariantIndex === index ? (
-                            <div className="flex items-center gap-2 w-full flex-wrap">
-                                <label className="cursor-pointer relative w-8 h-8 rounded border border-blue-300 overflow-hidden group">
-                                    <img src={tempVariantData.preview || "https://via.placeholder.com/32"} alt="preview" className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white"><Edit2 size={12}/></div>
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleEditFileChange} />
-                                </label>
+                            <div className="w-full space-y-3">
+                                <div className="flex gap-2">
+                                  <input type="text" className="flex-1 border border-blue-300 rounded px-2 py-1" value={tempVariantData.color} onChange={(e) => setTempVariantData({...tempVariantData, color: e.target.value})} placeholder="Renk"/>
+                                  <input type="text" className="w-20 border border-blue-300 rounded px-2 py-1 text-center uppercase" value={tempVariantData.size} onChange={(e) => setTempVariantData({...tempVariantData, size: e.target.value})} placeholder="Beden"/>
+                                  <input type="number" className="w-20 border border-blue-300 rounded px-2 py-1 text-center" value={tempVariantData.stock} onChange={(e) => setTempVariantData({...tempVariantData, stock: e.target.value})} placeholder="Stok"/>
+                                </div>
 
-                                <input type="text" className="flex-1 min-w-[60px] border border-blue-300 rounded px-1 py-1" value={tempVariantData.color} onChange={(e) => setTempVariantData({...tempVariantData, color: e.target.value})} placeholder="Renk"/>
-                                <input type="text" className="w-16 border border-blue-300 rounded px-1 py-1 text-center uppercase" value={tempVariantData.size} onChange={(e) => setTempVariantData({...tempVariantData, size: e.target.value})} placeholder="Beden"/>
-                                <input type="number" className="w-16 border border-blue-300 rounded px-1 py-1 text-center" value={tempVariantData.stock} onChange={(e) => setTempVariantData({...tempVariantData, stock: e.target.value})} placeholder="Stok"/>
+                                {/* Resim Düzenleme Alanı */}
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 mb-1 block">Resimler:</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {/* Mevcut Resimler (URL) */}
+                                        {tempVariantData.vImageUrls.map((url, i) => (
+                                            <div key={`url-${i}`} className="relative w-12 h-12 border rounded overflow-hidden group">
+                                                <img src={url} className="w-full h-full object-cover" />
+                                                <button type="button" onClick={() => removeExistingImageFromTemp(i)} className="absolute inset-0 bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                                    <Trash2 size={14}/>
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {/* Yeni Eklenenler (File) */}
+                                        {tempVariantData.previews.map((preview, i) => (
+                                            <div key={`new-${i}`} className="relative w-12 h-12 border border-green-300 rounded overflow-hidden group">
+                                                <img src={preview} className="w-full h-full object-cover" />
+                                                <button type="button" onClick={() => removeNewImageFromTemp(i)} className="absolute inset-0 bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                                    <Trash2 size={14}/>
+                                                </button>
+                                                <div className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-bl"></div>
+                                            </div>
+                                        ))}
+                                        
+                                        {/* Ekleme Butonu */}
+                                        <label className="w-12 h-12 border-2 border-dashed border-blue-300 rounded flex items-center justify-center cursor-pointer hover:bg-blue-100 text-blue-500">
+                                            <Plus size={18}/>
+                                            <input type="file" className="hidden" multiple accept="image/*" onChange={handleEditFileChange} />
+                                        </label>
+                                    </div>
+                                </div>
                                 
-                                <div className="flex ml-auto gap-1">
-                                    <button type="button" onClick={() => saveEditingVariant(index)} className="text-green-600 hover:bg-green-100 p-1 rounded"><Check size={16}/></button>
-                                    <button type="button" onClick={cancelEditingVariant} className="text-red-600 hover:bg-red-100 p-1 rounded"><X size={16}/></button>
+                                <div className="flex justify-end gap-2">
+                                    <button type="button" onClick={() => saveEditingVariant(index)} className="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-green-700">
+                                        <Check size={14}/> Kaydet
+                                    </button>
+                                    <button type="button" onClick={cancelEditingVariant} className="bg-red-500 text-white px-3 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-red-600">
+                                        <X size={14}/> İptal
+                                    </button>
                                 </div>
                             </div>
                         ) : (
-                            <>
+                            // GÖRÜNTÜLEME MODU
+                            <div className="flex justify-between items-center w-full">
                                 <div className="flex items-center gap-3">
-                                    {v.preview ? (
-                                        <img src={v.preview} alt="v" className="w-8 h-8 rounded object-cover border border-gray-200" />
-                                    ) : (
-                                        <div className="w-8 h-8 rounded bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400"><ImageIcon size={14}/></div>
-                                    )}
+                                    {/* Resim Önizleme (İlk resim + sayı) */}
+                                    <div className="flex -space-x-2">
+                                        {v.vImageUrls && v.vImageUrls.length > 0 ? (
+                                            <>
+                                              {v.vImageUrls.slice(0, 2).map((url, i) => (
+                                                  <img key={i} src={url} className="w-9 h-9 rounded-full object-cover border border-white ring-1 ring-gray-200"/>
+                                              ))}
+                                              {v.files && v.files.length > 0 && (
+                                                 <div className="w-9 h-9 rounded-full bg-green-100 border border-white flex items-center justify-center text-[10px] font-bold text-green-700">+{v.files.length}</div>
+                                              )}
+                                              {(v.vImageUrls.length > 2) && (
+                                                 <div className="w-9 h-9 rounded-full bg-gray-200 border border-white flex items-center justify-center text-[10px] font-bold text-gray-500">+{v.vImageUrls.length - 2}</div>
+                                              )}
+                                            </>
+                                        ) : (
+                                            v.files && v.files.length > 0 ? (
+                                                <div className="w-9 h-9 rounded-full bg-green-100 border border-white flex items-center justify-center text-[10px] font-bold text-green-700">Yeni</div>
+                                            ) : (
+                                                <div className="w-9 h-9 rounded bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400"><ImageIcon size={14}/></div>
+                                            )
+                                        )}
+                                    </div>
                                     
                                     <div className="flex flex-col sm:flex-row sm:gap-2">
                                         <span className="font-bold text-gray-800">{v.color}</span>
@@ -450,7 +586,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
                                     <button type="button" onClick={() => startEditingVariant(index, v)} className="text-blue-500 hover:bg-blue-50 p-1.5 rounded transition"><Edit2 size={16}/></button>
                                     <button type="button" onClick={() => removeVariant(index)} className="text-red-500 hover:bg-red-50 p-1.5 rounded transition"><Trash2 size={16}/></button>
                                 </div>
-                            </>
+                            </div>
                         )}
                     </div>
                     ))}
@@ -465,6 +601,7 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
             </div>
           </div>
 
+          {/* ÜRÜN DETAYLARI */}
           <div className="bg-purple-50 p-5 rounded-xl border border-purple-200">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="text-purple-600" size={20} />
