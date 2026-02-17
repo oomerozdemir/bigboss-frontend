@@ -48,6 +48,19 @@ const ScrollToTop = () => {
   return null;
 };
 
+const MetaPixelTracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Sayfa değiştiğinde PageView gönder
+    if (window.fbq) {
+      window.fbq('track', 'PageView');
+    }
+  }, [location]);
+
+  return null;
+};
+
 const HomePage = () => {
   return (
     <>
@@ -67,6 +80,7 @@ function App() {
     <FavoritesProvider>
     <Router>
       <ScrollToTop />
+      <MetaPixelTracker />
       
       <div className="font-sans">
         <ToastContainer />
@@ -111,22 +125,17 @@ export default App;
 
 
 /* 
-urunlerin aciklamasi mutlaka olmali
-urun detay sayfasi assagiya dogru uzamali bir seyler ekle oraya
+
+seo çalışması
 
 mobil responsiveligi kontrol et her sayfa icin
 ahfres kaydet
 
+
+degerlendirme modalını ekle
 siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali acilsin
 
 siparis tamamlandiktan sonra sepet silinsin
-
-
-ınsta bıo duzenle 3 mağaza adresını de ekle
-
-
-maildeki iletisim bilgilerini duzenle
-siparislerim butonunu duzenle maildeki
 
 sepetinde urun biraknalara mail gonderelim zamanla dongu halinde 
 

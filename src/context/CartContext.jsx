@@ -59,6 +59,23 @@ export const CartProvider = ({ children }) => {
 
   // --- FONKSİYONLAR ---
   const addToCart = (product, variant, quantity = 1) => {
+
+    if (window.fbq) {
+      window.fbq('track', 'AddToCart', {
+        content_name: product.name,     // Ürün Adı
+        content_ids: [product.id],      // Ürün ID
+        content_type: 'product',
+        value: product.price,           // Fiyat
+        currency: 'TRY',                // Para Birimi
+        contents: [{                    // İçerik Detayı
+            id: product.id,
+            quantity: quantity,
+            item_price: product.price
+        }]
+      });
+    }
+
+
     setCartItems(prev => {
       const safePrev = Array.isArray(prev) ? prev : []; // Ekstra güvenlik
       const existing = safePrev.find(item => 

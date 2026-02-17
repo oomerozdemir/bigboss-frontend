@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Package, Truck, Home } from 'lucide-react';
 
@@ -7,6 +7,9 @@ const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const [orderDetails, setOrderDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Pixel'in mükerrer çalışmasını önlemek için ref kullanıyoruz
+  const pixelFired = useRef(false);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -19,7 +22,7 @@ const PaymentSuccess = () => {
           return;
         }
 
-        // Sipariş detaylarını getir (opsiyonel)
+        // Sipariş detaylarını getir
         const apiUrl = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem('token');
 
@@ -42,7 +45,23 @@ const PaymentSuccess = () => {
     };
 
     fetchOrderDetails();
-  }, [searchParams, navigate]);
+  }, [searchParams]);
+
+  // ✅ META PIXEL: Alışveriş (Purchase) Olayını Gönder
+  useEffect(() => {
+    if (orderDetails && window.fbq && !pixelFired.current) {
+      
+      window.fbq('track', 'Purchase', {
+        value: orderDetails.amount,       // Toplam Tutar
+        currency: 'TRY',                  // Para Birimi
+        content_type: 'product',
+        order_id: orderDetails.orderId    // Sipariş Numarası
+      });
+
+      pixelFired.current = true; // Tekrar çalışmasını engelle
+      console.log("✅ Meta Pixel: Purchase olayı gönderildi.", orderDetails.amount);
+    }
+  }, [orderDetails]);
 
   if (loading) {
     return (
@@ -86,7 +105,7 @@ const PaymentSuccess = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Ödeme Tarihi:</span>
                     <span className="font-semibold text-gray-900">
-                      {new Date(orderDetails.paidAt).toLocaleDateString('tr-TR')}
+                      {orderDetails.paidAt ? new Date(orderDetails.paidAt).toLocaleDateString('tr-TR') : new Date().toLocaleDateString('tr-TR')}
                     </span>
                   </div>
                 </div>
