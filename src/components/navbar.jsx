@@ -3,13 +3,17 @@ import { Menu, X, ShoppingBag, Search, User, LogOut, ShieldCheck, ChevronDown, H
 import AuthModal from './AuthModel';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useUI } from '../context/UIContext'; // ✅ Context Import Edildi
 
 import logoImg from '../assets/bigbossLOGO.jpg'; 
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false); 
   const [user, setUser] = useState(null); 
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  
+  // ✅ Context'ten Modal Kontrolü
+  const { isAuthModalOpen, toggleAuthModal, closeAuthModal, openAuthModal } = useUI();
+  
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -87,7 +91,7 @@ const Navbar = () => {
 
   return (
     <>
-      {/* 🎨 YENİ: Üst Bar (Duyuru/Kampanya Çubuğu) */}
+      {/* 🎨 Üst Bar (Duyuru/Kampanya Çubuğu) */}
       <div className="bg-black text-white text-center py-2 text-xs md:text-sm font-medium tracking-wide">
         <span className="inline-flex items-center gap-2">
           <span className="hidden md:inline">🎉</span>
@@ -103,7 +107,6 @@ const Navbar = () => {
       }`}>
         <div className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12">
           
-          {/* 🎨 ÜSTE ÇIKAN YENİ YAPILANMA */}
           <div className="flex justify-between items-center">
             
             {/* --- SOL: LOGO + ARAMA (Desktop) --- */}
@@ -116,7 +119,7 @@ const Navbar = () => {
                 />
               </Link>
 
-              {/* 🎨 YENİ: Entegre Arama Çubuğu (Desktop) */}
+              {/* Arama Çubuğu (Desktop) */}
               <div className="hidden lg:block flex-1 max-w-md">
                 <form onSubmit={handleSearch} className="relative">
                   <input 
@@ -131,12 +134,10 @@ const Navbar = () => {
               </div>
             </div>
 
-            {/* --- ORTA: KATEGORİ NAV (Desktop) - Artık orta değil, alta taşındı --- */}
-
             {/* --- SAĞ: AKSİYON BUTONLARI --- */}
             <div className="flex items-center gap-3 md:gap-5">
               
-              {/* 🎨 YENİ: Mobil Arama Butonu */}
+              {/* Mobil Arama Butonu */}
               <button 
                 onClick={() => setSearchOpen(!searchOpen)}
                 className="lg:hidden hover:text-gray-500 transition-colors p-2 hover:bg-gray-50 rounded-full"
@@ -151,7 +152,6 @@ const Navbar = () => {
                 title="Favorilerim"
               >
                 <Heart size={22} strokeWidth={1.5} />
-                {/* 🎨 YENİ: Tooltip */}
                 <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                   Favoriler
                 </span>
@@ -161,14 +161,13 @@ const Navbar = () => {
               {user ? (
                 <div className="relative group">
                   <button className="flex items-center gap-2 hover:text-gray-500 transition-colors p-2 hover:bg-gray-50 rounded-full">
-                    {/* 🎨 YENİ: Avatar Circle */}
                     <div className="w-9 h-9 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-md">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                     <ChevronDown size={14} className="hidden md:block group-hover:rotate-180 transition-transform duration-300" />
                   </button>
                   
-                  {/* 🎨 YENİ: Geliştirilmiş Dropdown */}
+                  {/* Dropdown */}
                   <div className="absolute right-0 top-full mt-3 w-64 bg-white border border-gray-100 shadow-2xl rounded-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                     
                     {/* Header */}
@@ -218,7 +217,7 @@ const Navbar = () => {
                 </div>
               ) : (
                 <button 
-                  onClick={() => setIsAuthOpen(true)} 
+                  onClick={openAuthModal} // ✅ Context fonksiyonu kullanılıyor
                   className="hidden md:flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition-all hover:shadow-lg hover:scale-105"
                 >
                   <User size={16} />
@@ -226,7 +225,7 @@ const Navbar = () => {
                 </button>
               )}
 
-              {/* 🎨 YENİ: Geliştirilmiş Sepet */}
+              {/* Sepet */}
               <Link 
                 to="/sepet" 
                 className="relative hover:text-gray-500 transition-all hover:scale-110 p-2 hover:bg-gray-50 rounded-full group"
@@ -238,17 +237,15 @@ const Navbar = () => {
                     <span className="absolute -top-1 -right-1 bg-gradient-to-br from-red-500 to-red-600 text-white text-[10px] font-black rounded-full h-5 w-5 flex items-center justify-center shadow-lg animate-in zoom-in duration-300 border-2 border-white">
                       {totalItems > 9 ? '9+' : totalItems}
                     </span>
-                    {/* 🎨 YENİ: Pulse Animasyonu */}
                     <span className="absolute -top-1 -right-1 bg-red-500 rounded-full h-5 w-5 animate-ping opacity-75"></span>
                   </>
                 )}
-                {/* Tooltip */}
                 <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                   Sepet
                 </span>
               </Link>
 
-              {/* Mobil Menü */}
+              {/* Mobil Menü Butonu */}
               <button 
                 onClick={() => setIsOpen(!isOpen)} 
                 className="lg:hidden text-gray-800 p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -259,7 +256,7 @@ const Navbar = () => {
 
           </div>
 
-          {/* 🎨 YENİ: ALT SATIR - Kategoriler (Desktop) */}
+          {/* Kategoriler (Desktop) */}
           <div className="hidden lg:flex items-center justify-center gap-8 mt-4 pt-4 border-t border-gray-100">
             
             <Link 
@@ -326,7 +323,7 @@ const Navbar = () => {
 
         </div>
 
-        {/* 🎨 YENİ: Mobil Arama Çubuğu (Açılır Panel) */}
+        {/* Mobil Arama Çubuğu (Açılır Panel) */}
         {searchOpen && (
           <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-100 shadow-lg p-4 animate-in slide-in-from-top duration-300">
             <form onSubmit={handleSearch} className="relative">
@@ -388,7 +385,10 @@ const Navbar = () => {
                   </div>
                 ) : (
                   <button 
-                    onClick={() => {setIsOpen(false); setIsAuthOpen(true);}} 
+                    onClick={() => {
+                        setIsOpen(false); 
+                        openAuthModal(); // ✅ Context fonksiyonu
+                    }} 
                     className="w-full bg-black text-white py-3 rounded-xl font-bold text-sm tracking-wider uppercase hover:bg-gray-800 transition-colors mb-6"
                   >
                     Giriş Yap / Kayıt Ol
@@ -456,10 +456,10 @@ const Navbar = () => {
         )}
       </nav>
 
-      {/* MODAL */}
+      {/* ✅ GLOBAL AUTH MODAL */}
       <AuthModal 
-        isOpen={isAuthOpen} 
-        onClose={() => setIsAuthOpen(false)} 
+        isOpen={isAuthModalOpen} // Context'ten gelen değer
+        onClose={closeAuthModal} // Context'ten gelen fonksiyon
       />
     </>
   );

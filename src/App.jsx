@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import MainLayout from './components/MainLayout';
 
 import ToastContainer from "./config/toastConfig";
+import { UIProvider } from './context/UIContext';
 
 import Hero from './components/heroSection';
 import Products from './components/Products';
@@ -78,6 +79,7 @@ const HomePage = () => {
 function App() {
   return (
     <FavoritesProvider>
+      <UIProvider>
     <Router>
       <ScrollToTop />
       <MetaPixelTracker />
@@ -117,6 +119,7 @@ function App() {
         </CartProvider>
       </div>
     </Router>
+    </UIProvider>
     </FavoritesProvider>
   );
 }

@@ -4,10 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCart } from '../context/CartContext'; 
+import { useUI } from '../context/UIContext'; // ✅ YENİ: Context Import Edildi
 
 const ProductCard = ({ product }) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addToCart } = useCart(); 
+  const { openAuthModal } = useUI(); // ✅ YENİ: Modal açma fonksiyonu alındı
   const navigate = useNavigate();  
   
   if (!product || !product.id) {
@@ -34,10 +36,9 @@ const ProductCard = ({ product }) => {
 
   const liked = isFavorite(product.id);
 
-  // ✅ YENİ: İndirim Hesaplama Mantığı (Detail sayfası ile aynı)
+  // İndirim Hesaplama
   const hasDiscount = product.isOnSale && product.discountPrice && product.discountPrice < product.price;
   
-  // İndirim yüzdesini hesapla
   const discountPercent = hasDiscount 
     ? Math.round((1 - parseFloat(product.discountPrice) / parseFloat(product.price)) * 100)
     : 0;
@@ -71,7 +72,8 @@ const ProductCard = ({ product }) => {
     e.stopPropagation();
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.error("Favorilere eklemek için giriş yapmalısınız.");
+      // ✅ YENİ: Giriş yapılmamışsa Favori için de Modalı Aç
+      openAuthModal();
       return;
     }
     await toggleFavorite(product.id);
@@ -90,6 +92,14 @@ const ProductCard = ({ product }) => {
   const handleAddToCart = (e) => {
     e.preventDefault(); 
     e.stopPropagation(); 
+
+    // ✅ YENİ: Token Kontrolü (Giriş Yapılmış mı?)
+    const token = localStorage.getItem("token");
+    if (!token) {
+        openAuthModal(); // Giriş yapılmamışsa Modalı Aç
+        return;
+    }
+
     const variantToAdd = Array.isArray(product.variants) 
       ? product.variants.find(v => v && v.stock > 0)
       : null;
@@ -141,7 +151,6 @@ const ProductCard = ({ product }) => {
             />
           </button>
           
-          {/* ✅ DÜZELTME: İndirim yüzdesi doğru hesaplanarak gösteriliyor */}
           {hasDiscount && (
              <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider shadow-sm rounded">
                %{discountPercent} İNDİRİM
@@ -205,7 +214,6 @@ const ProductCard = ({ product }) => {
             </div>
           )}
           
-          {/* ✅ DÜZELTME: Fiyat Alanı - İndirim varsa eski/yeni fiyat gösterimi */}
           <div className="mt-1 flex items-center gap-2">
             {hasDiscount ? (
                 <>
