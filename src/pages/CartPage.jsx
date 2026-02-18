@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
+import { useUI } from '../context/UIContext'; // ✅ YENİ: Context Import Edildi
 import { Trash2, Minus, Plus, ArrowRight, ShoppingBag, ShieldCheck, Ticket, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom'; 
-import toast from 'react-hot-toast'; // Eksik import eklendi
+import toast from 'react-hot-toast';
 
 const CartPage = () => {
   // Context'ten gerekli tüm verileri ve fonksiyonları çekiyoruz
@@ -18,6 +19,7 @@ const CartPage = () => {
     updateQuantity 
   } = useCart();
 
+  const { openAuthModal } = useUI(); // ✅ YENİ: Modal açma fonksiyonu
   const [couponCode, setCouponCode] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate(); 
@@ -57,6 +59,19 @@ const CartPage = () => {
     }
   };
 
+  // --- SEPETİ ONAYLA (Giriş Kontrolü) ---
+  const handleCheckout = () => {
+    const token = localStorage.getItem('token');
+
+    // ✅ Eğer giriş yapılmamışsa Modalı Aç
+    if (!token) {
+        openAuthModal();
+    } else {
+        // Giriş yapılmışsa Ödeme Sayfasına git
+        navigate('/odeme-sayfasi');
+    }
+  };
+
   // --- BOŞ SEPET GÖRÜNÜMÜ ---
   if (cartItems.length === 0) {
     return (
@@ -67,7 +82,7 @@ const CartPage = () => {
         <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Sepetin Henüz Boş</h2>
         <p className="text-gray-500 mb-8 font-light">Tarzını yansıtacak parçaları keşfetmeye hemen başla.</p>
         <Link 
-          to="/products" 
+          to="/" 
           className="group flex items-center gap-2 bg-black text-white px-8 py-3 text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-all"
         >
           Alışverişe Başla
@@ -93,7 +108,7 @@ const CartPage = () => {
                 {/* Ürün Resmi */}
                 <Link to={`/product/${item.id}`} className="block w-24 h-32 md:w-32 md:h-40 bg-gray-50 overflow-hidden relative">
                    <img 
-                      src={item.imageUrl || "https://via.placeholder.com/300x400"} 
+                      src={item.selectedVariant?.vImageUrl || item.imageUrl || "https://via.placeholder.com/300x400"} 
                       alt={item.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                    />
@@ -106,7 +121,7 @@ const CartPage = () => {
                       <Link to={`/product/${item.id}`} className="text-sm md:text-base font-bold text-gray-900 hover:text-gray-600 transition-colors uppercase tracking-wide line-clamp-1">
                         {item.name}
                       </Link>
-                      {/* SİLME BUTONU: Beden ve Renk parametreleri eklendi */}
+                      {/* SİLME BUTONU */}
                       <button 
                         onClick={() => removeFromCart(item.id, item.selectedVariant?.size, item.selectedVariant?.color)} 
                         className="text-gray-400 hover:text-red-500 transition-colors p-1"
@@ -125,7 +140,7 @@ const CartPage = () => {
                   </div>
 
                   <div className="flex justify-between items-end">
-                    {/* Miktar Arttır/Azalt: Beden ve Renk parametreleri eklendi */}
+                    {/* Miktar Arttır/Azalt */}
                     <div className="flex items-center border border-gray-200 h-8 md:h-10">
                       <button 
                         onClick={() => updateQuantity(item.id, item.selectedVariant?.size, item.selectedVariant?.color, -1)}
@@ -144,9 +159,20 @@ const CartPage = () => {
 
                     {/* Fiyat */}
                     <div className="text-right">
-                      <p className="text-sm md:text-lg font-bold">
-                        {(item.price * item.quantity).toLocaleString('tr-TR')} TL
-                      </p>
+                      {item.discountPrice ? (
+                        <div className="flex flex-col items-end">
+                            <span className="text-xs text-gray-400 line-through font-medium">
+                                {(item.price * item.quantity).toLocaleString('tr-TR')} TL
+                            </span>
+                            <span className="text-sm md:text-lg font-bold text-red-600">
+                                {(item.discountPrice * item.quantity).toLocaleString('tr-TR')} TL
+                            </span>
+                        </div>
+                      ) : (
+                        <p className="text-sm md:text-lg font-bold">
+                            {(item.price * item.quantity).toLocaleString('tr-TR')} TL
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -232,7 +258,7 @@ const CartPage = () => {
               </div>
 
               <button 
-                onClick={() => navigate('/odeme-sayfasi')} 
+                onClick={handleCheckout} // ✅ DÜZELTİLDİ: Fonksiyon bağlandı
                 className="w-full bg-black text-white py-4 text-xs font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition-all flex justify-center items-center gap-2 group shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 Sepeti Onayla
