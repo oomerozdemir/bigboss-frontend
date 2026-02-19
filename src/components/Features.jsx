@@ -1,27 +1,30 @@
 import React from 'react';
 import { Truck, RefreshCcw, ShieldCheck, Ruler } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Features = () => {
+  const { t } = useTranslation();
+
   const features = [
     {
       icon: <Ruler size={32} strokeWidth={1} />,
-      title: "Geniş Beden Aralığı",
-      desc: "36 - 50 beden arası özel kalıplar."
+      title: t('features.size_range_title'),
+      desc: t('features.size_range_desc')
     },
     {
       icon: <Truck size={32} strokeWidth={1} />,
-      title: "Ücretsiz Kargo",
-      desc: "2000 TL üzeri siparişlerde kargo bizden."
+      title: t('features.free_shipping_title'),
+      desc: t('features.free_shipping_desc')
     },
     {
       icon: <RefreshCcw size={32} strokeWidth={1} />,
-      title: "Kolay İade",
-      desc: "14 gün içinde koşulsuz iade hakkı."
+      title: t('features.easy_return_title'),
+      desc: t('features.easy_return_desc')
     },
     {
       icon: <ShieldCheck size={32} strokeWidth={1} />,
-      title: "Güvenli Ödeme",
-      desc: "256-bit SSL ile korunan ödeme altyapısı."
+      title: t('features.secure_payment_title'),
+      desc: t('features.secure_payment_desc')
     }
   ];
 

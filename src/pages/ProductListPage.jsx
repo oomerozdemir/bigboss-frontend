@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import ProductCard from '../components/ProductCard';
-import { Search, ArrowUpDown, Filter, ChevronLeft, ChevronRight } from 'lucide-react'; 
+import { Search, ArrowUpDown, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import TranslatedText from '../components/TranslatedText';
 
 const ProductListPage = () => {
   const location = useLocation();
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +15,7 @@ const ProductListPage = () => {
   // Filtre state'leri
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState("newest");
-  
+
   const [mainCategories, setMainCategories] = useState(["Tümü"]);
   const [selectedMainCategory, setSelectedMainCategory] = useState(
     location.state?.category || "Tümü"
@@ -21,9 +24,9 @@ const ProductListPage = () => {
   const [availableSubCategories, setAvailableSubCategories] = useState(["Tümü"]);
   const [selectedSubCategory, setSelectedSubCategory] = useState("Tümü");
 
-  // ✅ PAGINATION STATE
+  // PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
-  const PRODUCTS_PER_PAGE = 12; // Her sayfada 12 ürün
+  const PRODUCTS_PER_PAGE = 12;
 
   useEffect(() => {
     fetchProducts();
@@ -31,10 +34,10 @@ const ProductListPage = () => {
 
   const fetchProducts = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL; 
+      const apiUrl = import.meta.env.VITE_API_URL;
       const res = await fetch(`${apiUrl}/api/products`);
       const data = await res.json();
-      
+
       let productsArray = [];
       if (Array.isArray(data)) {
         productsArray = data;
@@ -43,13 +46,13 @@ const ProductListPage = () => {
       } else {
         console.error("Beklenmeyen ürün verisi formatı:", data);
       }
-      
+
       setProducts(productsArray);
       setFilteredProducts(productsArray);
 
       // Ana kategorileri çıkart
       const uniqueMainCats = new Set(["Tümü"]);
-      
+
       if (Array.isArray(productsArray)) {
         productsArray.forEach(p => {
           if (p?.categories && Array.isArray(p.categories)) {
@@ -61,7 +64,7 @@ const ProductListPage = () => {
           }
         });
       }
-      
+
       setMainCategories(Array.from(uniqueMainCats));
       setLoading(false);
     } catch (error) {
@@ -157,10 +160,10 @@ const ProductListPage = () => {
     }
 
     setFilteredProducts(result);
-    setCurrentPage(1); // Filtre değişince ilk sayfaya dön
+    setCurrentPage(1);
   }, [searchTerm, selectedMainCategory, selectedSubCategory, sortOption, products]);
 
-  // ✅ PAGINATION HESAPLAMALARI
+  // PAGINATION HESAPLAMALARI
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
   const endIndex = startIndex + PRODUCTS_PER_PAGE;
@@ -173,11 +176,10 @@ const ProductListPage = () => {
     }
   };
 
-  // Sayfa numaralarını hesapla
   const getPageNumbers = () => {
     const pages = [];
     const maxVisible = 5;
-    
+
     if (totalPages <= maxVisible) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -201,35 +203,34 @@ const ProductListPage = () => {
         pages.push(totalPages);
       }
     }
-    
+
     return pages;
   };
 
   return (
     <>
-      
       <div className="bg-gray-50 min-h-screen pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           {/* BAŞLIK */}
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2 uppercase">
-                {selectedMainCategory === "Tümü" ? "TÜM ÜRÜNLER" : selectedMainCategory}
+                {selectedMainCategory === "Tümü" ? t('product.all_products') : selectedMainCategory}
             </h1>
             <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
-                <span>Tarzını yansıtan en iyi parçalar.</span>
+                <span>{t('product.tagline')}</span>
                 <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
                 <span className="font-bold text-black bg-gray-200 px-2 py-0.5 rounded-md">
-                    {loading ? "..." : (Array.isArray(filteredProducts) ? filteredProducts.length : 0)} Ürün
+                    {loading ? "..." : t('product.product_count', { count: Array.isArray(filteredProducts) ? filteredProducts.length : 0 })}
                 </span>
             </div>
           </div>
 
           {/* FİLTRE ALANI */}
           <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 mb-8 sticky top-20 z-30">
-            
+
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4 border-b border-gray-100 pb-4">
-                
+
                 {/* Ana Kategori Butonları */}
                 <div className="flex gap-2 overflow-x-auto pb-1 w-full md:w-auto scrollbar-hide">
                     {Array.isArray(mainCategories) && mainCategories.length > 0 ? (
@@ -238,12 +239,12 @@ const ProductListPage = () => {
                           key={cat}
                           onClick={() => setSelectedMainCategory(cat)}
                           className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all ${
-                              selectedMainCategory === cat 
-                              ? "bg-black text-white shadow-lg transform scale-105" 
+                              selectedMainCategory === cat
+                              ? "bg-black text-white shadow-lg transform scale-105"
                               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                           }`}
                         >
-                          {cat}
+                          {cat === "Tümü" ? t('product.all') : <TranslatedText text={cat} />}
                         </button>
                       ))
                     ) : (
@@ -258,9 +259,9 @@ const ProductListPage = () => {
                 <div className="flex gap-3 w-full md:w-auto">
                     <div className="relative flex-1 md:w-56">
                         <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="Ara..." 
+                        <input
+                            type="text"
+                            placeholder={t('product.search_placeholder')}
                             className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-black text-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -268,14 +269,14 @@ const ProductListPage = () => {
                     </div>
                     <div className="relative">
                         <ArrowUpDown className="absolute left-3 top-2.5 text-gray-500 pointer-events-none" size={16} />
-                        <select 
+                        <select
                             value={sortOption}
                             onChange={(e) => setSortOption(e.target.value)}
                             className="pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:outline-none cursor-pointer text-sm font-medium h-full hover:bg-gray-100"
                         >
-                            <option value="newest">En Yeniler</option>
-                            <option value="price-asc">Artan Fiyat</option>
-                            <option value="price-desc">Azalan Fiyat</option>
+                            <option value="newest">{t('product.sort_newest')}</option>
+                            <option value="price-asc">{t('product.sort_price_asc')}</option>
+                            <option value="price-desc">{t('product.sort_price_desc')}</option>
                         </select>
                     </div>
                 </div>
@@ -284,19 +285,19 @@ const ProductListPage = () => {
             {/* Alt Kategori Butonları */}
             {Array.isArray(availableSubCategories) && availableSubCategories.length > 1 && (
                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-2 hidden md:block">Filtrele:</span>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-2 hidden md:block">{t('product.filter')}</span>
                     <div className="flex gap-2 overflow-x-auto pb-1 w-full scrollbar-hide">
                         {availableSubCategories.map((sub) => (
                             <button
                                 key={sub}
                                 onClick={() => setSelectedSubCategory(sub)}
                                 className={`whitespace-nowrap px-4 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                                    selectedSubCategory === sub 
-                                    ? "bg-black text-white border-black" 
+                                    selectedSubCategory === sub
+                                    ? "bg-black text-white border-black"
                                     : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
                                 }`}
                             >
-                                {sub}
+                                {sub === "Tümü" ? t('product.all') : <TranslatedText text={sub} />}
                             </button>
                         ))}
                     </div>
@@ -318,7 +319,7 @@ const ProductListPage = () => {
                 })}
               </div>
 
-              {/* ✅ PAGINATION */}
+              {/* PAGINATION */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-12">
                   <button
@@ -334,7 +335,7 @@ const ProductListPage = () => {
                       if (page === '...') {
                         return <span key={`ellipsis-${index}`} className="px-3 py-2 text-gray-400">...</span>;
                       }
-                      
+
                       return (
                         <button
                           key={page}
@@ -362,7 +363,7 @@ const ProductListPage = () => {
               )}
 
               <div className="text-center mt-4 text-sm text-gray-500">
-                Sayfa {currentPage} / {totalPages} - Toplam {filteredProducts.length} ürün
+                {t('product.page_info', { current: currentPage, total: totalPages, count: filteredProducts.length })}
               </div>
             </>
           ) : (
@@ -370,19 +371,19 @@ const ProductListPage = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
                     <Filter size={32} className="text-gray-400"/>
                 </div>
-                <h3 className="text-xl font-bold text-gray-800">Sonuç Bulunamadı</h3>
+                <h3 className="text-xl font-bold text-gray-800">{t('product.no_results')}</h3>
                 <p className="text-gray-500 mt-2">
-                    {selectedMainCategory !== "Tümü" ? `${selectedMainCategory} > ${selectedSubCategory}` : "Yapılan arama"} için ürün yok.
+                    {t('product.no_results_desc', { filter: selectedMainCategory !== "Tümü" ? `${selectedMainCategory} > ${selectedSubCategory}` : searchTerm })}
                 </p>
-                <button 
+                <button
                     onClick={() => {
-                        setSearchTerm(""); 
+                        setSearchTerm("");
                         setSelectedMainCategory("Tümü");
                         setSelectedSubCategory("Tümü");
                     }}
                     className="mt-6 text-black font-bold underline hover:text-gray-600"
                 >
-                    Filtreleri Temizle
+                    {t('product.clear_filters')}
                 </button>
             </div>
           )}

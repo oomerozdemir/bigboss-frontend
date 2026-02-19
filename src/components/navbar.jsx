@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ShoppingBag, Search, User, LogOut, ShieldCheck, ChevronDown, Heart, Bell } from 'lucide-react'; 
+import { Menu, X, ShoppingBag, Search, User, LogOut, ShieldCheck, ChevronDown, Heart, Globe } from 'lucide-react';
 import AuthModal from './AuthModel';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { useUI } from '../context/UIContext'; // ✅ Context Import Edildi
+import { useUI } from '../context/UIContext';
+import { useTranslation } from 'react-i18next';
 
-import logoImg from '../assets/bigbossLOGO.jpg'; 
+import logoImg from '../assets/bigbossLOGO.jpg';
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false); 
-  const [user, setUser] = useState(null); 
-  
-  // ✅ Context'ten Modal Kontrolü
+  const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
   const { isAuthModalOpen, toggleAuthModal, closeAuthModal, openAuthModal } = useUI();
-  
+  const { t, i18n } = useTranslation();
+
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,7 +28,7 @@ const Navbar = () => {
       return acc + quantity;
     }, 0);
   }, [cartItems]);
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,7 +59,7 @@ const Navbar = () => {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
-      
+
       if (Array.isArray(data)) {
         const navbarCats = data.filter(cat => cat?.isShowOnNavbar === true);
         setCategories(navbarCats);
@@ -89,42 +90,46 @@ const Navbar = () => {
     }
   };
 
+  const handleLanguageChange = (lang) => {
+    i18n.changeLanguage(lang);
+  };
+
   return (
     <>
-      {/* 🎨 Üst Bar (Duyuru/Kampanya Çubuğu) */}
+      {/* Üst Bar (Duyuru/Kampanya Çubuğu) */}
       <div className="bg-black text-white text-center py-2 text-xs md:text-sm font-medium tracking-wide">
         <span className="inline-flex items-center gap-2">
           <span className="hidden md:inline">🎉</span>
-          <span>2000 TL ve üzeri alışverişlerde</span>
-          <span className="font-bold text-yellow-400">ÜCRETSİZ KARGO</span>
+          <span>{t('nav.free_shipping_announcement')}</span>
+          <span className="font-bold text-yellow-400">{t('nav.free_shipping')}</span>
         </span>
       </div>
 
       <nav className={`sticky top-0 w-full z-50 transition-all duration-500 ease-in-out ${
-        scrolled 
-          ? "bg-white/98 backdrop-blur-xl shadow-lg py-3 border-b border-gray-100" 
+        scrolled
+          ? "bg-white/98 backdrop-blur-xl shadow-lg py-3 border-b border-gray-100"
           : "bg-white py-5 shadow-sm"
       }`}>
         <div className="max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12">
-          
+
           <div className="flex justify-between items-center">
-            
-            {/* --- SOL: LOGO + ARAMA (Desktop) --- */}
+
+            {/* SOL: LOGO + ARAMA (Desktop) */}
             <div className="flex items-center gap-6 lg:gap-8 flex-1">
               <Link to="/" className="shrink-0 group">
-                <img 
-                  src={logoImg} 
-                  alt="Big Boss" 
-                  className="h-12 md:h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105" 
+                <img
+                  src={logoImg}
+                  alt="Big Boss"
+                  className="h-12 md:h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
                 />
               </Link>
 
               {/* Arama Çubuğu (Desktop) */}
               <div className="hidden lg:block flex-1 max-w-md">
                 <form onSubmit={handleSearch} className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Ürün ara... (Örn: Elbise, Pantolon)"
+                  <input
+                    type="text"
+                    placeholder={t('nav.search_placeholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-gray-50 border-2 border-gray-200 rounded-full pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:border-black focus:bg-white transition-all duration-300 placeholder:text-gray-400"
@@ -134,11 +139,11 @@ const Navbar = () => {
               </div>
             </div>
 
-            {/* --- SAĞ: AKSİYON BUTONLARI --- */}
+            {/* SAĞ: AKSİYON BUTONLARI */}
             <div className="flex items-center gap-3 md:gap-5">
-              
+
               {/* Mobil Arama Butonu */}
-              <button 
+              <button
                 onClick={() => setSearchOpen(!searchOpen)}
                 className="lg:hidden hover:text-gray-500 transition-colors p-2 hover:bg-gray-50 rounded-full"
               >
@@ -146,17 +151,39 @@ const Navbar = () => {
               </button>
 
               {/* Favoriler */}
-              <Link 
-                to="/favoriler" 
+              <Link
+                to="/favoriler"
                 className="hidden md:flex hover:text-gray-500 transition-all hover:scale-110 p-2 hover:bg-gray-50 rounded-full relative group"
-                title="Favorilerim"
+                title={t('nav.favorites')}
               >
                 <Heart size={22} strokeWidth={1.5} />
                 <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Favoriler
+                  {t('nav.favorites')}
                 </span>
               </Link>
-              
+
+              {/* Dil Değiştirici */}
+              <div className="relative group hidden md:block">
+                <button className="flex items-center gap-1.5 p-2 hover:bg-gray-50 rounded-full text-gray-700 hover:text-black transition-colors">
+                  <Globe size={20} strokeWidth={1.5} />
+                  <span className="text-xs font-bold uppercase">{i18n.language === 'ar' ? 'AR' : 'TR'}</span>
+                </button>
+                <div className="absolute right-0 top-full mt-2 bg-white border border-gray-100 shadow-xl rounded-xl p-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 min-w-[80px]">
+                  <button
+                    onClick={() => handleLanguageChange('tr')}
+                    className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg transition-colors ${i18n.language === 'tr' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-700'}`}
+                  >
+                    🇹🇷 TR
+                  </button>
+                  <button
+                    onClick={() => handleLanguageChange('ar')}
+                    className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg transition-colors ${i18n.language === 'ar' ? 'bg-black text-white' : 'hover:bg-gray-50 text-gray-700'}`}
+                  >
+                    🇸🇦 AR
+                  </button>
+                </div>
+              </div>
+
               {/* Kullanıcı Menüsü */}
               {user ? (
                 <div className="relative group">
@@ -166,70 +193,70 @@ const Navbar = () => {
                     </div>
                     <ChevronDown size={14} className="hidden md:block group-hover:rotate-180 transition-transform duration-300" />
                   </button>
-                  
+
                   {/* Dropdown */}
                   <div className="absolute right-0 top-full mt-3 w-64 bg-white border border-gray-100 shadow-2xl rounded-2xl p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                    
+
                     {/* Header */}
                     <div className="px-3 py-3 border-b border-gray-100 mb-2 bg-gradient-to-br from-gray-50 to-white rounded-xl">
-                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Hoşgeldin</p>
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">{t('nav.welcome')}</p>
                       <p className="text-base font-bold text-gray-900 truncate">{user.name}</p>
                       <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
                     </div>
 
                     {/* Menu Items */}
                     <div className="space-y-1">
-                      <Link 
-                        to="/hesabim" 
+                      <Link
+                        to="/hesabim"
                         className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-all group/item"
                       >
                         <User size={16} className="text-gray-400 group-hover/item:text-gray-700" />
-                        <span>Hesabım</span>
+                        <span>{t('nav.my_account')}</span>
                       </Link>
 
                       {user.isAdmin && (
-                        <Link 
-                          to="/admin-panel" 
+                        <Link
+                          to="/admin-panel"
                           className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                         >
                           <ShieldCheck size={16} />
-                          <span>Admin Paneli</span>
+                          <span>{t('nav.admin_panel')}</span>
                         </Link>
                       )}
 
-                      <Link 
-                        to="/hesabim" 
+                      <Link
+                        to="/hesabim"
                         className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-all"
                       >
                         <ShoppingBag size={16} className="text-gray-400" />
-                        Siparişlerim
+                        {t('nav.my_orders')}
                       </Link>
 
-                      <button 
-                        onClick={handleLogout} 
+                      <button
+                        onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-all mt-2 border-t border-gray-100 pt-3"
                       >
                         <LogOut size={16} />
-                        <span className="font-medium">Çıkış Yap</span>
+                        <span className="font-medium">{t('nav.logout')}</span>
                       </button>
                     </div>
                   </div>
                 </div>
               ) : (
-                <button 
-                  onClick={openAuthModal} // ✅ Context fonksiyonu kullanılıyor
+                <button
+                  onClick={openAuthModal}
                   className="hidden md:flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition-all hover:shadow-lg hover:scale-105"
                 >
                   <User size={16} />
-                  Giriş Yap
+                  {t('nav.login')}
                 </button>
               )}
 
               {/* Sepet */}
-              <Link 
-                to="/sepet" 
+              <Link
+                to="/sepet"
                 className="relative hover:text-gray-500 transition-all hover:scale-110 p-2 hover:bg-gray-50 rounded-full group"
-                title="Sepetim"
+                title={t('nav.cart')}
               >
                 <ShoppingBag size={23} strokeWidth={1.5} />
                 {totalItems > 0 && (
@@ -241,13 +268,13 @@ const Navbar = () => {
                   </>
                 )}
                 <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                  Sepet
+                  {t('nav.cart')}
                 </span>
               </Link>
 
               {/* Mobil Menü Butonu */}
-              <button 
-                onClick={() => setIsOpen(!isOpen)} 
+              <button
+                onClick={() => setIsOpen(!isOpen)}
                 className="lg:hidden text-gray-800 p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -258,22 +285,22 @@ const Navbar = () => {
 
           {/* Kategoriler (Desktop) */}
           <div className="hidden lg:flex items-center justify-center gap-8 mt-4 pt-4 border-t border-gray-100">
-            
-            <Link 
-              to="/" 
+
+            <Link
+              to="/"
               className="text-xs font-bold text-gray-700 hover:text-black tracking-widest uppercase transition-all relative group py-1"
             >
-              ANASAYFA
+              {t('nav.home')}
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-black group-hover:w-full transition-all duration-300"></span>
             </Link>
 
             {Array.isArray(categories) && categories.length > 0 ? (
               categories.map((mainCat) => {
                 if (!mainCat?.id || !mainCat?.name) return null;
-                
+
                 return (
                   <div key={mainCat.id} className="group/cat relative">
-                    <Link 
+                    <Link
                       to={`/products?category=${encodeURIComponent(mainCat.name)}`}
                       className="flex items-center gap-1.5 text-xs font-bold text-gray-700 hover:text-black tracking-widest uppercase transition-all py-1 relative"
                     >
@@ -291,11 +318,11 @@ const Navbar = () => {
                           <div className="p-2">
                             {mainCat.subCategories.map((sub) => {
                               if (!sub?.id || !sub?.name) return null;
-                              
+
                               return (
-                                <Link 
-                                  key={sub.id} 
-                                  to={`/products?category=${encodeURIComponent(mainCat.name)}&subcategory=${encodeURIComponent(sub.name)}`} 
+                                <Link
+                                  key={sub.id}
+                                  to={`/products?category=${encodeURIComponent(mainCat.name)}&subcategory=${encodeURIComponent(sub.name)}`}
                                   className="block px-4 py-3 text-sm font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-lg transition-all group/sub"
                                 >
                                   <span className="flex items-center justify-between">
@@ -327,9 +354,9 @@ const Navbar = () => {
         {searchOpen && (
           <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-100 shadow-lg p-4 animate-in slide-in-from-top duration-300">
             <form onSubmit={handleSearch} className="relative">
-              <input 
-                type="text" 
-                placeholder="Ne arıyorsunuz?"
+              <input
+                type="text"
+                placeholder={t('nav.search_placeholder_mobile')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
@@ -340,21 +367,21 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* --- MOBİL MENÜ (Sidebar) --- */}
+        {/* MOBİL MENÜ (Sidebar) */}
         {isOpen && (
           <>
             {/* Overlay */}
-            <div 
+            <div
               className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 animate-in fade-in duration-300"
               onClick={() => setIsOpen(false)}
             ></div>
 
             {/* Sidebar */}
             <div className="lg:hidden fixed right-0 top-0 h-full w-80 bg-white z-50 shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto">
-              
+
               {/* Header */}
               <div className="sticky top-0 bg-white border-b border-gray-100 p-6 flex justify-between items-center">
-                <h2 className="text-xl font-black tracking-tight">MENÜ</h2>
+                <h2 className="text-xl font-black tracking-tight">{t('nav.menu')}</h2>
                 <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                   <X size={24} />
                 </button>
@@ -362,7 +389,23 @@ const Navbar = () => {
 
               {/* Content */}
               <div className="p-6 space-y-4">
-                
+
+                {/* Dil Değiştirici (Mobil) */}
+                <div className="flex gap-2 mb-2">
+                  <button
+                    onClick={() => handleLanguageChange('tr')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors ${i18n.language === 'tr' ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-200'}`}
+                  >
+                    🇹🇷 Türkçe
+                  </button>
+                  <button
+                    onClick={() => handleLanguageChange('ar')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors ${i18n.language === 'ar' ? 'bg-black text-white border-black' : 'bg-white text-gray-700 border-gray-200'}`}
+                  >
+                    🇸🇦 العربية
+                  </button>
+                </div>
+
                 {/* User Section */}
                 {user ? (
                   <div className="bg-gradient-to-br from-gray-800 to-gray-600 text-white p-4 rounded-2xl mb-6">
@@ -375,59 +418,59 @@ const Navbar = () => {
                         <p className="text-xs opacity-80">{user.email}</p>
                       </div>
                     </div>
-                    <Link 
-                      to="/hesabim" 
+                    <Link
+                      to="/hesabim"
                       onClick={() => setIsOpen(false)}
                       className="block w-full bg-white/10 hover:bg-white/20 text-center py-2 rounded-lg text-sm font-medium transition-colors"
                     >
-                      Hesabımı Görüntüle
+                      {t('nav.view_account')}
                     </Link>
                   </div>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => {
-                        setIsOpen(false); 
-                        openAuthModal(); // ✅ Context fonksiyonu
-                    }} 
+                        setIsOpen(false);
+                        openAuthModal();
+                    }}
                     className="w-full bg-black text-white py-3 rounded-xl font-bold text-sm tracking-wider uppercase hover:bg-gray-800 transition-colors mb-6"
                   >
-                    Giriş Yap / Kayıt Ol
+                    {t('nav.login_register')}
                   </button>
                 )}
 
                 {/* Navigation */}
-                <Link 
-                  to="/" 
-                  onClick={() => setIsOpen(false)} 
+                <Link
+                  to="/"
+                  onClick={() => setIsOpen(false)}
                   className="block text-lg font-bold text-gray-900 hover:text-black py-3 border-b border-gray-100 transition-colors"
                 >
-                  🏠 ANASAYFA
+                  🏠 {t('nav.home')}
                 </Link>
 
                 {Array.isArray(categories) && categories.length > 0 && categories.map((cat) => {
                   if (!cat?.id || !cat?.name) return null;
-                  
+
                   return (
                     <div key={cat.id} className="border-b border-gray-100 pb-3">
-                      <Link 
-                        to={`/products?category=${encodeURIComponent(cat.name)}`} 
-                        onClick={() => setIsOpen(false)} 
+                      <Link
+                        to={`/products?category=${encodeURIComponent(cat.name)}`}
+                        onClick={() => setIsOpen(false)}
                         className="text-lg font-bold text-gray-900 hover:text-black flex justify-between items-center py-2 transition-colors"
                       >
                         {cat.name}
                         {cat.subCategories?.length > 0 && <ChevronDown size={18} />}
                       </Link>
-                      
+
                       {Array.isArray(cat.subCategories) && cat.subCategories.length > 0 && (
                         <div className="pl-4 mt-2 space-y-2 border-l-2 border-gray-200">
                           {cat.subCategories.map(sub => {
                             if (!sub?.id || !sub?.name) return null;
-                            
+
                             return (
-                              <Link 
-                                key={sub.id} 
-                                to={`/products?category=${encodeURIComponent(cat.name)}&subcategory=${encodeURIComponent(sub.name)}`} 
-                                onClick={() => setIsOpen(false)} 
+                              <Link
+                                key={sub.id}
+                                to={`/products?category=${encodeURIComponent(cat.name)}&subcategory=${encodeURIComponent(sub.name)}`}
+                                onClick={() => setIsOpen(false)}
                                 className="block text-sm font-medium text-gray-600 hover:text-black py-1.5 transition-colors"
                               >
                                 → {sub.name}
@@ -442,12 +485,12 @@ const Navbar = () => {
 
                 {/* Bottom Actions */}
                 {user && (
-                  <button 
+                  <button
                     onClick={handleLogout}
                     className="w-full flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 py-3 rounded-xl font-medium transition-colors mt-6"
                   >
                     <LogOut size={18} />
-                    Çıkış Yap
+                    {t('nav.logout')}
                   </button>
                 )}
               </div>
@@ -456,10 +499,10 @@ const Navbar = () => {
         )}
       </nav>
 
-      {/* ✅ GLOBAL AUTH MODAL */}
-      <AuthModal 
-        isOpen={isAuthModalOpen} // Context'ten gelen değer
-        onClose={closeAuthModal} // Context'ten gelen fonksiyon
+      {/* GLOBAL AUTH MODAL */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={closeAuthModal}
       />
     </>
   );

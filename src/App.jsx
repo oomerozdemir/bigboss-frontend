@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import MainLayout from './components/MainLayout';
 
 import ToastContainer from "./config/toastConfig";
@@ -77,6 +78,14 @@ const HomePage = () => {
 };
 
 function App() {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = dir;
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
   return (
     <FavoritesProvider>
       <UIProvider>
@@ -131,9 +140,10 @@ export default App;
 
 seo çalışması
 
-mobil responsiveligi kontrol et her sayfa icin
 ahfres kaydet
 
+
+hangi ürüne ne kadar tıklandı bunu izleyelim admın panelinde.
 
 degerlendirme modalını ekle
 siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali acilsin

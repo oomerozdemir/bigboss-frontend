@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Heart, ImageOff } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom'; 
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useFavorites } from '../context/FavoritesContext';
-import { useCart } from '../context/CartContext'; 
+import { useCart } from '../context/CartContext';
 import { useUI } from '../context/UIContext'; // ✅ YENİ: Context Import Edildi
+import { useTranslation } from 'react-i18next';
+import { useAutoTranslate } from '../hooks/useAutoTranslate';
+import { formatPrice } from '../utils/formatPrice';
 
 const ProductCard = ({ product }) => {
   const { isFavorite, toggleFavorite } = useFavorites();
-  const { addToCart } = useCart(); 
+  const { addToCart } = useCart();
   const { openAuthModal } = useUI(); // ✅ YENİ: Modal açma fonksiyonu alındı
-  const navigate = useNavigate();  
-  
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const translatedName = useAutoTranslate(product?.name || '');
+
   if (!product || !product.id) {
     return null;
   }
@@ -77,7 +82,7 @@ const ProductCard = ({ product }) => {
       return;
     }
     await toggleFavorite(product.id);
-    toast.success(liked ? "Favorilerden çıkarıldı" : "Favorilere eklendi");
+    toast.success(liked ? t('product.removed_from_favorites') : t('product.added_to_favorites'));
   };
 
   const handleColorClick = (e, variantImage) => {
@@ -108,7 +113,7 @@ const ProductCard = ({ product }) => {
         addToCart(product, variantToAdd, 1);
         navigate('/sepet'); 
     } else {
-        toast.error("Ürün stokta yok veya beden seçilemedi.");
+        toast.error(t('product.no_stock_error'));
     }
   };
 
@@ -164,7 +169,7 @@ const ProductCard = ({ product }) => {
                 className="w-full bg-white text-black py-3 text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed rounded"
              >
                 <ShoppingCart size={16} />
-                {product.stock === 0 ? "Tükendi" : "Sepete Ekle"}
+                {product.stock === 0 ? t('product.out_of_stock') : t('product.add_to_cart')}
              </button>
           </div>
         </div>
@@ -197,7 +202,7 @@ const ProductCard = ({ product }) => {
           )}
 
           <h3 className="text-sm text-gray-900 font-medium leading-tight line-clamp-2 group-hover:underline decoration-1 underline-offset-4">
-            {product.name || 'Ürün Adı'}
+            {translatedName || product.name || t('product.product_name_fallback')}
           </h3>
 
           {/* Bedenler */}
@@ -218,15 +223,15 @@ const ProductCard = ({ product }) => {
             {hasDiscount ? (
                 <>
                     <span className="text-xs text-gray-400 line-through font-medium">
-                        {parseFloat(product.price).toFixed(2)} TL
+                        {formatPrice(product.price)} TL
                     </span>
                     <span className="text-sm font-bold text-red-600">
-                        {parseFloat(product.discountPrice).toFixed(2)} TL
+                        {formatPrice(product.discountPrice)} TL
                     </span>
                 </>
             ) : (
                 <span className="text-sm font-bold text-gray-900">
-                    {product.price ? `${parseFloat(product.price).toFixed(2)} TL` : 'Fiyat Belirtilmemiş'}
+                    {product.price ? `${formatPrice(product.price)} TL` : 'Fiyat Belirtilmemiş'}
                 </span>
             )}
           </div>

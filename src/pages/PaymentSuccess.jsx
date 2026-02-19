@@ -1,28 +1,27 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Package, Truck, Home } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [orderDetails, setOrderDetails] = useState(null);
   const [loading, setLoading] = useState(true);
-  
-  // Pixel'in mükerrer çalışmasını önlemek için ref kullanıyoruz
+
   const pixelFired = useRef(false);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
-        // URL'den sipariş ID'sini al
         const orderId = searchParams.get('merchant_oid');
-        
+
         if (!orderId) {
           setLoading(false);
           return;
         }
 
-        // Sipariş detaylarını getir
         const apiUrl = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem('token');
 
@@ -33,7 +32,7 @@ const PaymentSuccess = () => {
         });
 
         const data = await response.json();
-        
+
         if (data.success) {
           setOrderDetails(data.payment);
         }
@@ -47,18 +46,16 @@ const PaymentSuccess = () => {
     fetchOrderDetails();
   }, [searchParams]);
 
-  // ✅ META PIXEL: Alışveriş (Purchase) Olayını Gönder
+  // META PIXEL: Purchase olayı
   useEffect(() => {
     if (orderDetails && window.fbq && !pixelFired.current) {
-      
       window.fbq('track', 'Purchase', {
-        value: orderDetails.amount,       // Toplam Tutar
-        currency: 'TRY',                  // Para Birimi
+        value: orderDetails.amount,
+        currency: 'TRY',
         content_type: 'product',
-        order_id: orderDetails.orderId    // Sipariş Numarası
+        order_id: orderDetails.orderId
       });
-
-      pixelFired.current = true; // Tekrar çalışmasını engelle
+      pixelFired.current = true;
       console.log("✅ Meta Pixel: Purchase olayı gönderildi.", orderDetails.amount);
     }
   }, [orderDetails]);
@@ -75,35 +72,34 @@ const PaymentSuccess = () => {
     <>
       <div className="min-h-screen bg-gray-50 pt-24 pb-12">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          {/* Başarı İkonu */}
+
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
               <CheckCircle className="text-green-600" size={48} />
             </div>
 
             <h1 className="text-3xl font-black text-gray-900 mb-3">
-              Ödeme Başarılı!
+              {t('payment_success.title')}
             </h1>
             <p className="text-gray-600 mb-8">
-              Siparişiniz başarıyla alındı. Teşekkür ederiz!
+              {t('payment_success.subtitle')}
             </p>
 
             {/* Sipariş Bilgileri */}
             {orderDetails && (
               <div className="bg-gray-50 rounded-lg p-6 mb-8 text-left">
-                <h3 className="font-semibold text-gray-900 mb-4">Sipariş Detayları</h3>
+                <h3 className="font-semibold text-gray-900 mb-4">{t('payment_success.order_details')}</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Sipariş No:</span>
+                    <span className="text-gray-600">{t('payment_success.order_no')}</span>
                     <span className="font-semibold text-gray-900">{orderDetails.orderId}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Toplam Tutar:</span>
+                    <span className="text-gray-600">{t('payment_success.total_amount')}</span>
                     <span className="font-semibold text-gray-900">{orderDetails.amount} TL</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Ödeme Tarihi:</span>
+                    <span className="text-gray-600">{t('payment_success.payment_date')}</span>
                     <span className="font-semibold text-gray-900">
                       {orderDetails.paidAt ? new Date(orderDetails.paidAt).toLocaleDateString('tr-TR') : new Date().toLocaleDateString('tr-TR')}
                     </span>
@@ -114,28 +110,24 @@ const PaymentSuccess = () => {
 
             {/* Sonraki Adımlar */}
             <div className="border-t border-gray-200 pt-6 mb-8">
-              <h3 className="font-semibold text-gray-900 mb-4">Sonraki Adımlar</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('payment_success.next_steps')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                     <Package className="text-blue-600" size={20} />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 text-sm">Sipariş Hazırlanıyor</p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Siparişiniz hazırlanmaya başlandı
-                    </p>
+                    <p className="font-semibold text-gray-900 text-sm">{t('payment_success.preparing')}</p>
+                    <p className="text-xs text-gray-600 mt-1">{t('payment_success.preparing_desc')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
                     <Truck className="text-purple-600" size={20} />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 text-sm">Kargoya Verilecek</p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      1-2 iş günü içinde kargoya verilecek
-                    </p>
+                    <p className="font-semibold text-gray-900 text-sm">{t('payment_success.shipping')}</p>
+                    <p className="text-xs text-gray-600 mt-1">{t('payment_success.shipping_desc')}</p>
                   </div>
                 </div>
               </div>
@@ -143,10 +135,7 @@ const PaymentSuccess = () => {
 
             {/* E-posta Bildirimi */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-              <p className="text-sm text-gray-700">
-                Sipariş detayları e-posta adresinize gönderildi. 
-                Kargo takip bilgileri SMS ile iletilecektir.
-              </p>
+              <p className="text-sm text-gray-700">{t('payment_success.email_notice')}</p>
             </div>
 
             {/* Butonlar */}
@@ -155,14 +144,14 @@ const PaymentSuccess = () => {
                 onClick={() => navigate('/hesabim')}
                 className="flex-1 bg-black text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
               >
-                Siparişlerimi Görüntüle
+                {t('payment_success.view_orders')}
               </button>
               <button
                 onClick={() => navigate('/')}
                 className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
               >
                 <Home size={20} />
-                <span>Ana Sayfaya Dön</span>
+                <span>{t('payment_success.go_home')}</span>
               </button>
             </div>
           </div>

@@ -1,56 +1,55 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { XCircle, AlertTriangle, RotateCcw, Home, HelpCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const PaymentFailed = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [failureReason, setFailureReason] = useState('');
 
   useEffect(() => {
-    // URL'den hata kodunu al
-    const reason = searchParams.get('failed_reason_msg') || 
+    const reason = searchParams.get('failed_reason_msg') ||
                    searchParams.get('reason') ||
                    'Ödeme işlemi tamamlanamadı';
     setFailureReason(reason);
   }, [searchParams]);
 
-  // Hata mesajlarını Türkçeleştir
   const getFailureMessage = (reason) => {
-    const messages = {
-      'INVALID_CARD': 'Kart bilgileri hatalı',
-      'INSUFFICIENT_FUNDS': 'Yetersiz bakiye',
-      'CARD_EXPIRED': 'Kartın geçerlilik süresi dolmuş',
-      'DECLINED': 'Banka kartı reddetti',
-      'TIMEOUT': 'İşlem zaman aşımına uğradı',
-      '3D_VERIFICATION_FAILED': '3D Secure doğrulama başarısız',
-      'CANCELLED_BY_USER': 'Kullanıcı tarafından iptal edildi'
+    const keyMap = {
+      'INVALID_CARD': 'payment_failed.err_invalid_card',
+      'INSUFFICIENT_FUNDS': 'payment_failed.err_insufficient_funds',
+      'CARD_EXPIRED': 'payment_failed.err_card_expired',
+      'DECLINED': 'payment_failed.err_declined',
+      'TIMEOUT': 'payment_failed.err_timeout',
+      '3D_VERIFICATION_FAILED': 'payment_failed.err_3d_failed',
+      'CANCELLED_BY_USER': 'payment_failed.err_cancelled'
     };
 
-    return messages[reason] || reason;
+    return keyMap[reason] ? t(keyMap[reason]) : reason;
   };
 
-  // Yaygın sorunlar ve çözümler
   const commonIssues = [
     {
       icon: <AlertTriangle className="text-yellow-600" size={20} />,
-      title: 'Kart Limiti',
-      description: 'Kartınızın günlük veya aylık limitini aşmış olabilirsiniz'
+      title: t('payment_failed.issue_limit_title'),
+      description: t('payment_failed.issue_limit_desc')
     },
     {
       icon: <AlertTriangle className="text-yellow-600" size={20} />,
-      title: 'İnternet Alışverişi',
-      description: 'Kartınızın internet alışverişine kapalı olabilir'
+      title: t('payment_failed.issue_online_title'),
+      description: t('payment_failed.issue_online_desc')
     },
     {
       icon: <AlertTriangle className="text-yellow-600" size={20} />,
-      title: '3D Secure',
-      description: 'SMS şifresini hatalı girmiş olabilirsiniz'
+      title: t('payment_failed.issue_3d_title'),
+      description: t('payment_failed.issue_3d_desc')
     },
     {
       icon: <AlertTriangle className="text-yellow-600" size={20} />,
-      title: 'Banka Onayı',
-      description: 'Bankanız işlemi güvenlik nedeniyle reddetmiş olabilir'
+      title: t('payment_failed.issue_bank_title'),
+      description: t('payment_failed.issue_bank_desc')
     }
   ];
 
@@ -58,24 +57,23 @@ const PaymentFailed = () => {
     <>
       <div className="min-h-screen bg-gray-50 pt-24 pb-12">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          {/* Hata İkonu */}
+
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-6">
               <XCircle className="text-red-600" size={48} />
             </div>
 
             <h1 className="text-3xl font-black text-gray-900 mb-3">
-              Ödeme Başarısız
+              {t('payment_failed.title')}
             </h1>
             <p className="text-gray-600 mb-2">
-              Ödeme işleminiz tamamlanamadı
+              {t('payment_failed.subtitle')}
             </p>
-            
+
             {/* Hata Nedeni */}
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
               <p className="text-sm font-semibold text-red-900">
-                Hata Nedeni:
+                {t('payment_failed.error_reason')}
               </p>
               <p className="text-sm text-red-800 mt-1">
                 {getFailureMessage(failureReason)}
@@ -86,7 +84,7 @@ const PaymentFailed = () => {
             <div className="border-t border-gray-200 pt-6 mb-8 text-left">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <HelpCircle size={20} />
-                Ne Yapmalıyım?
+                {t('payment_failed.what_to_do')}
               </h3>
               <div className="space-y-3">
                 {commonIssues.map((issue, index) => (
@@ -103,23 +101,23 @@ const PaymentFailed = () => {
 
             {/* Öneriler */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 text-left">
-              <h4 className="font-semibold text-blue-900 mb-2 text-sm">Öneriler</h4>
+              <h4 className="font-semibold text-blue-900 mb-2 text-sm">{t('payment_failed.suggestions')}</h4>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>
-                  <span>Kart bilgilerinizi kontrol edin</span>
+                  <span>{t('payment_failed.tip1')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>
-                  <span>Kartınızın internet alışverişine açık olduğundan emin olun</span>
+                  <span>{t('payment_failed.tip2')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>
-                  <span>Farklı bir kart ile deneyebilirsiniz</span>
+                  <span>{t('payment_failed.tip3')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>
-                  <span>Bankanızı arayarak işlemi onaylayabilirsiniz</span>
+                  <span>{t('payment_failed.tip4')}</span>
                 </li>
               </ul>
             </div>
@@ -131,28 +129,28 @@ const PaymentFailed = () => {
                 className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
               >
                 <RotateCcw size={20} />
-                <span>Tekrar Dene</span>
+                <span>{t('payment_failed.retry')}</span>
               </button>
               <button
                 onClick={() => navigate('/')}
                 className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
               >
                 <Home size={20} />
-                <span>Ana Sayfaya Dön</span>
+                <span>{t('payment_failed.go_home')}</span>
               </button>
             </div>
 
             {/* Yardım */}
             <div className="mt-8 pt-6 border-t border-gray-200">
               <p className="text-sm text-gray-600">
-                Sorun devam ediyorsa{' '}
-                <button 
+                {t('payment_failed.help_text')}{' '}
+                <button
                   onClick={() => navigate('/iletisim')}
                   className="text-blue-600 hover:underline font-semibold"
                 >
-                  müşteri hizmetleri
+                  {t('payment_failed.customer_service')}
                 </button>
-                {' '}ile iletişime geçebilirsiniz.
+                {' '}{t('payment_failed.help_suffix')}
               </p>
             </div>
           </div>

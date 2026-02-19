@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { Search, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const HeroSection = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const { t } = useTranslation();
 
-  // ✅ Arama Fonksiyonu
   const handleSearch = (e) => {
     if (e.key === 'Enter' && searchTerm.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchTerm)}`);
     }
   };
 
-  // ✅ Buton Fonksiyonları
   const handleShopNow = () => {
     navigate('/products');
   };
@@ -31,24 +31,21 @@ const HeroSection = () => {
       {/* Header with title and search */}
       <div className="max-w-7xl mx-auto px-6 py-8 mt-15">
         <div className="flex flex-col md:flex-row items-start justify-between gap-6">
-          {/* Main heading */}
           <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold leading-none tracking-tight">
-            Big Boss ile →<br />
-            <span className="block">tarzını Yansıt.</span>
+            {t('hero.headline1')}<br />
+            <span className="block">{t('hero.headline2')}</span>
           </h1>
-          
-         
         </div>
       </div>
 
       {/* Grid Layout */}
       <div className="max-w-7xl mx-auto px-6 pb-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           {/* Left side - Model image with Shop Now button */}
           <div className="relative bg-gray-100 rounded-2xl overflow-hidden h-[500px] md:h-[600px] group">
-            <img 
-              src="/hero-product3.png" 
+            <img
+              src="/hero-product3.png"
               alt="Big Boss Sonbahar Koleksiyonu - Şık Kadın Giyim"
               className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
               onError={(e) => {
@@ -56,25 +53,25 @@ const HeroSection = () => {
               }}
               loading="eager"
             />
-            {/* Shop Now button */}
-            <button 
+            <button
               onClick={handleShopNow}
-              className="absolute bottom-1/2 right-12 translate-y-1/2 bg-black text-white rounded-full w-32 h-32 flex items-center justify-center font-semibold text-sm hover:scale-110 hover:shadow-2xl transition-all duration-300 active:scale-95"
-              aria-label="Şimdi alışverişe başla"
+              className="absolute bottom-1/2 right-12 translate-y-1/2 bg-black text-white rounded-full w-32 h-32 flex items-center justify-center font-semibold text-sm hover:scale-110 hover:shadow-2xl transition-all duration-300 active:scale-95 text-center"
+              aria-label={t('hero.shop_now')}
             >
-              Şimdi<br />Satın Al!
+              {t('hero.shop_now').split('\n').map((line, i) => (
+                <span key={i}>{line}{i === 0 && <br />}</span>
+              ))}
             </button>
           </div>
 
-         {/* Right side - Two sections stacked */}
+          {/* Right side - Two sections stacked */}
           <div className="flex flex-col gap-6">
-            
-            {/* Promo section - 20% OFF */}
+
+            {/* Promo section */}
             <div className="bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl p-8 md:p-10 relative overflow-hidden h-[280px] md:h-[350px] flex flex-col justify-between group">
-              {/* Background illustration image */}
               <div className="absolute top-0 right-0 w-60 md:w-80 h-full opacity-40 group-hover:opacity-60 transition-opacity duration-500">
-                <img 
-                  src="/hero-product4.jpg" 
+                <img
+                  src="/hero-product4.jpg"
                   alt="Kış İndirimleri"
                   className="w-full h-full object-contain object-right"
                   onError={(e) => {
@@ -83,41 +80,38 @@ const HeroSection = () => {
                   loading="lazy"
                 />
               </div>
-              
-              {/* Text content */}
+
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-5xl font-bold leading-tight mb-4 drop-shadow-sm">
-                  %50'ye Varan<br />
-                  indirimlerden<br />
-                  faydalan.
+                  {t('hero.discount_title1')}<br />
+                  {t('hero.discount_title2')}<br />
+                  {t('hero.discount_title3')}
                 </h2>
                 <p className="text-sm text-gray-700 font-medium drop-shadow-sm">
-                  30 Ocak'a Kadar Geçerli
+                  {t('hero.discount_valid')}
                 </p>
               </div>
-              
-              {/* CTA button */}
-              <button 
+
+              <button
                 onClick={handleDiscountClick}
                 className="relative z-10 self-start border-2 border-black bg-white rounded-full px-6 md:px-8 py-3 text-sm font-semibold hover:bg-black hover:text-white transition-all duration-300 active:scale-95 flex items-center gap-2 group/btn shadow-md hover:shadow-xl"
-                aria-label="İndirimli ürünleri gör"
+                aria-label={t('hero.discount_cta')}
               >
-                <span>%50 İndirimi Al</span>
+                <span>{t('hero.discount_cta')}</span>
                 <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
               </button>
             </div>
 
             {/* Bottom categories */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 h-auto sm:h-[234px]">
-              
-              {/* Ceketler category */}
+
               <button
                 onClick={() => handleCategoryClick('Ceketler')}
                 className="relative bg-gray-300 rounded-2xl overflow-hidden group cursor-pointer h-[200px] sm:h-full transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-95"
-                aria-label="Ceket koleksiyonunu görüntüle"
+                aria-label={t('hero.category_jackets')}
               >
-                <img 
-                  src="/hero-product4.jpg" 
+                <img
+                  src="/hero-product4.jpg"
                   alt="Ceket Koleksiyonu - Big Boss"
                   className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-700"
                   onError={(e) => {
@@ -127,18 +121,17 @@ const HeroSection = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                 <h3 className="absolute bottom-6 left-6 text-white text-xl md:text-2xl font-bold drop-shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  #Ceketler
+                  {t('hero.category_jackets')}
                 </h3>
               </button>
 
-              {/* Elbiseler category */}
               <button
                 onClick={() => handleCategoryClick('Elbiseler')}
                 className="relative bg-gray-300 rounded-2xl overflow-hidden group cursor-pointer h-[200px] sm:h-full transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-95"
-                aria-label="Elbise koleksiyonunu görüntüle"
+                aria-label={t('hero.category_dresses')}
               >
-                <img 
-                  src="/hero-product3.png" 
+                <img
+                  src="/hero-product3.png"
                   alt="Elbise Koleksiyonu - Big Boss"
                   className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-700"
                   onError={(e) => {
@@ -148,10 +141,10 @@ const HeroSection = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                 <h3 className="absolute bottom-6 left-6 text-white text-xl md:text-2xl font-bold drop-shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  #Elbiseler
+                  {t('hero.category_dresses')}
                 </h3>
               </button>
-              
+
             </div>
           </div>
 
