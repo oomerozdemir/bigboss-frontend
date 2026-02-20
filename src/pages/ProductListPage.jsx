@@ -35,7 +35,7 @@ const ProductListPage = () => {
   const fetchProducts = async () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
-      const res = await fetch(`${apiUrl}/api/products`);
+      const res = await fetch(`${apiUrl}/api/products?limit=9999`);
       const data = await res.json();
 
       let productsArray = [];
