@@ -17,14 +17,14 @@ const ProductDetailPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { isFavorite, toggleFavorite } = useFavorites();
-
-  // Dinamik içerik otomatik çevirisi (Arapça seçilince)
-  const translatedProductName = useAutoTranslate(product?.name || '');
-  const translatedDescription = useAutoTranslate(product?.description || '');
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Dinamik içerik otomatik çevirisi (Arapça seçilince)
+  const translatedProductName = useAutoTranslate(product?.name || '');
+  const translatedDescription = useAutoTranslate(product?.description || '');
 
   const [activeImage, setActiveImage] = useState("");
   const [currentImages, setCurrentImages] = useState([]);
