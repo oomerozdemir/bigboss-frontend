@@ -77,8 +77,43 @@ const HomePage = () => {
   );
 };
 
+// JWT exp alanını decode ederek süre dolmuş mu kontrol eder
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+};
+
 function App() {
   const { i18n } = useTranslation();
+
+  // Uygulama açıldığında ve periyodik olarak normal kullanıcı token'ını kontrol et
+  useEffect(() => {
+    const checkUserToken = () => {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+      if (token && user && isTokenExpired(token)) {
+        try {
+          const parsedUser = JSON.parse(user);
+          // Admin oturumları ProtectedRoute tarafından yönetilir
+          if (!parsedUser?.isAdmin) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+          }
+        } catch {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+        }
+      }
+    };
+
+    checkUserToken();
+    const interval = setInterval(checkUserToken, 5 * 60 * 1000); // 5 dakikada bir
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
