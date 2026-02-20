@@ -59,6 +59,9 @@ export const CartProvider = ({ children }) => {
 
   // --- FONKSİYONLAR ---
   const addToCart = (product, variant, quantity = 1) => {
+    // Sepete ekleme sayacını artır (fire-and-forget)
+    const apiUrl = import.meta.env.VITE_API_URL;
+    fetch(`${apiUrl}/api/products/${product.id}/cart-add`, { method: 'POST' }).catch(() => {});
 
     if (window.fbq) {
       window.fbq('track', 'AddToCart', {

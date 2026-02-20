@@ -37,6 +37,9 @@ const ProductDetailPage = () => {
 
   useEffect(() => {
     fetchProductDetail();
+    // Görüntülenme sayacını artır (fire-and-forget)
+    const apiUrl = import.meta.env.VITE_API_URL;
+    fetch(`${apiUrl}/api/products/${id}/view`, { method: 'POST' }).catch(() => {});
   }, [id]);
 
   const fetchProductDetail = async () => {

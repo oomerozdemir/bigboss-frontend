@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search, 
-  Layers, ShoppingBag, RefreshCcw, Ticket, 
-  CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight, Upload
+import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search,
+  Layers, ShoppingBag, RefreshCcw, Ticket,
+  CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight, Upload,
+  Heart, ShoppingCart
 } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
@@ -338,12 +339,15 @@ const AdminPanel = () => {
                     <th className="p-4 font-semibold">Kategori</th>
                     <th className="p-4 font-semibold">Fiyat</th>
                     <th className="p-4 font-semibold">Stok</th>
+                    <th className="p-4 font-semibold text-center" title="Görüntülenme"><Eye size={15} className="inline" /></th>
+                    <th className="p-4 font-semibold text-center" title="Favoriye Eklenme"><Heart size={15} className="inline" /></th>
+                    <th className="p-4 font-semibold text-center" title="Sepete Eklenme"><ShoppingCart size={15} className="inline" /></th>
                     <th className="p-4 font-semibold text-right">İşlemler</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {loading ? (
-                    <tr><td colSpan="7" className="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
+                    <tr><td colSpan="10" className="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
                   ) : products.map((product) => (
                     <tr key={product.id} className={`hover:bg-gray-50 transition-colors group ${safeSelectedIds.includes(product.id) ? "bg-blue-50/30" : ""}`}>
                       
@@ -395,6 +399,9 @@ const AdminPanel = () => {
                           {product.stock > 0 ? "Stokta" : "Tükendi"}
                         </span>
                       </td>
+                      <td className="p-4 text-center text-sm font-medium text-gray-700">{product.viewCount ?? 0}</td>
+                      <td className="p-4 text-center text-sm font-medium text-red-500">{product.favoriteCount ?? 0}</td>
+                      <td className="p-4 text-center text-sm font-medium text-blue-600">{product.cartAddCount ?? 0}</td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
