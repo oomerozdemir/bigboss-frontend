@@ -1,7 +1,8 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import toast from 'react-hot-toast';
 
 const CartContext = createContext();
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const CartProvider = ({ children }) => {
   // 1. Sepeti Güvenli Başlat (Hata varsa boş dizi döner)
@@ -15,6 +16,9 @@ export const CartProvider = ({ children }) => {
       return [];
     }
   });
+
+  // Backend sync için debounce ref
+  const syncTimerRef = useRef(null);
 
   const [appliedCoupon, setAppliedCoupon] = useState(() => {
     try {
@@ -34,6 +38,22 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
+
+    // Giriş yapmış kullanıcılar için backend'e debounce ile sync et
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      fetch(`${API_URL}/api/cart/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ items: cartItems }),
+      }).catch(() => {}); // Hata sessizce yutulur, kullanıcıyı etkilemez
+    }, 2000); // 2 saniye bekle (debounce)
   }, [cartItems]);
 
   useEffect(() => {
@@ -114,6 +134,15 @@ export const CartProvider = ({ children }) => {
   const clearCart = () => {
     setCartItems([]);
     setAppliedCoupon(null);
+
+    // Backend'deki sepeti de temizle
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetch(`${API_URL}/api/cart/clear`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      }).catch(() => {});
+    }
   };
 
   const removeCoupon = () => {
