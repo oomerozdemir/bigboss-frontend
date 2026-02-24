@@ -9,10 +9,11 @@ import CategoryManager from './CategoryManager';
 import AddProductModal from '../../utils/AddProductModal';
 import DeleteModal from '../../utils/DeleteModal'; 
 import EditProductModal from '../../utils/EditProductModal';
-import OrderManager from './OrderManager'; 
+import OrderManager from './OrderManager';
 import ReturnManager from './ReturnManager';
 import CouponManager from './CouponManager';
 import BulkUploadPage from './BulkUploadPage';
+import UsersManager from './UsersManager';
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
@@ -474,6 +475,7 @@ const AdminPanel = () => {
         {activeTab === 'categories' && <CategoryManager />}
         {activeTab === 'coupons' && <CouponManager />}
         {activeTab === 'bulk-upload' && <BulkUploadPage />}
+        {activeTab === 'users' && <UsersManager />}
 
         <AddProductModal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} onSuccess={() => fetchProducts(currentPage, searchTerm)} />
         <EditProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={editingProduct} onSuccess={() => fetchProducts(currentPage, searchTerm)} />

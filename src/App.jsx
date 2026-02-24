@@ -180,11 +180,6 @@ seo çalışmas
 
 ahfres kaydet
 
-
-kargo ücretsizi daha belirgin hale getirilecek
-tüm Türkiye'ye ücretsiz kargo' yapılabilir.
-
-
 degerlendirme modalını ekle
 siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali acilsin
 
