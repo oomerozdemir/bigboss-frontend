@@ -186,7 +186,7 @@ siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali a
 siparis tamamlandiktan sonra sepet silinsin
 
 
-dil secenegi eklenicek
+test aşaması kurulucak. Sürekli manuel test yapmak yerine, kritik akışlar için otomatik testler yazılacak. Jest ve React Testing Library kullanılabilir.
 
 Gelecek Geliştirmeler
  Zamanlı indirimler (başlangıç/bitiş tarihi)
