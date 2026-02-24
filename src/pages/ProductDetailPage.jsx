@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import TranslatedText from '../components/TranslatedText';
 import { formatPrice } from '../utils/formatPrice';
+import SEO from '../components/SEO';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -191,8 +192,41 @@ const ProductDetailPage = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center">{t('common.loading')}</div>;
   if (!product) return <div className="min-h-screen flex items-center justify-center">{t('product.product_not_found')}</div>;
 
+  const productImage = activeImage && !activeImage.includes('placeholder') ? activeImage : undefined;
+  const seoDescription = product.description
+    ? product.description.slice(0, 155) + (product.description.length > 155 ? '...' : '')
+    : `${product.name} - Big Boss Textil'de en iyi fiyatla. Ücretsiz kargo, güvenli alışveriş.`;
+
+  const productSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description || seoDescription,
+    image: productImage || `https://bigbosstextil.com/hero-product.png`,
+    url: `https://bigbosstextil.com/product/${id}`,
+    brand: { '@type': 'Brand', name: 'Big Boss Textil' },
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'TRY',
+      price: displayPrice.toFixed(2),
+      availability: product.stock > 0
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+      seller: { '@type': 'Organization', name: 'Big Boss Textil' },
+      url: `https://bigbosstextil.com/product/${id}`,
+    },
+  };
+
   return (
     <>
+      <SEO
+        title={product.name}
+        description={seoDescription}
+        canonical={`/product/${id}`}
+        image={productImage}
+        type="og:product"
+        schema={productSchema}
+      />
       <div className="bg-white min-h-screen pt-28 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -230,7 +264,7 @@ const ProductDetailPage = () => {
                               onClick={() => setActiveImage(img)}
                               className={`w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden border-2 transition ${activeImage === img ? 'border-black' : 'border-transparent hover:border-gray-200'}`}
                           >
-                              <img src={img} className="w-full h-full object-cover" alt={`view-${idx}`} />
+                              <img src={img} className="w-full h-full object-cover" alt={`${product.name} - görsel ${idx + 1}`} />
                           </button>
                       ))}
                   </div>

@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Admin sayfalarını indeksletme
+Disallow: /admin
+Disallow: /admin-panel
+Disallow: /admin/bulk-edit
+
+# Kullanıcı ve ödeme sayfalarını indeksletme
+Disallow: /hesabim
+Disallow: /sepet
+Disallow: /odeme-sayfasi
+Disallow: /payment-success
+Disallow: /payment-failed
+
+# Sitemap
+Sitemap: https://bigbosstextil.com/sitemap.xml

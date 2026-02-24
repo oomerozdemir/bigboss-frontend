@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { HelmetProvider } from 'react-helmet-async';
 import MainLayout from './components/MainLayout';
 
 import ToastContainer from "./config/toastConfig";
@@ -122,6 +123,7 @@ function App() {
   }, [i18n.language]);
 
   return (
+    <HelmetProvider>
     <FavoritesProvider>
       <UIProvider>
     <Router>
@@ -165,6 +167,7 @@ function App() {
     </Router>
     </UIProvider>
     </FavoritesProvider>
+    </HelmetProvider>
   );
 }
 export default App;
@@ -187,7 +190,6 @@ siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali a
 
 siparis tamamlandiktan sonra sepet silinsin
 
-sepetinde urun biraknalara mail gonderelim zamanla dongu halinde 
 
 dil secenegi eklenicek
 

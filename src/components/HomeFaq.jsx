@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Minus, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 
 const HomeFAQ = () => {
   const [openIndex, setOpenIndex] = useState(null);
@@ -17,8 +18,21 @@ const HomeFAQ = () => {
     { question: t('faq_home.q3'), answer: t('faq_home.a3') },
   ];
 
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+    })),
+  };
+
   return (
     <section className="py-24 bg-white border-t border-gray-100">
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+      </Helmet>
       <div className="max-w-3xl mx-auto px-6">
 
         <div className="text-center mb-12">

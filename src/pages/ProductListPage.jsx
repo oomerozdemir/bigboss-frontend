@@ -4,6 +4,7 @@ import { Search, ArrowUpDown, Filter, ChevronLeft, ChevronRight } from 'lucide-r
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import TranslatedText from '../components/TranslatedText';
+import SEO from '../components/SEO';
 
 const ProductListPage = () => {
   const location = useLocation();
@@ -207,8 +208,21 @@ const ProductListPage = () => {
     return pages;
   };
 
+  const seoTitle = selectedMainCategory !== 'Tümü'
+    ? `${selectedMainCategory} - Kadın Giyim`
+    : 'Tüm Ürünler - Kadın Giyim';
+
+  const seoDescription = selectedMainCategory !== 'Tümü'
+    ? `Big Boss Textil'de ${selectedMainCategory} kategorisindeki kadın giyim ürünlerini keşfedin. Uygun fiyat, ücretsiz kargo.`
+    : 'Big Boss Textil koleksiyonunu keşfedin. Kaliteli kadın giyim ürünleri, uygun fiyatlar ve ücretsiz kargo ile.';
+
   return (
     <>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        canonical="/products"
+      />
       <div className="bg-gray-50 min-h-screen pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
