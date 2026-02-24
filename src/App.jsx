@@ -176,7 +176,7 @@ export default App;
 
 /* 
 
-seo çalışması
+seo çalışmas
 
 ahfres kaydet
 
