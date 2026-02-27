@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Star, ThumbsUp, User, Send, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star, User, Send, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // ─── BÜYÜK SAHTE YORUM HAVUZU ────────────────────────────────────────────────
@@ -10,12 +10,12 @@ const FAKE_POOL = [
   { name: "Ayşe T.", rating: 5, comment: "38 beden aldım tam oldu. Kumaşı terletmeyen cinsten, yaz ayları için ideal. Kesinlikle tavsiye ederim.", likes: 24 },
   { name: "Fatma D.", rating: 3, comment: "Ürün fena değil ama fiyatına göre biraz daha kaliteli olabilirdi. Rengi tam beklediğim gibi çıktı.", likes: 3 },
   { name: "Zeynep A.", rating: 4, comment: "Çok beğendim, annem için aldım çok memnun kaldı. Hızlı kargo için teşekkürler.", likes: 6 },
-  { name: "Hafize B.", rating: 2, comment: "Beden tablosuna göre M beden aldım ama biraz büyük geldi, L beden kesimi gibi durdu. Dikkat edin.", likes: 14 },
+  { name: "Hafize B.", rating: 3, comment: "Beden tablosuna göre 38 beden aldım ama biraz büyük geldi, 40 beden kesimi gibi durdu. Dikkat edin.", likes: 1 },
   { name: "Gülay S.", rating: 5, comment: "Paketleme çok özenliydi, ürün harika geldi. Kalitesi fotoğraftaki gibi, hatta daha iyi bile.", likes: 19 },
   { name: "Canan M.", rating: 4, comment: "İkinci kez sipariş verdim, marka artık favorilerimde. Sadece teslimat biraz gecikmeli oldu.", likes: 5 },
   { name: "Sevgi K.", rating: 3, comment: "Orta düzey bir ürün. Ne çok kötü ne çok iyi. Fiyat performans açısından makul sayılır.", likes: 2 },
   { name: "Nurcan Ö.", rating: 5, comment: "Çok şık ve kaliteli. Arkadaşım da beğendi, o da sipariş verdi. Teşekkürler Big Boss!", likes: 31 },
-  { name: "Hülya P.", rating: 1, comment: "Beden tam bana uymadı, iade sürecinde sorun yaşadım. Müşteri hizmetleri biraz daha hızlı olabilirdi.", likes: 7 },
+  { name: "Hülya P.", rating: 3, comment: "Ürün güzeldi ama bedeni tam bana uymadı. Müşteri hizmetleri sadece biraz daha hızlı olabilirdi.", likes: 7 },
   { name: "Emine R.", rating: 4, comment: "Kaliteli bir ürün. Kumaşı güzel, dikişleri sağlam. Beklediğimden iyi çıktı.", likes: 9 },
   { name: "Leyla Ç.", rating: 5, comment: "Harika! Rengi bire bir fotoğraftaki gibi geldi. Hızlı kargo, özenli paket. Çok memnunum.", likes: 22 },
   { name: "Bahar Y.", rating: 2, comment: "Ürün pek beğenmedim, dikişlerde küçük bir sorun vardı. Ücretsiz iade işe yaradı neyse.", likes: 11 },
@@ -33,7 +33,6 @@ const FAKE_POOL = [
   { name: "Zeliha W.", rating: 3, comment: "Ne iyiydi ne kötüydü. Standart bir ürün. Fiyat-performans olarak orta düzey diyebilirim.", likes: 2 },
   { name: "Aynur X.", rating: 5, comment: "Kesinlikle beklentilerimin üzerinde çıktı! Kalite, teslimat ve paketleme her şey tam puandı.", likes: 21 },
   { name: "Berna Z.", rating: 4, comment: "Genel olarak memnunum. Ürün açıklamasıyla birebir örtüşüyor, doğru beden seçin.", likes: 10 },
-  { name: "Cemile A.", rating: 1, comment: "Maalesef çok hayal kırıklığı yaşadım. Beklediğimden tamamen farklı bir ürün geldi.", likes: 4 },
   { name: "Döndü B.", rating: 5, comment: "Süper ürün! Hem şık hem rahat. Herkese tavsiye ederim.", likes: 16 },
 ];
 
@@ -350,16 +349,9 @@ const Reviews = ({ productId }) => {
                     <StarDisplay rating={review.rating} size={14} />
                   </div>
 
-                  <p className="text-gray-600 text-sm leading-relaxed mb-4 pl-14">
+                  <p className="text-gray-600 text-sm leading-relaxed pl-14">
                     {review.comment}
                   </p>
-
-                  <div className="pl-14 flex items-center gap-4">
-                    <button className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-black transition-colors">
-                      <ThumbsUp size={14} />
-                      <span>Bu yorum faydalı ({review.likes || 0})</span>
-                    </button>
-                  </div>
                 </div>
               );
             })
