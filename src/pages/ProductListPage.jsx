@@ -209,12 +209,12 @@ const ProductListPage = () => {
   };
 
   const seoTitle = selectedMainCategory !== 'Tümü'
-    ? `${selectedMainCategory} - Kadın Giyim`
-    : 'Tüm Ürünler - Kadın Giyim';
+    ? `${selectedMainCategory} Giyim | Uygun Fiyat & Ücretsiz Kargo`
+    : 'Kadın Giyim Koleksiyonu | Etek, Elbise, Bluz & Daha Fazlası';
 
   const seoDescription = selectedMainCategory !== 'Tümü'
-    ? `Big Boss Textil'de ${selectedMainCategory} kategorisindeki kadın giyim ürünlerini keşfedin. Uygun fiyat, ücretsiz kargo.`
-    : 'Big Boss Textil koleksiyonunu keşfedin. Kaliteli kadın giyim ürünleri, uygun fiyatlar ve ücretsiz kargo ile.';
+    ? `Big Boss Textil'de ${selectedMainCategory} modelleri: uygun fiyat, ücretsiz kargo, güvenli ödeme. Yüzlerce model arasından dilediğini seç, kapına gelsin!`
+    : 'Big Boss Textil kadın giyim koleksiyonu: etek, elbise, bluz, pantolon ve daha fazlası. Uygun fiyat, ücretsiz kargo, güvenli ödeme ile hızlı teslimat.';
 
   return (
     <>

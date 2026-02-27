@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 
 const Contact = () => {
   const { t } = useTranslation();
@@ -60,6 +61,11 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="İletişim – Big Boss Textil"
+        description="Big Boss Textil'e ulaşın: Osmanbey, Şişli ve Nişantaşı mağazalarımız, e-posta ve telefon iletişim bilgilerimiz. Sorularınız için bize yazın!"
+        canonical="/iletisim"
+      />
       {/* Hero Section */}
       <div className="bg-black text-white py-20">
         <div className="max-w-[1440px] mx-auto px-6 md:px-12">

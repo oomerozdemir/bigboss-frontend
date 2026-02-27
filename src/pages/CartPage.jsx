@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useUI } from '../context/UIContext';
 import { Trash2, Minus, Plus, ArrowRight, ShoppingBag, ShieldCheck, Ticket, X } from 'lucide-react';
+import SEO from '../components/SEO';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -86,6 +87,7 @@ const CartPage = () => {
 
   return (
     <div className="bg-white min-h-screen py-12">
+      <SEO title="Sepetim" noindex={true} />
       <div className="container mx-auto px-4 max-w-6xl">
         <h1 className="text-3xl font-black uppercase tracking-tighter mb-8 text-center md:text-left">
           {t('cart.title')} ({cartItems.length})

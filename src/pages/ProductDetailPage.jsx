@@ -193,9 +193,12 @@ const ProductDetailPage = () => {
   if (!product) return <div className="min-h-screen flex items-center justify-center">{t('product.product_not_found')}</div>;
 
   const productImage = activeImage && !activeImage.includes('placeholder') ? activeImage : undefined;
+  const priceText = hasDiscount
+    ? `${parseFloat(product.discountPrice).toLocaleString('tr-TR')} TL (İndirimli)`
+    : `${parseFloat(product.price).toLocaleString('tr-TR')} TL`;
   const seoDescription = product.description
-    ? product.description.slice(0, 155) + (product.description.length > 155 ? '...' : '')
-    : `${product.name} - Big Boss Textil'de en iyi fiyatla. Ücretsiz kargo, güvenli alışveriş.`;
+    ? `${product.description.slice(0, 110).trim()}... ${priceText}, ücretsiz kargo. Big Boss Textil.`
+    : `${product.name} – ${priceText}. Big Boss Textil'de ücretsiz kargo, güvenli ödeme ve hızlı teslimat ile sipariş verin.`;
 
   const productSchema = {
     '@context': 'https://schema.org',

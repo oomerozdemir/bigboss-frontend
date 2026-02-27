@@ -4,7 +4,7 @@ const SITE_NAME = 'Big Boss Textil';
 const BASE_URL = 'https://bigbosstextil.com';
 const DEFAULT_IMAGE = `${BASE_URL}/hero-product.png`;
 const DEFAULT_DESCRIPTION =
-  'Big Boss Textil ile en kaliteli kadın giyim ürünlerini keşfedin. Uygun fiyatlar, hızlı kargo ve güvenli alışveriş.';
+  'Big Boss Textil\'de kadın giyim koleksiyonunu keşfedin: etek, elbise, bluz, pantolon ve daha fazlası. Uygun fiyat, ücretsiz kargo, güvenli ödeme. Hızlı teslimat!';
 
 const SEO = ({
   title,
@@ -15,7 +15,7 @@ const SEO = ({
   noindex = false,
   schema = null,
 }) => {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Kadın Giyim | Online Alışveriş`;
+  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Kadın Giyim – Etek, Elbise, Bluz | Ücretsiz Kargo`;
   const fullCanonical = canonical ? `${BASE_URL}${canonical}` : BASE_URL;
 
   return (

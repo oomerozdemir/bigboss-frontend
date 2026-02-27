@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Minus, HelpCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 
 const FAQPage = () => {
   const { t } = useTranslation();
@@ -35,6 +36,11 @@ const FAQPage = () => {
 
   return (
     <div className="bg-white min-h-screen pt-32 pb-20">
+      <SEO
+        title="Sık Sorulan Sorular – Big Boss Textil"
+        description="Big Boss Textil hakkında merak ettiğiniz her şey: kargo süreci, iade koşulları, ödeme yöntemleri ve beden rehberi. SSS sayfamızda hızlıca yanıt bulun."
+        canonical="/sss"
+      />
 
       {/* HEADER */}
       <div className="bg-gray-50 py-16 mb-16 text-center border-y border-gray-100">

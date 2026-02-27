@@ -2,15 +2,18 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Package, Truck, Home } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useCart } from '../context/CartContext';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { clearCart } = useCart();
   const [searchParams] = useSearchParams();
   const [orderDetails, setOrderDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const pixelFired = useRef(false);
+  const cartCleared = useRef(false);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -35,6 +38,10 @@ const PaymentSuccess = () => {
 
         if (data.success) {
           setOrderDetails(data.payment);
+          if (!cartCleared.current) {
+            clearCart();
+            cartCleared.current = true;
+          }
         }
       } catch (error) {
         console.error('Order fetch error:', error);

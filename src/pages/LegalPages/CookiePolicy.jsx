@@ -1,9 +1,11 @@
 import React from 'react';
 import { Cookie, Shield, Settings, Eye } from 'lucide-react';
+import SEO from '../../components/SEO';
 
 const CookiePolicy = () => {
   return (
     <>
+      <SEO title="Çerez Politikası" canonical="/cerez-politikasi" noindex={true} />
       <div className="bg-white min-h-screen pt-24 pb-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           

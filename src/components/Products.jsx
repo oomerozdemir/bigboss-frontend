@@ -239,14 +239,14 @@ const Products = () => {
 
       {/* ÜRÜN GRID */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-8">
           {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-            <div key={i} className="h-96 bg-gray-200 rounded-xl animate-pulse"></div>
+            <div key={i} className="h-52 sm:h-72 lg:h-96 bg-gray-200 rounded-xl animate-pulse"></div>
           ))}
         </div>
       ) : Array.isArray(currentProducts) && currentProducts.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-8 mb-8">
             {currentProducts.map((product) => {
               if (!product?.id) return null;
               return <ProductCard key={product.id} product={product} />;

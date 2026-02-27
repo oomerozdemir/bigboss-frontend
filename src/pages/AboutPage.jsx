@@ -1,12 +1,18 @@
 import React from 'react';
 import { MapPin, Clock, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import SEO from '../components/SEO';
 
 const AboutPage = () => {
   const { t } = useTranslation();
 
   return (
     <>
+      <SEO
+        title="Hakkımızda – Big Boss Textil"
+        description="Big Boss Textil olarak 1972'den bu yana kaliteli kadın giyim üretiyoruz. Türkiye'nin güvenilir tekstil markası, uygun fiyat ve geniş koleksiyonla hizmetinizdeyiz."
+        canonical="/hakkimizda"
+      />
       <div className="bg-white pt-28 pb-12">
 
         {/* HERO SECTION */}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, MapPin, User, LogOut, ChevronDown, ChevronUp, Truck, FileText, Box, RefreshCcw, Plus, Trash2, X, Heart } from 'lucide-react';
+import { Package, MapPin, User, LogOut, ChevronDown, ChevronUp, Truck, FileText, Box, RefreshCcw, Plus, Trash2, X, Heart, Star, Send, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SEO from '../components/SEO';
 
 const UserAccountPage = () => {
   const navigate = useNavigate();
@@ -19,6 +20,13 @@ const UserAccountPage = () => {
   // UI Kontrolleri
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+
+  // Değerlendirme Modalı
+  const [reviewModal, setReviewModal] = useState({ open: false, product: null });
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewedProductIds, setReviewedProductIds] = useState(new Set());
   
   // Yeni Adres Formu
   const [newAddress, setNewAddress] = useState({
@@ -168,6 +176,47 @@ const UserAccountPage = () => {
     }
   };
 
+  // --- DEĞERLENDİRME ---
+  const openReviewModal = (product) => {
+    setReviewModal({ open: true, product });
+    setReviewRating(0);
+    setReviewComment('');
+  };
+
+  const closeReviewModal = () => {
+    setReviewModal({ open: false, product: null });
+    setReviewRating(0);
+    setReviewComment('');
+  };
+
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0) return toast.error('Lütfen yıldız puanı seçin.');
+    if (reviewComment.trim().length < 10) return toast.error('Yorum en az 10 karakter olmalıdır.');
+    setReviewSubmitting(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews/${reviewModal.product.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ rating: reviewRating, comment: reviewComment })
+      });
+      const data = await res.json();
+      if (res.status === 409) {
+        toast.error('Bu ürünü zaten değerlendirdiniz.');
+        setReviewedProductIds(prev => new Set([...prev, reviewModal.product.id]));
+        closeReviewModal();
+        return;
+      }
+      if (!res.ok) return toast.error(data.error || 'Bir hata oluştu.');
+      toast.success('Değerlendirmeniz eklendi, teşekkürler!');
+      setReviewedProductIds(prev => new Set([...prev, reviewModal.product.id]));
+      closeReviewModal();
+    } catch {
+      toast.error('Bağlantı hatası, lütfen tekrar deneyin.');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   // --- YARDIMCI FONKSİYONLAR ---
   const toggleOrderDetails = (orderId) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
@@ -188,6 +237,7 @@ const UserAccountPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+      <SEO title="Hesabım" noindex={true} />
       <div className="max-w-6xl mx-auto">
         
         {/* Üst Başlık ve Çıkış */}
@@ -353,23 +403,39 @@ const UserAccountPage = () => {
                                                     <Box size={16}/> Sipariş İçeriği
                                                 </h4>
                                                 <div className="border rounded-lg overflow-hidden">
-                                                    {order.items?.map((item) => (
+                                                    {order.items?.map((item) => {
+                                                      const isDelivered = order.status === 'TESLIM_EDILDI' || order.status === 'DELIVERED';
+                                                      const alreadyReviewed = reviewedProductIds.has(item.productId || item.product?.id);
+                                                      return (
                                                         <div key={item.id} className="flex items-center gap-4 p-4 border-b last:border-0 hover:bg-gray-50">
-                                                            <img 
-                                                                src={item.product?.imageUrl || "https://via.placeholder.com/80"} 
-                                                                alt={item.product?.name} 
+                                                            <img
+                                                                src={item.product?.imageUrl || "https://via.placeholder.com/80"}
+                                                                alt={item.product?.name}
                                                                 className="w-16 h-16 object-cover rounded border"
                                                             />
                                                             <div className="flex-1">
                                                                 <p className="font-bold text-sm text-gray-900">{item.product?.name}</p>
                                                                 <p className="text-xs text-gray-500">{item.variant}</p>
+                                                                {isDelivered && (
+                                                                  alreadyReviewed ? (
+                                                                    <span className="text-xs text-green-600 font-medium mt-1 inline-block">✓ Değerlendirildi</span>
+                                                                  ) : (
+                                                                    <button
+                                                                      onClick={(e) => { e.stopPropagation(); openReviewModal(item.product); }}
+                                                                      className="mt-1.5 flex items-center gap-1 text-xs font-bold text-white bg-black hover:bg-gray-800 px-2.5 py-1 rounded transition-colors"
+                                                                    >
+                                                                      <Star size={11} fill="currentColor" /> Değerlendir
+                                                                    </button>
+                                                                  )
+                                                                )}
                                                             </div>
                                                             <div className="text-right">
                                                                 <p className="text-sm font-medium">{item.quantity} Adet</p>
                                                                 <p className="text-sm font-bold text-gray-900">{parseFloat(item.price).toLocaleString('tr-TR')} TL</p>
                                                             </div>
                                                         </div>
-                                                    ))}
+                                                      );
+                                                    })}
                                                 </div>
                                             </div>
 
@@ -463,6 +529,66 @@ const UserAccountPage = () => {
           </div>
         </div>
       </div>
+
+      {/* DEĞERLENDİRME MODALI */}
+      {reviewModal.open && reviewModal.product && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-gray-900">Ürünü Değerlendir</h3>
+                <p className="text-xs text-gray-500 mt-0.5 truncate max-w-[280px]">{reviewModal.product.name}</p>
+              </div>
+              <button onClick={closeReviewModal} className="text-gray-500 hover:text-black"><X size={20}/></button>
+            </div>
+            <div className="p-6 space-y-5">
+              {/* Yıldız Seçici */}
+              <div>
+                <p className="text-xs font-bold uppercase text-gray-500 mb-2">Puanınız</p>
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map(star => (
+                    <button key={star} type="button" onClick={() => setReviewRating(star)} className="focus:outline-none">
+                      <Star
+                        size={32}
+                        fill={star <= reviewRating ? "currentColor" : "none"}
+                        className={star <= reviewRating ? "text-yellow-400" : "text-gray-300 hover:text-yellow-300 transition-colors"}
+                      />
+                    </button>
+                  ))}
+                </div>
+                {reviewRating > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {reviewRating === 1 ? 'Çok Kötü' : reviewRating === 2 ? 'Kötü' : reviewRating === 3 ? 'Orta' : reviewRating === 4 ? 'İyi' : 'Mükemmel'}
+                  </p>
+                )}
+              </div>
+
+              {/* Yorum Alanı */}
+              <div>
+                <p className="text-xs font-bold uppercase text-gray-500 mb-2">Yorumunuz</p>
+                <textarea
+                  value={reviewComment}
+                  onChange={e => setReviewComment(e.target.value)}
+                  rows={4}
+                  maxLength={500}
+                  placeholder="Bu ürün hakkındaki düşüncelerinizi paylaşın..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black resize-none"
+                />
+                <p className="text-xs text-gray-400 text-right mt-1">{reviewComment.length}/500</p>
+              </div>
+
+              <button
+                onClick={handleSubmitReview}
+                disabled={reviewSubmitting || reviewRating === 0}
+                className="w-full flex items-center justify-center gap-2 bg-black text-white py-3 rounded-lg font-bold text-sm hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {reviewSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {reviewSubmitting ? 'Gönderiliyor...' : 'Değerlendirmeyi Gönder'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ADRES EKLEME MODALI */}
       {isAddressModalOpen && (

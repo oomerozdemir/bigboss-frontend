@@ -129,7 +129,7 @@ const ProductCard = ({ product }) => {
       <div className="flex flex-col h-full">
         
         {/* --- GÖRSEL ALANI --- */}
-        <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden mb-4 rounded-lg">
+        <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden mb-2 sm:mb-4 rounded-lg">
           {imageError ? (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
               <ImageOff size={48} className="text-gray-300 mb-2" />
@@ -145,19 +145,19 @@ const ProductCard = ({ product }) => {
             />
           )}
 
-          <button 
+          <button
             onClick={handleToggleFavorite}
-            className="absolute top-3 right-3 z-20 p-2 rounded-full bg-white/80 backdrop-blur-sm transition-all hover:bg-white shadow-sm"
+            className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 p-1.5 sm:p-2 rounded-full bg-white/80 backdrop-blur-sm transition-all hover:bg-white shadow-sm"
           >
-            <Heart 
-              size={18} 
-              className={liked ? "fill-black text-black" : "text-black"} 
+            <Heart
+              size={15}
+              className={liked ? "fill-black text-black" : "text-black"}
               strokeWidth={1.5}
             />
           </button>
-          
+
           {hasDiscount && (
-             <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider shadow-sm rounded">
+             <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase tracking-wider shadow-sm rounded">
                %{discountPercent} İNDİRİM
              </span>
           )}
@@ -201,7 +201,7 @@ const ProductCard = ({ product }) => {
               </div>
           )}
 
-          <h3 className="text-sm text-gray-900 font-medium leading-tight line-clamp-2 group-hover:underline decoration-1 underline-offset-4">
+          <h3 className="text-xs sm:text-sm text-gray-900 font-medium leading-tight line-clamp-2 group-hover:underline decoration-1 underline-offset-4">
             {translatedName || product.name || t('product.product_name_fallback')}
           </h3>
 
@@ -219,18 +219,18 @@ const ProductCard = ({ product }) => {
             </div>
           )}
           
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1 flex items-center gap-1 sm:gap-2 flex-wrap">
             {hasDiscount ? (
                 <>
-                    <span className="text-xs text-gray-400 line-through font-medium">
+                    <span className="text-[10px] sm:text-xs text-gray-400 line-through font-medium">
                         {formatPrice(product.price)} TL
                     </span>
-                    <span className="text-sm font-bold text-red-600">
+                    <span className="text-xs sm:text-sm font-bold text-red-600">
                         {formatPrice(product.discountPrice)} TL
                     </span>
                 </>
             ) : (
-                <span className="text-sm font-bold text-gray-900">
+                <span className="text-xs sm:text-sm font-bold text-gray-900">
                     {product.price ? `${formatPrice(product.price)} TL` : 'Fiyat Belirtilmemiş'}
                 </span>
             )}
