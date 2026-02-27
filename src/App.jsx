@@ -176,9 +176,21 @@ export default App;
 
 /* 
 
-seo çalışmas
-
+seo optimizasyonu için yapılacaklar:
 ahfres kaydet
+keyword araştırması yap
+
+
+müşteri yorumları için schema markup ekle
+ürün detaylarında schema markup ekle
+meta description ve title optimize et
+müşteri desteği ekleyelim
+canlı destek entegrasyonu (örneğin Tawk.to veya Intercom)
+sıkça sorulan sorular bölümü ekleyelim
+canlı destek butonu ekleyelim
+müşteri destek sayfası oluşturmak
+müşteri destek sayfasında iletişim formu ekleyelim
+
 
 degerlendirme modalını ekle
 siparislerim kisminda teslim edildikten sonra o urun icin degerlendirme modali acilsin

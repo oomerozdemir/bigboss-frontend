@@ -443,7 +443,7 @@ const ProductDetailPage = () => {
             )}
           </div>
 
-          <Reviews />
+          <Reviews productId={product?.id} />
           <SimilarProducts currentProduct={product} />
 
         </div>
