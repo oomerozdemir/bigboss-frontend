@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search,
   Layers, ShoppingBag, RefreshCcw, Ticket,
   CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight, Upload,
-  Heart, ShoppingCart, ChevronUp, ChevronDown
+  Heart, ShoppingCart, ChevronUp, ChevronDown, Image as ImageIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
@@ -14,6 +14,7 @@ import ReturnManager from './ReturnManager';
 import CouponManager from './CouponManager';
 import BulkUploadPage from './BulkUploadPage';
 import UsersManager from './UsersManager';
+import HeroManager from './HeroManager';
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
@@ -271,6 +272,7 @@ const AdminPanel = () => {
           <SidebarItem id="returns" icon={RefreshCcw} label="İade Talepleri" />
           <SidebarItem id="coupons" icon={Ticket} label="Kuponlar" />
           <SidebarItem id="categories" icon={Layers} label="Kategoriler" />
+          <SidebarItem id="hero" icon={ImageIcon} label="Hero & İçerik" />
           <SidebarItem id="products" icon={Package} label="Ürün Yönetimi" />
           <SidebarItem id="bulk-upload" icon={Upload} label="Toplu Yükleme" />
           <SidebarItem id="users" icon={Users} label="Müşteriler" />
@@ -544,6 +546,7 @@ const AdminPanel = () => {
         {activeTab === 'coupons' && <CouponManager />}
         {activeTab === 'bulk-upload' && <BulkUploadPage />}
         {activeTab === 'users' && <UsersManager />}
+        {activeTab === 'hero' && <HeroManager />}
 
         <AddProductModal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} onSuccess={() => fetchProducts(currentPage, searchTerm, sortBy, sortDir)} />
         <EditProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={editingProduct} onSuccess={() => fetchProducts(currentPage, searchTerm, sortBy, sortDir)} />
