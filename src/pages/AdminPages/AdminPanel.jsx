@@ -56,7 +56,7 @@ const AdminPanel = () => {
         fetchProducts(currentPage, searchTerm, sortBy, sortDir, statusFilter);
         fetchCategories();
     }
-  }, [activeTab, currentPage, sortBy, sortDir, statusFilter]);
+  }, [activeTab, currentPage]); // sort/filter değişimleri kendi handler'larından direkt fetch eder
 
   // --- ARAMA İŞLEMİ ---
   const handleSearch = (e) => {
@@ -68,13 +68,11 @@ const AdminPanel = () => {
 
   // --- SIRALAMA FONKSİYONU ---
   const handleSort = (field) => {
-    if (sortBy === field) {
-      setSortDir(prev => prev === 'desc' ? 'asc' : 'desc');
-    } else {
-      setSortBy(field);
-      setSortDir('desc');
-    }
+    const newDir = sortBy === field ? (sortDir === 'desc' ? 'asc' : 'desc') : 'desc';
+    setSortBy(field);
+    setSortDir(newDir);
     setCurrentPage(1);
+    fetchProducts(1, searchTerm, field, newDir, statusFilter);
   };
 
   // Sıralama ikonu render yardımcısı
@@ -323,7 +321,7 @@ const AdminPanel = () => {
               ].map(({ key, label }) => (
                 <button
                   key={key}
-                  onClick={() => { setStatusFilter(key); setCurrentPage(1); }}
+                  onClick={() => { setStatusFilter(key); setCurrentPage(1); fetchProducts(1, searchTerm, sortBy, sortDir, key); }}
                   className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${
                     statusFilter === key
                       ? 'border-black text-black'
