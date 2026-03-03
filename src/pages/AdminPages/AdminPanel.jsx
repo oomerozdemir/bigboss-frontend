@@ -31,6 +31,9 @@ const AdminPanel = () => {
   // Sıralama State'leri
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortDir, setSortDir] = useState('desc');
+
+  // Görünürlük Filtresi
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
   
   // Modallar
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -50,16 +53,16 @@ const AdminPanel = () => {
 
   useEffect(() => {
     if (activeTab === 'products') {
-        fetchProducts(currentPage, searchTerm, sortBy, sortDir);
+        fetchProducts(currentPage, searchTerm, sortBy, sortDir, statusFilter);
         fetchCategories();
     }
-  }, [activeTab, currentPage, sortBy, sortDir]);
+  }, [activeTab, currentPage, sortBy, sortDir, statusFilter]);
 
   // --- ARAMA İŞLEMİ ---
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
         setCurrentPage(1);
-        fetchProducts(1, searchTerm, sortBy, sortDir);
+        fetchProducts(1, searchTerm, sortBy, sortDir, statusFilter);
     }
   };
 
@@ -83,10 +86,10 @@ const AdminPanel = () => {
   };
 
   // --- ÜRÜNLERİ GETİR (GÜVENLİ) ---
-  const fetchProducts = async (page = 1, search = "", sort = "createdAt", dir = "desc") => {
+  const fetchProducts = async (page = 1, search = "", sort = "createdAt", dir = "desc", status = "all") => {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products?isAdmin=true&page=${page}&limit=20&search=${search}&sortBy=${sort}&sortDir=${dir}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products?isAdmin=true&page=${page}&limit=20&search=${search}&sortBy=${sort}&sortDir=${dir}&statusFilter=${status}`);
       const data = await res.json();
       
       // DÜZELTME: Gelen verinin formatı kontrol ediliyor
@@ -162,7 +165,7 @@ const AdminPanel = () => {
           if (res.ok) {
               toast.success("Seçili ürünler silindi");
               setSelectedIds([]);
-              fetchProducts(currentPage, searchTerm, sortBy, sortDir);
+              fetchProducts(currentPage, searchTerm, sortBy, sortDir, statusFilter);
           } else {
               toast.error("Silme başarısız");
           }
@@ -190,7 +193,7 @@ const AdminPanel = () => {
               toast.success("Kategoriye eklendi");
               setIsBulkCategoryModalOpen(false);
               setSelectedIds([]);
-              fetchProducts(currentPage, searchTerm, sortBy, sortDir);
+              fetchProducts(currentPage, searchTerm, sortBy, sortDir, statusFilter);
           } else {
               toast.error("İşlem başarısız");
           }
@@ -216,7 +219,7 @@ const AdminPanel = () => {
           toast.success(!currentStatus ? "Ürün Yayında" : "Ürün Gizlendi");
       } catch (error) {
           toast.error("Durum değiştirilemedi");
-          fetchProducts(currentPage, searchTerm, sortBy, sortDir);
+          fetchProducts(currentPage, searchTerm, sortBy, sortDir, statusFilter);
       }
   };
 
@@ -236,7 +239,7 @@ const AdminPanel = () => {
       });
       if (res.ok) {
         toast.success("Ürün silindi!");
-        fetchProducts(currentPage, searchTerm, sortBy, sortDir);
+        fetchProducts(currentPage, searchTerm, sortBy, sortDir, statusFilter);
       } else {
         toast.error("Silinemedi"); 
       }
@@ -310,7 +313,30 @@ const AdminPanel = () => {
         {/* ÜRÜN TABLOSU & TOPLU İŞLEMLER */}
         {activeTab === 'products' && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[600px]">
-            
+
+            {/* FİLTRE SEKMELERİ */}
+            <div className="flex border-b border-gray-100">
+              {[
+                { key: 'all',      label: 'Tümü' },
+                { key: 'active',   label: 'Yayında' },
+                { key: 'inactive', label: 'Gizli' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => { setStatusFilter(key); setCurrentPage(1); }}
+                  className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                    statusFilter === key
+                      ? 'border-black text-black'
+                      : 'border-transparent text-gray-400 hover:text-gray-700'
+                  }`}
+                >
+                  {label}
+                  {key === 'active' && <span className="ml-1.5 w-2 h-2 rounded-full bg-green-500 inline-block" />}
+                  {key === 'inactive' && <span className="ml-1.5 w-2 h-2 rounded-full bg-gray-400 inline-block" />}
+                </button>
+              ))}
+            </div>
+
             {/* ÜST BAR: Arama ve Toplu İşlemler */}
             <div className="p-4 border-b border-gray-100 flex items-center justify-between gap-4 bg-gray-50/50">
               
