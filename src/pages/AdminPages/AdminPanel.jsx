@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search,
   Layers, ShoppingBag, RefreshCcw, Ticket,
   CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight, Upload,
-  Heart, ShoppingCart
+  Heart, ShoppingCart, ChevronUp, ChevronDown
 } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
@@ -27,6 +27,10 @@ const AdminPanel = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [totalCount, setTotalCount] = useState(0);
+
+  // Sıralama State'leri
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortDir, setSortDir] = useState('desc');
   
   // Modallar
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -46,24 +50,43 @@ const AdminPanel = () => {
 
   useEffect(() => {
     if (activeTab === 'products') {
-        fetchProducts(currentPage, searchTerm);
+        fetchProducts(currentPage, searchTerm, sortBy, sortDir);
         fetchCategories();
     }
-  }, [activeTab, currentPage]);
+  }, [activeTab, currentPage, sortBy, sortDir]);
 
   // --- ARAMA İŞLEMİ ---
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
         setCurrentPage(1);
-        fetchProducts(1, searchTerm);
+        fetchProducts(1, searchTerm, sortBy, sortDir);
     }
   };
 
+  // --- SIRALAMA FONKSİYONU ---
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortDir(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(field);
+      setSortDir('desc');
+    }
+    setCurrentPage(1);
+  };
+
+  // Sıralama ikonu render yardımcısı
+  const SortIcon = ({ field }) => {
+    if (sortBy !== field) return null;
+    return sortDir === 'desc'
+      ? <ChevronDown size={13} className="inline ml-0.5" />
+      : <ChevronUp size={13} className="inline ml-0.5" />;
+  };
+
   // --- ÜRÜNLERİ GETİR (GÜVENLİ) ---
-  const fetchProducts = async (page = 1, search = "") => {
+  const fetchProducts = async (page = 1, search = "", sort = "createdAt", dir = "desc") => {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products?isAdmin=true&page=${page}&limit=20&search=${search}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/products?isAdmin=true&page=${page}&limit=20&search=${search}&sortBy=${sort}&sortDir=${dir}`);
       const data = await res.json();
       
       // DÜZELTME: Gelen verinin formatı kontrol ediliyor
@@ -139,7 +162,7 @@ const AdminPanel = () => {
           if (res.ok) {
               toast.success("Seçili ürünler silindi");
               setSelectedIds([]);
-              fetchProducts(currentPage, searchTerm);
+              fetchProducts(currentPage, searchTerm, sortBy, sortDir);
           } else {
               toast.error("Silme başarısız");
           }
@@ -167,7 +190,7 @@ const AdminPanel = () => {
               toast.success("Kategoriye eklendi");
               setIsBulkCategoryModalOpen(false);
               setSelectedIds([]);
-              fetchProducts(currentPage, searchTerm);
+              fetchProducts(currentPage, searchTerm, sortBy, sortDir);
           } else {
               toast.error("İşlem başarısız");
           }
@@ -193,7 +216,7 @@ const AdminPanel = () => {
           toast.success(!currentStatus ? "Ürün Yayında" : "Ürün Gizlendi");
       } catch (error) {
           toast.error("Durum değiştirilemedi");
-          fetchProducts(currentPage, searchTerm);
+          fetchProducts(currentPage, searchTerm, sortBy, sortDir);
       }
   };
 
@@ -212,8 +235,8 @@ const AdminPanel = () => {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
-        toast.success("Ürün silindi!"); 
-        fetchProducts(currentPage, searchTerm);
+        toast.success("Ürün silindi!");
+        fetchProducts(currentPage, searchTerm, sortBy, sortDir);
       } else {
         toast.error("Silinemedi"); 
       }
@@ -340,9 +363,30 @@ const AdminPanel = () => {
                     <th className="p-4 font-semibold">Kategori</th>
                     <th className="p-4 font-semibold">Fiyat</th>
                     <th className="p-4 font-semibold">Stok</th>
-                    <th className="p-4 font-semibold text-center" title="Görüntülenme"><Eye size={15} className="inline" /></th>
-                    <th className="p-4 font-semibold text-center" title="Favoriye Eklenme"><Heart size={15} className="inline" /></th>
-                    <th className="p-4 font-semibold text-center" title="Sepete Eklenme"><ShoppingCart size={15} className="inline" /></th>
+                    <th
+                      className={`p-4 font-semibold text-center cursor-pointer select-none hover:bg-gray-100 transition-colors ${sortBy === 'viewCount' ? 'text-black' : ''}`}
+                      title="Görüntülenme sayısına göre sırala"
+                      onClick={() => handleSort('viewCount')}
+                    >
+                      <Eye size={15} className="inline" />
+                      <SortIcon field="viewCount" />
+                    </th>
+                    <th
+                      className={`p-4 font-semibold text-center cursor-pointer select-none hover:bg-gray-100 transition-colors ${sortBy === 'favoriteCount' ? 'text-black' : ''}`}
+                      title="Favoriye eklenme sayısına göre sırala"
+                      onClick={() => handleSort('favoriteCount')}
+                    >
+                      <Heart size={15} className="inline" />
+                      <SortIcon field="favoriteCount" />
+                    </th>
+                    <th
+                      className={`p-4 font-semibold text-center cursor-pointer select-none hover:bg-gray-100 transition-colors ${sortBy === 'cartAddCount' ? 'text-black' : ''}`}
+                      title="Sepete eklenme sayısına göre sırala"
+                      onClick={() => handleSort('cartAddCount')}
+                    >
+                      <ShoppingCart size={15} className="inline" />
+                      <SortIcon field="cartAddCount" />
+                    </th>
                     <th className="p-4 font-semibold text-right">İşlemler</th>
                   </tr>
                 </thead>
@@ -477,8 +521,8 @@ const AdminPanel = () => {
         {activeTab === 'bulk-upload' && <BulkUploadPage />}
         {activeTab === 'users' && <UsersManager />}
 
-        <AddProductModal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} onSuccess={() => fetchProducts(currentPage, searchTerm)} />
-        <EditProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={editingProduct} onSuccess={() => fetchProducts(currentPage, searchTerm)} />
+        <AddProductModal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} onSuccess={() => fetchProducts(currentPage, searchTerm, sortBy, sortDir)} />
+        <EditProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={editingProduct} onSuccess={() => fetchProducts(currentPage, searchTerm, sortBy, sortDir)} />
         
         <DeleteModal isOpen={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} onConfirm={confirmDeleteProduct} title="Ürünü Sil" message="Bu işlem geri alınamaz." />
 
