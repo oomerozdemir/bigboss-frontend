@@ -51,6 +51,33 @@ const ScrollToTop = () => {
   return null;
 };
 
+// Script index.html'den yükleniyor — sadece admin sayfalarında gizle
+const TawkToChat = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const isAdmin = pathname.startsWith('/admin');
+
+    const applyVisibility = () => {
+      if (!window.Tawk_API?.hideWidget) return;
+      isAdmin ? window.Tawk_API.hideWidget() : window.Tawk_API.showWidget();
+    };
+
+    // Tawk henüz yüklenmediyse onLoad callback'e kayıt ol
+    window.Tawk_API = window.Tawk_API || {};
+    const prevOnLoad = window.Tawk_API.onLoad;
+    window.Tawk_API.onLoad = () => {
+      if (prevOnLoad) prevOnLoad();
+      applyVisibility();
+    };
+
+    // Tawk zaten yüklendiyse direkt uygula
+    applyVisibility();
+  }, [pathname]);
+
+  return null;
+};
+
 const MetaPixelTracker = () => {
   const location = useLocation();
 
@@ -129,6 +156,7 @@ function App() {
     <Router>
       <ScrollToTop />
       <MetaPixelTracker />
+      <TawkToChat />
       
       <div className="font-sans">
         <ToastContainer />
