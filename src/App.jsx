@@ -198,17 +198,7 @@ siparis tamamlandiktan sonra sepet silinsin
 test aşaması kurulucak. Sürekli manuel test yapmak yerine, kritik akışlar için otomatik testler yazılacak. Jest ve React Testing Library kullanılabilir.
 
 Gelecek Geliştirmeler
- Zamanlı indirimler (başlangıç/bitiş tarihi)
- Flash sale özelliği
  Kupon sistemine entegrasyon
  Rich text editor ile detay düzenleme
  Detay şablonları (hazır içerikler)
-
-
-### Sonra Yap (İleride)
-🔄 **Level 2-3 için plan yap**
-- Admin panel hero editor
-- Slider/carousel
-- Dynamic content
-- A/B testing
-*/
+ */

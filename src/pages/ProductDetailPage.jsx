@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, ShoppingCart, Truck, RefreshCcw, ShieldCheck, Star, Minus, Plus, Check, ChevronDown } from 'lucide-react';
+import { Heart, ShoppingCart, Truck, RefreshCcw, ShieldCheck, Star, Minus, Plus, Check, ChevronDown, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -12,6 +12,43 @@ import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import TranslatedText from '../components/TranslatedText';
 import { formatPrice } from '../utils/formatPrice';
 import SEO from '../components/SEO';
+
+const CountdownTimer = ({ endDate }) => {
+  const calc = () => {
+    const diff = new Date(endDate) - new Date();
+    if (diff <= 0) return null;
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    return { h, m, s, total: diff };
+  };
+
+  const [time, setTime] = useState(calc);
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(calc()), 1000);
+    return () => clearInterval(timer);
+  }, [endDate]);
+
+  if (!time) return null;
+
+  const pad = (n) => String(n).padStart(2, '0');
+  return (
+    <div className="flex items-center gap-2">
+      {[
+        { val: Math.floor(time.h / 24), label: 'Gün' },
+        { val: time.h % 24, label: 'Saat' },
+        { val: time.m, label: 'Dk' },
+        { val: time.s, label: 'Sn' },
+      ].filter(u => u.val > 0 || u.label === 'Saat' || u.label === 'Dk' || u.label === 'Sn').map(({ val, label }) => (
+        <div key={label} className="flex flex-col items-center bg-yellow-900/80 text-yellow-100 rounded-lg px-3 py-1.5 min-w-11">
+          <span className="text-lg font-black leading-none">{pad(val)}</span>
+          <span className="text-[9px] uppercase tracking-widest mt-0.5 opacity-80">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -244,11 +281,18 @@ const ProductDetailPage = () => {
                     alt={product.name}
                     className="w-full h-full object-cover object-top transition-all duration-300"
                   />
-                  {/* İndirim rozeti */}
+                  {/* İndirim / Flash Sale rozeti */}
                   {hasDiscount && (
-                    <div className="absolute top-4 left-4 bg-red-500 text-white font-bold text-sm px-3 py-1.5 rounded-full shadow-lg">
-                      {t('product.discount_badge', { percent: discountPercent })}
-                    </div>
+                    product.isFlashSale ? (
+                      <div className="absolute top-4 left-4 bg-yellow-400 text-yellow-900 font-black text-sm px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+                        <Zap size={14} className="fill-yellow-900" />
+                        FLASH %{discountPercent}
+                      </div>
+                    ) : (
+                      <div className="absolute top-4 left-4 bg-red-500 text-white font-bold text-sm px-3 py-1.5 rounded-full shadow-lg">
+                        {t('product.discount_badge', { percent: discountPercent })}
+                      </div>
+                    )
                   )}
 
                   {product.stock === 0 && (
@@ -279,13 +323,27 @@ const ProductDetailPage = () => {
                <div className="mb-6">
                  <h1 className="text-3xl font-black text-gray-900 mb-2">{translatedProductName || product.name}</h1>
 
+                 {/* Flash Sale Banner */}
+                 {product.isFlashSale && hasDiscount && (
+                   <div className="mb-4 bg-linear-to-r from-yellow-400 to-amber-400 rounded-xl px-4 py-3 flex items-center justify-between gap-4 shadow-md">
+                     <div className="flex items-center gap-2">
+                       <Zap size={20} className="text-yellow-900 fill-yellow-900" />
+                       <span className="font-black text-yellow-900 text-sm uppercase tracking-wide">Flash Sale</span>
+                     </div>
+                     {product.saleEndDate && <CountdownTimer endDate={product.saleEndDate} />}
+                   </div>
+                 )}
+
                  {/* Fiyat gösterimi */}
                  <div className="flex items-center gap-4">
                     <div className="flex items-baseline gap-2">
                       {hasDiscount && (
                         <span className="text-lg font-medium text-gray-400 line-through">{formatPrice(product.price)} TL</span>
                       )}
-                      <span className={`text-2xl font-bold ${hasDiscount ? 'text-red-600' : 'text-gray-900'}`}>
+                      <span className={`text-2xl font-bold ${
+                        product.isFlashSale && hasDiscount ? 'text-yellow-600' :
+                        hasDiscount ? 'text-red-600' : 'text-gray-900'
+                      }`}>
                         {formatPrice(displayPrice)} TL
                       </span>
                     </div>
