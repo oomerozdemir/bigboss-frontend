@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Upload, Check, Loader2, Trash2, Plus, Edit2, Image as ImageIcon, Layers, Tag, FileText } from 'lucide-react';
+import { X, Save, Upload, Check, Loader2, Trash2, Plus, Edit2, Image as ImageIcon, Layers, Tag, FileText, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sortVariantsByOrder } from './sortHelpers';
 import { apiRequest } from './ApiHelper';
@@ -33,12 +33,15 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
   });
 
   const [formData, setFormData] = useState({
-    name: "", 
-    description: "", 
-    price: "", 
+    name: "",
+    description: "",
+    price: "",
     discountPrice: "",
     isOnSale: false,
-    isFeatured: false, 
+    isFlashSale: false,
+    saleStartDate: "",
+    saleEndDate: "",
+    isFeatured: false,
     categoryIds: []
   });
 
@@ -62,12 +65,18 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     if (isOpen && product) {
       fetchCategories();
       
+      // Format datetime to "yyyy-MM-ddTHH:mm" for input[type=datetime-local]
+      const toDatetimeLocal = (d) => d ? new Date(d).toISOString().slice(0, 16) : "";
+
       setFormData({
         name: product.name,
         description: product.description || "",
         price: product.price,
         discountPrice: product.discountPrice || "",
         isOnSale: product.isOnSale || false,
+        isFlashSale: product.isFlashSale || false,
+        saleStartDate: toDatetimeLocal(product.saleStartDate),
+        saleEndDate: toDatetimeLocal(product.saleEndDate),
         isFeatured: product.isFeatured,
         categoryIds: product.categories ? product.categories.map(c => c.id) : []
       });
@@ -307,6 +316,9 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
     data.append("price", formData.price);
     data.append("discountPrice", formData.discountPrice || "");
     data.append("isOnSale", formData.isOnSale);
+    data.append("isFlashSale", formData.isFlashSale);
+    data.append("saleStartDate", formData.saleStartDate || "");
+    data.append("saleEndDate", formData.saleEndDate || "");
     data.append("isFeatured", formData.isFeatured);
     data.append("categoryIds", JSON.stringify(formData.categoryIds));
     data.append("productDetails", JSON.stringify(productDetails));
@@ -392,33 +404,69 @@ const EditProductModal = ({ isOpen, onClose, product, onSuccess }) => {
               <Tag className="text-orange-600" size={20} />
               <h3 className="font-bold text-orange-900">İndirim Ayarları</h3>
             </div>
-            
+
             <label className="flex items-center gap-3 mb-4 cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="w-5 h-5 accent-orange-600" 
-                checked={formData.isOnSale} 
-                onChange={e => setFormData({...formData, isOnSale: e.target.checked})} 
+              <input
+                type="checkbox"
+                className="w-5 h-5 accent-orange-600"
+                checked={formData.isOnSale}
+                onChange={e => setFormData({...formData, isOnSale: e.target.checked})}
               />
               <span className="font-medium text-gray-700">Bu ürün indirimde</span>
             </label>
 
             {formData.isOnSale && (
-              <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700">İndirimli Fiyat (TL)</label>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  className="w-full border border-orange-200 rounded-lg px-3 py-2" 
-                  value={formData.discountPrice} 
-                  onChange={e => setFormData({...formData, discountPrice: e.target.value})} 
-                  placeholder="Örn: 199.90"
-                />
-                {formData.price && formData.discountPrice && (
-                  <p className="text-xs text-orange-600 mt-1">
-                    İndirim: %{Math.round((1 - parseFloat(formData.discountPrice) / parseFloat(formData.price)) * 100)}
-                  </p>
-                )}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700">İndirimli Fiyat (TL)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="w-full border border-orange-200 rounded-lg px-3 py-2"
+                    value={formData.discountPrice}
+                    onChange={e => setFormData({...formData, discountPrice: e.target.value})}
+                    placeholder="Örn: 199.90"
+                  />
+                  {formData.price && formData.discountPrice && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      İndirim: %{Math.round((1 - parseFloat(formData.discountPrice) / parseFloat(formData.price)) * 100)}
+                    </p>
+                  )}
+                </div>
+
+                {/* Zamanlı İndirim */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-gray-700">Başlangıç Tarihi (Opsiyonel)</label>
+                    <input
+                      type="datetime-local"
+                      className="w-full border border-orange-200 rounded-lg px-3 py-2 text-sm"
+                      value={formData.saleStartDate}
+                      onChange={e => setFormData({...formData, saleStartDate: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-gray-700">Bitiş Tarihi (Opsiyonel)</label>
+                    <input
+                      type="datetime-local"
+                      className="w-full border border-orange-200 rounded-lg px-3 py-2 text-sm"
+                      value={formData.saleEndDate}
+                      onChange={e => setFormData({...formData, saleEndDate: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                {/* Flash Sale */}
+                <label className="flex items-center gap-3 cursor-pointer bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3">
+                  <input
+                    type="checkbox"
+                    className="w-5 h-5 accent-yellow-500"
+                    checked={formData.isFlashSale}
+                    onChange={e => setFormData({...formData, isFlashSale: e.target.checked})}
+                  />
+                  <Zap size={16} className="text-yellow-500" />
+                  <span className="font-medium text-gray-700 text-sm">Flash Sale (Özel vurgu + geri sayım)</span>
+                </label>
               </div>
             )}
           </div>

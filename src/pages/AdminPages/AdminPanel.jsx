@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search,
   Layers, ShoppingBag, RefreshCcw, Ticket,
   CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight, Upload,
-  Heart, ShoppingCart, ChevronUp, ChevronDown, Image as ImageIcon
+  Heart, ShoppingCart, ChevronUp, ChevronDown, Image as ImageIcon, Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
@@ -222,6 +222,22 @@ const AdminPanel = () => {
       }
   };
 
+  // --- FLASH SALE TOGGLE ---
+  const handleFlashSaleToggle = async (id, currentFlashSale) => {
+    const token = localStorage.getItem("token");
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, isFlashSale: !currentFlashSale } : p));
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}/toggle-flash-sale`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      toast.success(!currentFlashSale ? "⚡ Flash Sale Açıldı" : "Flash Sale Kapatıldı");
+    } catch (error) {
+      toast.error("Flash sale durumu değiştirilemedi");
+      fetchProducts(currentPage, searchTerm, sortBy, sortDir, statusFilter);
+    }
+  };
+
   // --- TEKLİ SİLME ---
   const handleDeleteClick = (id) => {
     setProductToDelete(id);
@@ -320,6 +336,7 @@ const AdminPanel = () => {
                 { key: 'all',      label: 'Tümü' },
                 { key: 'active',   label: 'Yayında' },
                 { key: 'inactive', label: 'Gizli' },
+                { key: 'flash',    label: 'Flash Sale' },
               ].map(({ key, label }) => (
                 <button
                   key={key}
@@ -333,6 +350,7 @@ const AdminPanel = () => {
                   {label}
                   {key === 'active' && <span className="ml-1.5 w-2 h-2 rounded-full bg-green-500 inline-block" />}
                   {key === 'inactive' && <span className="ml-1.5 w-2 h-2 rounded-full bg-gray-400 inline-block" />}
+                  {key === 'flash' && <Zap size={13} className="ml-1 inline text-yellow-500" />}
                 </button>
               ))}
             </div>
@@ -444,7 +462,10 @@ const AdminPanel = () => {
                         <div className="flex items-center gap-3">
                           <img src={product.imageUrl || "https://via.placeholder.com/50"} alt={product.name} className="w-12 h-12 rounded-lg object-cover border border-gray-200"/>
                           <div>
-                            <p className="font-semibold text-gray-900 line-clamp-1">{product.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-semibold text-gray-900 line-clamp-1">{product.name}</p>
+                              {product.isFlashSale && <Zap size={13} className="text-yellow-500 shrink-0" />}
+                            </div>
                             <p className="text-xs text-gray-500">ID: #{product.id}</p>
                           </div>
                         </div>
@@ -475,13 +496,19 @@ const AdminPanel = () => {
                       <td className="p-4 text-center text-sm font-medium text-blue-600">{product.cartAddCount ?? 0}</td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                          onClick={() => { setEditingProduct(product); setIsEditModalOpen(true); }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                        >
-                          <Edit size={18} />
-                        </button>
-                          
+                          <button
+                            onClick={() => handleFlashSaleToggle(product.id, product.isFlashSale)}
+                            className={`p-2 rounded-lg transition ${product.isFlashSale ? "text-yellow-500 bg-yellow-50 hover:bg-yellow-100" : "text-gray-300 hover:bg-gray-100 hover:text-yellow-500"}`}
+                            title={product.isFlashSale ? "Flash Sale Aktif (Kapat)" : "Flash Sale Aç"}
+                          >
+                            <Zap size={18} />
+                          </button>
+                          <button
+                            onClick={() => { setEditingProduct(product); setIsEditModalOpen(true); }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          >
+                            <Edit size={18} />
+                          </button>
                           <button onClick={() => handleDeleteClick(product.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition">
                             <Trash2 size={18} />
                           </button>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Heart, ImageOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, Heart, ImageOff, Zap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useFavorites } from '../context/FavoritesContext';
@@ -8,6 +8,35 @@ import { useUI } from '../context/UIContext'; // ✅ YENİ: Context Import Edild
 import { useTranslation } from 'react-i18next';
 import { useAutoTranslate } from '../hooks/useAutoTranslate';
 import { formatPrice } from '../utils/formatPrice';
+
+const CountdownTimer = ({ endDate }) => {
+  const calcRemaining = () => {
+    const diff = new Date(endDate) - new Date();
+    if (diff <= 0) return null;
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    if (h >= 24) {
+      const d = Math.floor(h / 24);
+      return `${d}g ${h % 24}s`;
+    }
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  const [remaining, setRemaining] = useState(calcRemaining);
+
+  useEffect(() => {
+    const timer = setInterval(() => setRemaining(calcRemaining()), 1000);
+    return () => clearInterval(timer);
+  }, [endDate]);
+
+  if (!remaining) return null;
+  return (
+    <span className="text-[9px] sm:text-[10px] font-bold text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded">
+      ⏱ {remaining}
+    </span>
+  );
+};
 
 const ProductCard = ({ product }) => {
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -156,11 +185,15 @@ const ProductCard = ({ product }) => {
             />
           </button>
 
-          {hasDiscount && (
-             <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase tracking-wider shadow-sm rounded">
-               %{discountPercent} İNDİRİM
-             </span>
-          )}
+          {product.isFlashSale && hasDiscount ? (
+            <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-yellow-400 text-yellow-900 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase tracking-wider shadow-sm rounded flex items-center gap-1">
+              <Zap size={10} /> FLASH %{discountPercent}
+            </span>
+          ) : hasDiscount ? (
+            <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase tracking-wider shadow-sm rounded">
+              %{discountPercent} İNDİRİM
+            </span>
+          ) : null}
 
           <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
              <button 
@@ -225,7 +258,7 @@ const ProductCard = ({ product }) => {
                     <span className="text-[10px] sm:text-xs text-gray-400 line-through font-medium">
                         {formatPrice(product.price)} TL
                     </span>
-                    <span className="text-xs sm:text-sm font-bold text-red-600">
+                    <span className={`text-xs sm:text-sm font-bold ${product.isFlashSale ? 'text-yellow-600' : 'text-red-600'}`}>
                         {formatPrice(product.discountPrice)} TL
                     </span>
                 </>
@@ -235,6 +268,12 @@ const ProductCard = ({ product }) => {
                 </span>
             )}
           </div>
+
+          {product.isFlashSale && product.saleEndDate && (
+            <div className="mt-1">
+              <CountdownTimer endDate={product.saleEndDate} />
+            </div>
+          )}
 
         </div>
       </div>
