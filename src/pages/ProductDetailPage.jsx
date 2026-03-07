@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import Reviews from '../components/Reviews';
 import SimilarProducts from '../components/SimilarProducts';
+import KombinProducts from '../components/KombinProducts';
 import { sortVariantsByOrder } from '../utils/sortHelpers';
 import { useTranslation } from 'react-i18next';
 import { useAutoTranslate } from '../hooks/useAutoTranslate';
@@ -504,6 +505,7 @@ const ProductDetailPage = () => {
             )}
           </div>
 
+          <KombinProducts productId={product?.id} />
           <Reviews productId={product?.id} />
           <SimilarProducts currentProduct={product} />
 

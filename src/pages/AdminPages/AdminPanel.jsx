@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Package, Users, Settings, Plus, Trash2, Edit, Search,
   Layers, ShoppingBag, RefreshCcw, Ticket,
   CheckSquare, Square, FolderInput, Eye, EyeOff, ChevronLeft, ChevronRight, Upload,
-  Heart, ShoppingCart, ChevronUp, ChevronDown, Image as ImageIcon, Zap
+  Heart, ShoppingCart, ChevronUp, ChevronDown, Image as ImageIcon, Zap, Shirt
 } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 import CategoryManager from './CategoryManager';
@@ -15,6 +15,7 @@ import CouponManager from './CouponManager';
 import BulkUploadPage from './BulkUploadPage';
 import UsersManager from './UsersManager';
 import HeroManager from './HeroManager';
+import CombinationManager from './CombinationManager';
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
@@ -290,6 +291,7 @@ const AdminPanel = () => {
           <SidebarItem id="categories" icon={Layers} label="Kategoriler" />
           <SidebarItem id="hero" icon={ImageIcon} label="Hero & İçerik" />
           <SidebarItem id="products" icon={Package} label="Ürün Yönetimi" />
+          <SidebarItem id="combinations" icon={Shirt} label="Kombin Yönetici" />
           <SidebarItem id="bulk-upload" icon={Upload} label="Toplu Yükleme" />
           <SidebarItem id="users" icon={Users} label="Müşteriler" />
           <SidebarItem id="settings" icon={Settings} label="Ayarlar" />
@@ -571,6 +573,7 @@ const AdminPanel = () => {
         {activeTab === 'returns' && <ReturnManager />}
         {activeTab === 'categories' && <CategoryManager />}
         {activeTab === 'coupons' && <CouponManager />}
+        {activeTab === 'combinations' && <CombinationManager />}
         {activeTab === 'bulk-upload' && <BulkUploadPage />}
         {activeTab === 'users' && <UsersManager />}
         {activeTab === 'hero' && <HeroManager />}
