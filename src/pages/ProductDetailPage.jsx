@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Heart, ShoppingCart, Truck, RefreshCcw, ShieldCheck, Star, Minus, Plus, Check, ChevronDown, Zap } from 'lucide-react';
+import { Heart, ShoppingCart, Truck, RefreshCcw, ShieldCheck, Star, Minus, Plus, Check, ChevronDown, Zap, Shirt } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -73,12 +73,18 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
 
   const [activeTab, setActiveTab] = useState('DESCRIPTION');
+  const [combinations, setCombinations] = useState([]);
 
   useEffect(() => {
     fetchProductDetail();
     // Görüntülenme sayacını artır (fire-and-forget)
     const apiUrl = import.meta.env.VITE_API_URL;
     fetch(`${apiUrl}/api/products/${id}/view`, { method: 'POST' }).catch(() => {});
+    // Kombinleri getir
+    fetch(`${apiUrl}/api/products/${id}/combinations`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setCombinations(Array.isArray(data) ? data.filter(c => c.product.isActive) : []))
+      .catch(() => {});
   }, [id]);
 
   const fetchProductDetail = async () => {
@@ -457,6 +463,80 @@ const ProductDetailPage = () => {
                   </div>
                </div>
 
+               {/* KOMBİN ÖNERİSİ — inline sağ kolon */}
+               {combinations.length > 0 && (
+                 <div className="mt-8 border border-gray-100 rounded-2xl overflow-hidden">
+                   <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-100">
+                     <Shirt size={16} className="text-gray-600" />
+                     <span className="text-sm font-black text-gray-900 uppercase tracking-wide">Kombin Önerisi</span>
+                     <span className="text-xs text-gray-400 font-normal ml-1">— Bunu da sepete eklemek ister misiniz?</span>
+                   </div>
+                   <div className="divide-y divide-gray-50">
+                     {combinations.map(({ combinationId, product: cp }) => {
+                       const thumb =
+                         cp.variants?.[0]?.vImageUrls?.[0] ||
+                         cp.variants?.[0]?.vImageUrl ||
+                         cp.imageUrl;
+                       const hasVariants = cp.variants && cp.variants.length > 0;
+                       const effectivePrice = cp.isOnSale && cp.discountPrice
+                         ? parseFloat(cp.discountPrice)
+                         : parseFloat(cp.price);
+                       const hasDiscount = cp.isOnSale && cp.discountPrice;
+                       const outOfStock = cp.stock === 0;
+
+                       return (
+                         <div key={combinationId} className="flex items-center gap-3 px-4 py-3">
+                           {/* Thumbnail */}
+                           <button onClick={() => navigate(`/product/${cp.id}`)} className="shrink-0">
+                             {thumb ? (
+                               <img src={thumb} alt={cp.name} className="w-14 h-16 rounded-lg object-cover object-top" />
+                             ) : (
+                               <div className="w-14 h-16 rounded-lg bg-gray-100" />
+                             )}
+                           </button>
+                           {/* İsim + Fiyat */}
+                           <div className="flex-1 min-w-0">
+                             <button
+                               onClick={() => navigate(`/product/${cp.id}`)}
+                               className="text-sm font-bold text-gray-900 line-clamp-2 text-left hover:underline"
+                             >
+                               {cp.name}
+                             </button>
+                             <div className="flex items-center gap-2 mt-0.5">
+                               {hasDiscount && (
+                                 <span className="text-xs text-gray-400 line-through">{formatPrice(cp.price)} TL</span>
+                               )}
+                               <span className={`text-sm font-bold ${hasDiscount ? 'text-red-600' : 'text-gray-900'}`}>
+                                 {formatPrice(effectivePrice)} TL
+                               </span>
+                             </div>
+                           </div>
+                           {/* Sepet Butonu */}
+                           {outOfStock ? (
+                             <span className="text-xs text-gray-400 shrink-0">Stok yok</span>
+                           ) : (
+                             <button
+                               onClick={() => {
+                                 if (hasVariants) {
+                                   navigate(`/product/${cp.id}`);
+                                 } else {
+                                   addToCart(cp, null, 1);
+                                   toast.success(`${cp.name} sepete eklendi!`);
+                                 }
+                               }}
+                               className="shrink-0 flex items-center gap-1.5 bg-black text-white text-xs font-bold px-3 py-2 rounded-full hover:bg-gray-800 transition whitespace-nowrap"
+                             >
+                               <ShoppingCart size={13} />
+                               {hasVariants ? 'Seç & Ekle' : 'Sepete Ekle'}
+                             </button>
+                           )}
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
+               )}
+
             </div>
           </div>
 
@@ -505,7 +585,6 @@ const ProductDetailPage = () => {
             )}
           </div>
 
-          <KombinProducts productId={product?.id} />
           <Reviews productId={product?.id} />
           <SimilarProducts currentProduct={product} />
 
