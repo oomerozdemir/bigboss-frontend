@@ -75,6 +75,11 @@ const ProductDetailPage = () => {
   const [activeTab, setActiveTab] = useState('DESCRIPTION');
   const [combinations, setCombinations] = useState([]);
 
+  // Kombin modal
+  const [kombineModalProduct, setKombineModalProduct] = useState(null);
+  const [modalColor, setModalColor] = useState('');
+  const [modalSize, setModalSize] = useState('');
+
   useEffect(() => {
     fetchProductDetail();
     // Görüntülenme sayacını artır (fire-and-forget)
@@ -171,6 +176,53 @@ const ProductDetailPage = () => {
 
     setCurrentImages(newImages);
     if (newImages.length > 0) setActiveImage(newImages[0]);
+  };
+
+  // --- KOMBİN MODAL ---
+  const openKombinModal = (cp) => {
+    const firstColorVariant = cp.variants?.find(v => v.color !== 'Standart' && v.stock > 0);
+    setModalColor(firstColorVariant?.color || '');
+    setModalSize('');
+    setKombineModalProduct(cp);
+  };
+
+  const modalUniqueColors = kombineModalProduct?.variants?.reduce((acc, v) => {
+    if (v.color && v.color !== 'Standart' && !acc.includes(v.color)) acc.push(v.color);
+    return acc;
+  }, []) || [];
+
+  const modalAvailableSizes = sortVariantsByOrder(
+    kombineModalProduct?.variants?.filter(v =>
+      modalColor ? v.color === modalColor : true
+    ) || []
+  );
+
+  const modalCurrentVariant = kombineModalProduct?.variants?.find(v =>
+    (modalColor ? v.color === modalColor : true) &&
+    (modalSize ? v.size === modalSize : true)
+  );
+
+  const handleKombinAdd = (addBoth) => {
+    if (modalUniqueColors.length > 0 && !modalColor) {
+      toast.error('Kombin ürün için renk seçin'); return;
+    }
+    if (modalAvailableSizes.length > 0 && !modalSize) {
+      toast.error('Kombin ürün için beden seçin'); return;
+    }
+
+    if (addBoth) {
+      if (uniqueColors.length > 0 && !selectedColor) {
+        toast.error(t('product.select_color')); return;
+      }
+      if (availableSizes.length > 0 && !selectedSize) {
+        toast.error(t('product.select_size')); return;
+      }
+      addToCart(product, currentVariant || null, 1);
+    }
+
+    addToCart(kombineModalProduct, modalCurrentVariant || null, 1);
+    toast.success(addBoth ? 'Her iki ürün sepete eklendi!' : `${kombineModalProduct.name} sepete eklendi!`);
+    setKombineModalProduct(null);
   };
 
   const handleAddToCart = () => {
@@ -518,7 +570,7 @@ const ProductDetailPage = () => {
                              <button
                                onClick={() => {
                                  if (hasVariants) {
-                                   navigate(`/product/${cp.id}`);
+                                   openKombinModal(cp);
                                  } else {
                                    addToCart(cp, null, 1);
                                    toast.success(`${cp.name} sepete eklendi!`);
@@ -590,6 +642,148 @@ const ProductDetailPage = () => {
 
         </div>
       </div>
+
+      {/* KOMBİN MODAL */}
+      {kombineModalProduct && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setKombineModalProduct(null); }}
+        >
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Shirt size={18} className="text-gray-600" />
+                <span className="font-black text-gray-900">Kombin Önerisi</span>
+              </div>
+              <button
+                onClick={() => setKombineModalProduct(null)}
+                className="text-gray-400 hover:text-gray-700 transition text-xl leading-none"
+              >✕</button>
+            </div>
+
+            <div className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
+              {/* Ürün Özeti */}
+              <div className="flex gap-4">
+                {(() => {
+                  const thumb =
+                    kombineModalProduct.variants?.find(v => modalColor ? v.color === modalColor : true)?.vImageUrls?.[0] ||
+                    kombineModalProduct.variants?.[0]?.vImageUrls?.[0] ||
+                    kombineModalProduct.variants?.[0]?.vImageUrl ||
+                    kombineModalProduct.imageUrl;
+                  return thumb ? (
+                    <img src={thumb} alt={kombineModalProduct.name} className="w-20 h-24 rounded-xl object-cover object-top shrink-0" />
+                  ) : (
+                    <div className="w-20 h-24 rounded-xl bg-gray-100 shrink-0" />
+                  );
+                })()}
+                <div className="flex-1 min-w-0 pt-1">
+                  <p className="font-bold text-gray-900 leading-tight">{kombineModalProduct.name}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    {kombineModalProduct.isOnSale && kombineModalProduct.discountPrice && (
+                      <span className="text-sm text-gray-400 line-through">{formatPrice(kombineModalProduct.price)} TL</span>
+                    )}
+                    <span className={`text-lg font-black ${kombineModalProduct.isOnSale && kombineModalProduct.discountPrice ? 'text-red-600' : 'text-gray-900'}`}>
+                      {formatPrice(kombineModalProduct.isOnSale && kombineModalProduct.discountPrice
+                        ? kombineModalProduct.discountPrice
+                        : kombineModalProduct.price
+                      )} TL
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Renk Seçimi */}
+              {modalUniqueColors.length > 0 && (
+                <div>
+                  <p className="text-sm font-bold text-gray-900 mb-2">
+                    Renk <span className="text-gray-400 font-normal">{modalColor}</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {modalUniqueColors.map(color => {
+                      const v = kombineModalProduct.variants?.find(vv => vv.color === color);
+                      const img = v?.vImageUrls?.[0] || v?.vImageUrl;
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => { setModalColor(color); setModalSize(''); }}
+                          className={`w-11 h-11 rounded-full border-2 p-0.5 transition-all ${modalColor === color ? 'border-black scale-110' : 'border-transparent hover:border-gray-300'}`}
+                        >
+                          {img ? (
+                            <img src={img} className="w-full h-full rounded-full object-cover" alt={color} />
+                          ) : (
+                            <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">{color[0]}</div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Beden Seçimi */}
+              {modalAvailableSizes.length > 0 && (
+                <div>
+                  <p className="text-sm font-bold text-gray-900 mb-2">Beden</p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {modalAvailableSizes.map((v) => {
+                      const available = v.stock > 0;
+                      return (
+                        <button
+                          key={v.id}
+                          disabled={!available}
+                          onClick={() => setModalSize(v.size)}
+                          className={`py-2.5 rounded-lg text-sm font-medium border transition-all ${
+                            modalSize === v.size
+                              ? 'bg-black text-white border-black'
+                              : available
+                                ? 'bg-white text-gray-900 border-gray-200 hover:border-black'
+                                : 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed line-through'
+                          }`}
+                        >
+                          {v.size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Sayfadaki Ana Ürün Hatırlatması */}
+              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600">
+                <p className="font-bold text-gray-800 mb-1">Sayfadaki ürün:</p>
+                <p className="truncate">{product?.name}</p>
+                {(selectedColor || selectedSize) && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {[selectedColor, selectedSize].filter(Boolean).join(' / ')}
+                  </p>
+                )}
+                {(!selectedColor && uniqueColors.length > 0) || (!selectedSize && availableSizes.length > 0) ? (
+                  <p className="text-xs text-amber-600 mt-1">⚠ Renk/beden seçilmemişse "İkisini birden ekle" çalışmaz.</p>
+                ) : null}
+              </div>
+
+              {/* Butonlar */}
+              <div className="space-y-2 pt-1">
+                <button
+                  onClick={() => handleKombinAdd(true)}
+                  className="w-full bg-black text-white font-bold py-3.5 rounded-full hover:bg-gray-800 transition flex items-center justify-center gap-2"
+                >
+                  <ShoppingCart size={18} />
+                  İkisini Birden Sepete Ekle
+                </button>
+                <button
+                  onClick={() => handleKombinAdd(false)}
+                  className="w-full border border-gray-300 text-gray-700 font-bold py-3.5 rounded-full hover:border-black hover:text-black transition flex items-center justify-center gap-2"
+                >
+                  <ShoppingCart size={18} />
+                  Sadece Kombin Ürünü Ekle
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
